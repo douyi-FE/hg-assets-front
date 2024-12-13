@@ -1,0 +1,16 @@
+{
+  "version": "v1.4.4",
+  "record": {
+    "hosts": [
+      "localhost",
+      "192.168.1.3",
+      "127.0.0.1",
+      "0.0.0.0"
+    ],
+    "hash": {
+      "key": "c134b4a3e9820c3dabe928598a17de2312b1a5787fd43ae0f210e4044237bf5f",
+      "cert": "215cadccf62614d0c3cb3e7230227065da17f7738c97e26d01beab9ea83690e1"
+    }
+  },
+  "configFilePath": "D:\\codes\\hg-webside-front\\vue3-antdv-admin\\.cert\\config.json"
+}
