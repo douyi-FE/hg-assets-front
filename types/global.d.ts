@@ -3,6 +3,7 @@ import type { ComponentRenderProxy, VNode, VNodeChild, PropType as VuePropType }
 import type { TinyMCE } from 'tinymce';
 
 declare global {
+  const GC: any;
   const __APP_INFO__: {
     pkg: typeof packageJSON;
     lastBuildTime: string;
