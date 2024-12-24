@@ -10,6 +10,26 @@ import type { PermissionType } from './permCode';
 import type { App, Directive, DirectiveBinding } from 'vue';
 import { useUserStore } from '@/store/modules/user';
 
+export function findMenuByPermission(permCode: PermissionType, menuPerms: Array<any>) {
+  let result: any = [];
+
+  function searchMenu(data) {
+    data.forEach((item) => {
+      // 检查当前项的权限是否与传入的权限一致
+      if (item.permission === permCode) {
+        result.push(item);
+      }
+      // 如果有子菜单，递归搜索
+      if (item.children && item.children.length > 0) {
+        searchMenu(item.children);
+      }
+    });
+  }
+
+  searchMenu(menuPerms);
+  return result[0] || {};
+}
+
 /**
  * 验证权限
  * @param {PermissionType} perm  权限码
@@ -17,7 +37,6 @@ import { useUserStore } from '@/store/modules/user';
  */
 export const hasPermission = (permCode: PermissionType) => {
   const permissionList = useUserStore().perms;
-
   return permissionList.some((n) => n === permCode);
 };
 

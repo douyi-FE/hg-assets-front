@@ -1281,4 +1281,15 @@ declare namespace API {
   type UserUpdateParams = {
     id: number;
   };
+
+  type TemplateItem = {
+    _id: string;
+    name: string;
+    code: string;
+    status: number;
+    isBuildIn: boolean;
+    note: string;
+    createdAt: string;
+    updateAt: string;
+  };
 }

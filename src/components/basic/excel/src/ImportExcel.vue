@@ -1,12 +1,6 @@
 <template>
   <div>
-    <input
-      v-show="false"
-      ref="inputRef"
-      type="file"
-      accept=".xlsx, .xls"
-      @change="handleInputClick"
-    />
+    <input ref="inputRef" type="file" accept=".xlsx, .xls" @change="handleInputClick" />
     <div @click="handleUpload">
       <slot />
     </div>

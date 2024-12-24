@@ -78,6 +78,9 @@ const _permissions = [
   'tool:storage:list',
   'tool:storage:delete',
   'upload:upload',
+  'template:excel:edit',
+  'template:excel:delete',
+  'template:excel:buildin',
 ] as const;
 
 export type PermissionType = (typeof _permissions)[number];

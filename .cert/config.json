@@ -3,14 +3,14 @@
   "record": {
     "hosts": [
       "localhost",
-      "192.168.1.3",
+      "192.168.1.4",
       "127.0.0.1",
       "0.0.0.0"
     ],
     "hash": {
-      "key": "c134b4a3e9820c3dabe928598a17de2312b1a5787fd43ae0f210e4044237bf5f",
-      "cert": "215cadccf62614d0c3cb3e7230227065da17f7738c97e26d01beab9ea83690e1"
+      "key": "5c65bba19640b31fa310f1e5a63d3985b1714f5a299aab673e21b65d7f3ab181",
+      "cert": "1174ec88ad49892d904eba01b2a6ef94be685ecad864c1eaa30f01822ce3f2b2"
     }
   },
-  "configFilePath": "D:\\codes\\hg-webside-front\\vue3-antdv-admin\\.cert\\config.json"
+  "configFilePath": "D:\\codes\\hg-assets-front\\.cert\\config.json"
 }

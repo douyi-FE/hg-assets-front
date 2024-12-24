@@ -16,6 +16,7 @@ export const useUserStore = defineStore(
     const token = ref<string>();
     const perms = ref<string[]>([]);
     const menus = ref<RouteRecordRaw[]>([]);
+    const menuPerms = ref<Array<any>>([]);
     const userInfo = ref<Partial<API.UserEntity>>({});
 
     const sortMenus = (menus: RouteRecordRaw[] = []) => {
@@ -75,11 +76,17 @@ export const useUserStore = defineStore(
     /** 获取权限及菜单 */
     const fetchPermsAndMenus = async () => {
       const { accountPermissions, accountMenu } = Api.account;
+      const { menuList } = Api.systemMenu;
       // const wsStore = useWsStore();
-      const [menusData, permsData] = await Promise.all([accountMenu(), accountPermissions()]);
+      const [menusData, permsData, menuPermData] = await Promise.all([
+        accountMenu(),
+        accountPermissions(),
+        menuList({}),
+      ]);
       perms.value = permsData;
       const result = generateDynamicRoutes(menusData as unknown as RouteRecordRaw[]);
       menus.value = sortMenus(result);
+      menuPerms.value = menuPermData;
     };
     /** 登出 */
     const logout = async () => {
@@ -92,6 +99,7 @@ export const useUserStore = defineStore(
       token,
       perms,
       menus,
+      menuPerms,
       userInfo,
       login,
       afterLogin,

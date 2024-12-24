@@ -2,7 +2,6 @@
   <div class="menu-container" :class="{ 'is-side-menu': isSideMenu }">
     <Menu
       v-model:selected-keys="selectedKeys"
-      :open-keys="isSideMenu ? openKeys : []"
       :mode="isSideMenu ? 'inline' : 'horizontal'"
       :theme="theme"
       :collapsed="props.collapsed"

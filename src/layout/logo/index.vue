@@ -1,7 +1,7 @@
 <template>
   <div class="logo">
     <img src="~@/assets/images/logo.png" alt="" />
-    <h2 v-show="!collapsed" class="title">弘庚资产管理</h2>
+    <h2 v-show="!collapsed" class="title">综合管理平台</h2>
   </div>
 </template>
 
@@ -29,7 +29,7 @@
     .title {
       @apply mb-0 text-xl;
 
-      color: var(--app-primary-color);
+      color: var(--app-logo-title-color);
     }
   }
 </style>

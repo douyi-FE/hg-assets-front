@@ -23,9 +23,11 @@
           <LockOutlined @click="lockscreenStore.setLock(true)" />
         </Tooltip>
         <FullScreen />
-        <LocalePicker />
+        <!-- <LocalePicker /> -->
         <Dropdown placement="bottomRight">
-          <Avatar :src="userInfo.avatar" :alt="userInfo.username">{{ userInfo.username }}</Avatar>
+          <a-badge count="5">
+            <Avatar :src="userInfo.avatar" :alt="userInfo.username">{{ userInfo.username }}</Avatar>
+          </a-badge>
           <template #overlay>
             <Menu>
               <Menu.Item @click="$router.push({ name: 'account-settings' })">
@@ -40,7 +42,7 @@
             </Menu>
           </template>
         </Dropdown>
-        <ProjectSetting />
+        <!-- <ProjectSetting /> -->
       </Space>
     </div>
   </Layout.Header>
@@ -67,8 +69,7 @@
     Tooltip,
     type MenuTheme,
   } from 'ant-design-vue';
-  import { Search, FullScreen, ProjectSetting, LayoutBreadcrumb } from './components/';
-  import { LocalePicker } from '@/components/basic/locale-picker';
+  import { Search, FullScreen, LayoutBreadcrumb } from './components/';
   import { useUserStore } from '@/store/modules/user';
   import { useKeepAliveStore } from '@/store/modules/keepAlive';
   import { useLockscreenStore } from '@/store/modules/lockscreen';
@@ -132,11 +133,11 @@
     top: 0;
     align-items: center;
     justify-content: space-between;
-    height: var(--app-header-height);
+    height: 55px;
     padding: 0 20px;
 
     .header-right {
-      min-width: 180px;
+      min-width: 135px;
       cursor: pointer;
     }
 
