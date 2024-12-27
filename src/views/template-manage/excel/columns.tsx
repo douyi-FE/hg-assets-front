@@ -23,6 +23,16 @@ export const baseColumns: TableColumnItem[] = [
     },
   },
   {
+    title: '模板编码',
+    width: 200,
+    dataIndex: 'code',
+    formItemProps: {
+      colProps: {
+        span: 4,
+      },
+    },
+  },
+  {
     title: '是否内置',
     width: 80,
     dataIndex: 'isBuildIn',

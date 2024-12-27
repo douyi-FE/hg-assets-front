@@ -105,3 +105,37 @@ export const loadTemplate = async (designer, taskId) => {
     designer.refresh();
   }
 };
+
+// 初始化工作簿
+export const initWorkbook = function (spread) {
+  const sheet = spread.getActiveSheet();
+  const defaultStyle = sheet.getDefaultStyle();
+  // 设置垂直居中
+  defaultStyle.vAlign = GC.Spread.Sheets.VerticalAlign.center;
+  sheet.setDefaultStyle(defaultStyle);
+  // 设置表格主题样式
+  const border = new GC.Spread.Sheets.LineBorder();
+  border.color = '#000000';
+  border.style = GC.Spread.Sheets.LineStyle.thin;
+  const styleInfo = new GC.Spread.Sheets.Tables.TableStyle(
+    '#ffffff',
+    '#000000',
+    'normal normal 16px 仿宋',
+    border,
+    border,
+    border,
+    border,
+    border,
+    border,
+  );
+  const standardTheme = new GC.Spread.Sheets.Tables.TableTheme();
+  standardTheme.name('standard');
+  standardTheme.wholeTableStyle(styleInfo);
+  standardTheme.headerRowStyle(styleInfo);
+  standardTheme.firstRowStripStyle(styleInfo);
+  standardTheme.firstColumnStripStyle(styleInfo);
+  standardTheme.footerRowStyle(styleInfo);
+  standardTheme.highlightFirstColumnStyle(styleInfo);
+  standardTheme.highlightLastColumnStyle(styleInfo);
+  spread.customTableThemes.add(standardTheme);
+};

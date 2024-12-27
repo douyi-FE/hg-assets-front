@@ -24,7 +24,11 @@
         </a-button>
       </template>
     </DynamicTable>
-    <TemplateDrawer ref="templateDrawerRef" @save="saveTemplate" />
+    <TemplateDrawer
+      ref="templateDrawerRef"
+      @save="saveTemplate"
+      @save-template-initial-data="onSaveTemplateInitialData"
+    />
   </div>
 </template>
 
@@ -46,37 +50,30 @@
   const openMenuModal = async (record: Partial<TableListItem>, type) => {
     templateDrawerRef.value.open(record, type);
   };
+  const onSaveTemplateInitialData = function (data) {
+    console.log('初始数据：', data);
+    Api.templateData.saveTemplateData(data);
+  };
   const saveTemplate = function (template, sjs) {
     const hideLoading = message.loading({
       content: '模板保存中...',
       duration: 0,
     });
     // 有id即认为是编辑
-    if (template.id) {
-      Api.template
-        .updateExcelTemplate(template, sjs)
-        .then(() => {
-          message.success('模板编辑成功');
-        })
-        .catch((err) => {
-          message.error('模板编辑失败');
-        })
-        .finally(() => {
-          hideLoading();
-        });
-    } else {
-      Api.template
-        .saveExcelTemplate(template, sjs)
-        .then(() => {
-          message.success('模板保存成功', 1);
-        })
-        .catch((err) => {
-          message.error('模板保存失败', 1);
-        })
-        .finally(() => {
-          hideLoading();
-        });
-    }
+    const saveTempate = template.id
+      ? Api.template.updateExcelTemplate(template, sjs)
+      : Api.template.saveExcelTemplate(template, sjs);
+    saveTempate
+      .then(() => {
+        message.success('模板编辑成功');
+        templateDrawerRef.value.close();
+      })
+      .catch((err) => {
+        message.error('模板编辑失败');
+      })
+      .finally(() => {
+        hideLoading();
+      });
     dynamicTableInstance?.reload();
   };
   const delRowConfirm = async (record: TableListItem) => {

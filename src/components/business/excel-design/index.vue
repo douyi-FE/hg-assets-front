@@ -1,11 +1,11 @@
 <template>
   <Teleport to="body" :disabled="!isFullscreen">
-    <div class="excel-container">
+    <div class="excel-bus-container">
       <slot name="excelsearch" />
       <div
         id="design_container"
         ref="designRef"
-        class="design-container"
+        class="design-bus-container"
         :disabled="!isFullscreen"
       />
       <a-float-button style="right: 80px; bottom: 80px" @click="toggleFullscreen">
@@ -13,13 +13,15 @@
           <component :is="isFullscreen ? FullscreenExitOutlined : FullscreenOutlined" />
         </template>
       </a-float-button>
+      <ExcelRibbon :designer="designer" @send-initial-data="onSendInitialData" />
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-  import { getCurrentInstance, nextTick, onMounted, ref, watch } from 'vue';
+  import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons-vue';
+  import ExcelRibbon from './ribbons.vue';
 
   const props = withDefaults(
     defineProps<{
@@ -28,12 +30,13 @@
     }>(),
     { templateJson: () => ({}) },
   );
+  const emits = defineEmits(['sendInitialData']);
 
   const isFullscreen = ref(false);
   const open = ref(false);
   const currentInstance = getCurrentInstance();
   const designRef = ref();
-  let designer: any = null;
+  let designer: any = ref(null);
 
   const updateAppContainerStyle = () => {
     const appEl: HTMLDivElement =
@@ -43,7 +46,7 @@
     appEl.style.setProperty('visibility', isFullscreen.value ? 'hidden' : 'visible');
     appEl.style.setProperty('position', isFullscreen.value ? 'absolute' : 'relative');
     nextTick(() => {
-      const workBook = designer.getWorkbook();
+      const workBook = designer.value.getWorkbook();
       workBook.addSheet(1, new GC.Spread.Sheets.Worksheet('custom'));
       workBook.removeSheet(1);
     });
@@ -56,7 +59,7 @@
   };
 
   const loadTemplate = function (sjsHex: string) {
-    const workBook = designer.getWorkbook();
+    const workBook = designer.value.getWorkbook();
     // hex转换为buffer
     const uint8Array = new Uint8Array(sjsHex.length / 2);
     for (let i = 0; i < sjsHex.length; i += 2) {
@@ -78,16 +81,12 @@
     );
   };
 
-  const initDesigner = () => {
-    designer = new GC.Spread.Sheets.Designer.Designer('design_container');
-    designer.setConfig(GC.Spread.Sheets.Designer.ToolBarModeConfig);
-    if (props.sjs) {
-      loadTemplate(props.sjs);
-    }
+  const onSendInitialData = function (data) {
+    emits('sendInitialData', data);
   };
 
   const getSpreadSJS = function () {
-    const workBook = designer.getWorkbook();
+    const workBook = designer.value.getWorkbook();
     return new Promise((resolve, reject) => {
       // 将spread保存为sjs文件。
       workBook.save(
@@ -99,6 +98,14 @@
         },
       );
     });
+  };
+
+  const initDesigner = () => {
+    designer.value = new GC.Spread.Sheets.Designer.Designer('design_container');
+    designer.value.setConfig(GC.Spread.Sheets.Designer.ToolBarModeConfig);
+    if (props.sjs) {
+      loadTemplate(props.sjs);
+    }
   };
 
   watch(
@@ -114,23 +121,27 @@
     initDesigner();
   });
 
+  onBeforeUnmount(() => {
+    designer.value = null;
+  });
+
   defineExpose({
     getSpreadSJS,
   });
 </script>
 
 <style lang="less" scoped>
-  .excel-container {
+  .excel-bus-container {
     display: flex;
     flex-direction: column;
     height: 100%;
 
-    .design-container {
+    .design-bus-container {
       width: 100%;
       height: calc(100% - 20px);
     }
 
-    .excel-status {
+    .excel-bus-status {
       height: 20px;
     }
   }

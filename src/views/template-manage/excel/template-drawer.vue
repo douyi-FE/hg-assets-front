@@ -13,7 +13,13 @@
     </template>
     <a-row :gutter="20" style="height: 100%">
       <a-col :span="18">
-        <ExcelDesign v-if="isOpen" ref="excelDesignRef" :sjs="excelTemplate" />
+        <!-- <ExcelDesign v-if="isOpen" ref="excelDesignRef" :sjs="excelTemplate" /> -->
+        <ExcelDesigner
+          v-if="isOpen"
+          ref="excelDesignRef"
+          :sjs="excelTemplate"
+          @send-initial-data="onSaveInitialData"
+        />
       </a-col>
       <a-col :span="6">
         <a-card title="模板信息">
@@ -23,8 +29,11 @@
             :label-col="{ style: { width: '100px' } }"
             :wrapper-col="{ span: 20 }"
           >
-            <a-form-item label="模板名称" name="name">
+            <a-form-item label="模板名称" name="name" :required="true">
               <a-input v-model:value="formState.name" />
+            </a-form-item>
+            <a-form-item label="模板编码" name="code" :required="true">
+              <a-input v-model:value="formState.code" />
             </a-form-item>
             <a-form-item label="是否内置" name="isBuildIn">
               <a-radio-group
@@ -56,11 +65,13 @@
   import { nextTick, ref, toRaw } from 'vue';
   import { useUserStore } from '@/store/modules/user';
   import { findMenuByPermission } from '@/permission';
-  const emits = defineEmits(['open', 'save']);
+  import ExcelDesigner from '@/components/business/excel-design/index.vue';
 
+  const emits = defineEmits(['open', 'save', 'saveTemplateInitialData']);
   const { menuPerms } = useUserStore();
   const initialState = {
     name: '',
+    code: '',
     isBuildIn: false,
     status: 0,
     note: '',
@@ -85,6 +96,7 @@
     } else {
       formState.value = {
         name: record.name,
+        code: record.code,
         isBuildIn: record.isBuildIn,
         status: record.status,
         note: record.note,
@@ -96,6 +108,19 @@
       isOpen.value = true;
     });
   };
+
+  const close = function () {
+    isOpen.value = false;
+  };
+
+  const onSaveInitialData = async function (data) {
+    emits('saveTemplateInitialData', {
+      name: formState.value.name,
+      code: formState.value.code,
+      record: data,
+    });
+  };
+
   const saveTemplate = async function () {
     const sjs = await excelDesignRef.value.getSpreadSJS();
     emits(
@@ -105,10 +130,10 @@
       },
       sjs,
     );
-    isOpen.value = false;
   };
 
   defineExpose({
     open,
+    close,
   });
 </script>
