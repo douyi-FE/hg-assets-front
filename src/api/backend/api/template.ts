@@ -12,6 +12,16 @@ export async function getExcelTemplateList(params: any) {
   });
 }
 
+export async function getExcelTemplateEjs(id: string) {
+  return request<any>({
+    url: '/api/template/excel/ejs',
+    method: 'GET',
+    params: {
+      id,
+    },
+  });
+}
+
 export async function saveExcelTemplate(body: any, file?: File, options?: RequestOptions) {
   const formData = new FormData();
   if (file) {
@@ -78,7 +88,7 @@ export async function deleteExcelTemplate(id: string) {
 // word相关
 
 export const getWordTemplateList = async function (params: object) {
-  return request<any>('/api/template/word', {
+  return request<any>('/api/template/word/list', {
     method: 'GET',
     params,
   });
@@ -104,7 +114,7 @@ export const saveWordTemplate = async function (body: any, file?: File) {
       }
     }
   });
-  return request<any>('/api/template/word/upload', {
+  return request<any>('/api/template/word/save', {
     method: 'POST',
     data: formData,
   });

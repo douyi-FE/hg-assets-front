@@ -28,6 +28,9 @@
   import { baseColumns, type TableColumnItem } from './columns';
   import UploadDialog from './upload.vue';
   import Api from '@/api/';
+  import { useTable } from '@/components/core/dynamic-table';
+
+  const [DynamicTable, dynamicTableInstance] = useTable();
 
   const columns: TableColumnItem[] = [
     ...baseColumns,
@@ -45,7 +48,7 @@
             effect: 'disable',
           },
           onClick: () => {
-            downloadTemplate(record.name);
+            downloadTemplate(record._id);
           },
         },
         {
@@ -58,7 +61,7 @@
             title: '你确定要删除吗？',
             placement: 'left',
             onConfirm: () => {
-              deleteWordTemplate(record.name);
+              deleteWordTemplate(record._id);
             },
           },
         },
@@ -72,50 +75,60 @@
     uploadDialogRef.value.openUpload();
   };
   const saveUploadTemplate = function (params) {
-    console.log('表单数据：', params);
-    Api.template.saveWordTemplate(
-      {
-        name: params.name,
-      },
-      params.file,
-    );
+    Api.template
+      .saveWordTemplate(
+        {
+          name: params.name,
+          code: params.code,
+          isBuildIn: params.isBuildIn,
+          note: params.note,
+          status: params.status,
+        },
+        params.file,
+      )
+      .then(() => {
+        message.success('模板上传成功', 1);
+        dynamicTableInstance?.reload();
+      });
   };
 
   const downFile = function (data) {
-    const base64Data = data.file; // 获取 Base64 字符串
-    // 解码 Base64 字符串
-    const byteCharacters = atob(base64Data);
-    const byteNumbers = new Uint8Array(byteCharacters.length);
-    // 将字符转换为字节
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
+    const { file: bufferHexString, fileName } = data;
+    // 将十六进制字符串转换为 Uint8Array
+    const byteArray = new Uint8Array(
+      bufferHexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)),
+    );
     // 创建 Blob 对象
-    const blob = new Blob([byteNumbers], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', 'downloaded-file.txt'); // 指定下载文件名
-    // 触发下载
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const blob = new Blob([byteArray], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName; // 设置下载的文件名
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url); // 释放内存
   };
-  const downloadTemplate = async function (name: string) {
+  const downloadTemplate = async function (id: string) {
     const result = await Api.template.downloadWordTemplate({
-      name,
+      id,
     });
     console.log('下载文件：', result);
     downFile(result);
   };
 
   // 删除模板
-  const deleteWordTemplate = async function (name: string) {
+  const deleteWordTemplate = async function (id: string) {
     Api.template
       .deleteWordTemplate({
-        name,
+        id,
       })
       .then(() => {
         message.success('删除成功', 1);
+        dynamicTableInstance?.reload();
       })
       .catch(() => {
         message.error('删除失败', 1);

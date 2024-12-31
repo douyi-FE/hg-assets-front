@@ -13,7 +13,6 @@
     </template>
     <a-row :gutter="20" style="height: 100%">
       <a-col :span="18">
-        <!-- <ExcelDesign v-if="isOpen" ref="excelDesignRef" :sjs="excelTemplate" /> -->
         <ExcelDesigner
           v-if="isOpen"
           ref="excelDesignRef"
@@ -36,9 +35,10 @@
               <a-input v-model:value="formState.code" />
             </a-form-item>
             <a-form-item label="是否内置" name="isBuildIn">
+              <!-- :disabled="$auth('template:excel:buildin') && isPermissionDisabledByCode()" -->
               <a-radio-group
                 v-model:value="formState.isBuildIn"
-                :disabled="$auth('template:excel:buildin') && isPermissionDisabledByCode()"
+                v-bind:disabled="formState.isBuildIn === true"
               >
                 <a-radio :value="true">是</a-radio>
                 <a-radio :value="false">否</a-radio>
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-  import { nextTick, ref, toRaw } from 'vue';
+  import { nextTick, ref, toRaw, watch } from 'vue';
   import { useUserStore } from '@/store/modules/user';
   import { findMenuByPermission } from '@/permission';
   import ExcelDesigner from '@/components/business/excel-design/index.vue';
@@ -87,7 +87,7 @@
     // status:0-禁用；2-启用
     return matchMenuPermiession?.status !== 1;
   };
-  const open = function (record: any, type: 'add' | 'edit') {
+  const open = function (record: any, ejs: string, type: 'add' | 'edit') {
     if (type === 'add') {
       formState.value = {
         ...initialState,
@@ -102,7 +102,7 @@
         note: record.note,
         id: record._id,
       };
-      excelTemplate.value = record.file;
+      excelTemplate.value = ejs;
     }
     nextTick(() => {
       isOpen.value = true;
@@ -122,15 +122,23 @@
   };
 
   const saveTemplate = async function () {
-    const sjs = await excelDesignRef.value.getSpreadSJS();
-    emits(
-      'save',
-      {
-        ...toRaw(formState.value),
-      },
-      sjs,
-    );
+    formRef.value.validate().then(async () => {
+      const sjs = await excelDesignRef.value.getSpreadSJS();
+      emits(
+        'save',
+        {
+          ...toRaw(formState.value),
+        },
+        sjs,
+      );
+    });
   };
+
+  watch(isOpen, (curIsOpen) => {
+    if (curIsOpen === false) {
+      formRef.value.clearValidate();
+    }
+  });
 
   defineExpose({
     open,

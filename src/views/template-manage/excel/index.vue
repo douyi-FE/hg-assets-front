@@ -48,10 +48,21 @@
   const [DynamicTable, dynamicTableInstance] = useTable();
 
   const openMenuModal = async (record: Partial<TableListItem>, type) => {
-    templateDrawerRef.value.open(record, type);
+    if (type === 'add') {
+      templateDrawerRef.value.open(record, undefined, type);
+    } else {
+      Api.template
+        .getExcelTemplateEjs(record._id!)
+        .then((res) => {
+          console.log('模板内容：', res.file);
+          templateDrawerRef.value.open(record, res.file, type);
+        })
+        .catch((err) => {
+          message.error('模板内容获取发生错误', 1);
+        });
+    }
   };
   const onSaveTemplateInitialData = function (data) {
-    console.log('初始数据：', data);
     Api.templateData.saveTemplateData(data);
   };
   const saveTemplate = function (template, sjs) {

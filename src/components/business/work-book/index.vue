@@ -1,15 +1,15 @@
 <template>
   <div class="work-book-container">
     <div class="work-book-operator">
-      <a-button type="primary" :icon="h(SaveOutlined)" @click="saveWorkBook">保存</a-button>
+      <a-button type="primary" @click="saveWorkBook">保存</a-button>
+      <a-button style="margin-left: 10px" @click="fetchExcelTableDataSource">刷新</a-button>
     </div>
     <div id="work_book_container" class="work-book-container" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { h, onMounted } from 'vue';
-  import { SaveOutlined } from '@ant-design/icons-vue';
+  import { onMounted } from 'vue';
   import { message } from 'ant-design-vue';
   import Api from '@/api';
 
@@ -50,6 +50,16 @@
       });
   };
 
+  const setSheetRange = function () {
+    const sheet = workBook.getActiveSheet();
+    const table = sheet.tables.findByName('table');
+    if (table !== null) {
+      const { col, colCount, row, rowCount } = table.dataRange();
+      sheet.setRowCount(row + rowCount);
+      sheet.setColumnCount(col + colCount);
+    }
+  };
+
   const loadDataSource = function (data: { table: Array<any> } = { table: [] }) {
     if (!(Array.isArray(data.table) && data.table.length > 0)) {
       return;
@@ -62,6 +72,7 @@
 
   const loadTemplate = function (sjsHex: string) {
     return new Promise((resolve, reject) => {
+      workBook.suspendPaint();
       // hex转换为buffer
       const uint8Array = new Uint8Array(sjsHex.length / 2);
       for (let i = 0; i < sjsHex.length; i += 2) {
@@ -78,6 +89,8 @@
           // 成功回调函数
           resolve({});
           fetchExcelTableDataSource();
+          setSheetRange();
+          workBook.resumePaint();
         },
         function (e) {
           // 错误回调函数
@@ -98,28 +111,19 @@
   };
 
   const fetchExcelTableDataSource = async function () {
+    message.loading('数据加载中...', 0);
     const tableDataSource: any = await Api.templateData
       .getTemplateDataList({
         code: props.templateCode,
       })
       .then((list) => {
         return list[0];
+      })
+      .finally(() => {
+        message.destroy();
       });
-    console.log('tableDataSource:', tableDataSource.record);
     loadDataSource(tableDataSource.record);
   };
-
-  // const renderExcelBySjs = async function () {
-  //   const builtInList = await getBuiltInEjs({ name: props.templateName });
-  //   if (Array.isArray(builtInList) && builtInList.length > 0) {
-  //     const sjs: any = builtInList[0]?.sjs || '';
-  //     if (sjs) {
-  //       loadTemplate(sjs);
-  //     }
-  //   } else {
-  //     await fetchExcelTemplate();
-  //   }
-  // };
 
   onMounted(() => {
     workBook = new GC.Spread.Sheets.Workbook('work_book_container');

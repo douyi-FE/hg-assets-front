@@ -81,6 +81,8 @@ const _permissions = [
   'template:excel:edit',
   'template:excel:delete',
   'template:excel:buildin',
+  'template:word:download',
+  'template:word:delete',
 ] as const;
 
 export type PermissionType = (typeof _permissions)[number];

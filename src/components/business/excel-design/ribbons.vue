@@ -262,8 +262,10 @@
       const ranges = formulaToRanges(workBook.getActiveSheet(), area, 0, 0);
       const rangeValue = getRangeValue(ranges);
       if (rangeValue) {
+        workBook.suspendPaint();
         // 按类型处理
         bindingTablePath(rangeValue);
+        workBook.resumePaint();
       }
     });
   };
