@@ -84,7 +84,6 @@ export async function deleteExcelTemplate(id: string) {
     },
   });
 }
-
 // word相关
 
 export const getWordTemplateList = async function (params: object) {

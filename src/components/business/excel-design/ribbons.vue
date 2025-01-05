@@ -15,12 +15,14 @@
 <script setup lang="ts">
   import { nextTick, ref, watch } from 'vue';
   import { message } from 'ant-design-vue';
+  import { setAttachColumn } from './ribbons/fileUploadCellType';
 
   const props = withDefaults(defineProps<{ designer: any }>(), { designer: null });
   const emits = defineEmits(['sendInitialData']);
   const isOpenSelectedModal = ref(false);
   let initDataSource = {};
   let fbx: any = null;
+  let ribbonType = '';
   const formulaBarRef = ref();
 
   // 获取选中的区域
@@ -264,14 +266,18 @@
       if (rangeValue) {
         workBook.suspendPaint();
         // 按类型处理
-        bindingTablePath(rangeValue);
+        if (ribbonType === 'fileAttach') {
+          setAttachColumn(rangeValue, workBook);
+        } else {
+          bindingTablePath(rangeValue);
+        }
         workBook.resumePaint();
       }
     });
   };
 
   // 开始选择模式
-  function startSelectMode() {
+  function startSelectMode(type: string) {
     isOpenSelectedModal.value = true;
     nextTick(() => {
       const workBook = props.designer.getWorkbook();
@@ -280,6 +286,7 @@
       });
       fbx.workbook(workBook);
       // 显示弹窗并调整相关交互逻辑
+      ribbonType = type;
       fbx.startSelectMode();
       fbx.text('');
     });
@@ -296,7 +303,7 @@
         bigButton: 'false',
         commandName: 'selectTableTitle',
         execute: async () => {
-          startSelectMode();
+          startSelectMode('tableTitle');
         },
       },
       ShowData: {
@@ -307,6 +314,16 @@
         commandName: 'showData',
         execute: async () => {
           emits('sendInitialData', initDataSource);
+        },
+      },
+      SetAttach: {
+        title: '设置附件',
+        text: '设置附件',
+        iconClass: 'ribbon-button-namemanager',
+        bigButton: 'false',
+        commandName: 'setAttach',
+        execute: async (context, propertyName) => {
+          startSelectMode('fileAttach');
         },
       },
     };
@@ -323,6 +340,10 @@
                 {
                   direction: 'vertical',
                   commands: ['SelectTableTitle'],
+                },
+                {
+                  direction: 'vertical',
+                  commands: ['SetAttach'],
                 },
                 {
                   direction: 'vertical',
@@ -363,5 +384,9 @@
   .save-inital-excel-data {
     background-image: url('data:image/png;base64,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');
     background-size: 35px 35px;
+  }
+
+  .ribbon-button-namemanager {
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMzJweCIgaGVpZ2h0PSIzMnB4IiB2aWV3Qm94PSIwIDAgMzIgMzIiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+CiAgICA8dGl0bGU+bmFtZSBtYW5hZ2VyPC90aXRsZT4KICAgIDxnIGlkPSJuYW1lLW1hbmFnZXIiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPgogICAgICAgIDxnIGlkPSLnvJbnu4QiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEuMDAwMDAwLCA0LjAwMDAwMCkiIGZpbGwtcnVsZT0ibm9uemVybyI+CiAgICAgICAgICAgIDxwb2x5Z29uIGlkPSJSZWN0YW5nbGUiIGZpbGw9IiNGRkZGRkYiIHBvaW50cz0iNi4zODM3ODIzOWUtMTYgMTMgMjMgMTMgMjMgMjMgNi4zODM3ODIzOWUtMTYgMjMiPjwvcG9seWdvbj4KICAgICAgICAgICAgPHBhdGggZD0iTTEsMTQgTDEsMjIgTDIyLDIyIEwyMiwxNCBMMSwxNCBaIE0wLDEzIEwyMywxMyBMMjMsMjMgTDAsMjMgTDAsMTMgWiIgaWQ9IlJlY3RhbmdsZSIgZmlsbD0iIzY2NjY2NiI+PC9wYXRoPgogICAgICAgICAgICA8cG9seWdvbiBpZD0iUmVjdGFuZ2xlLUNvcHktMiIgZmlsbD0iIzY2NjY2NiIgcG9pbnRzPSIyNCAxMiAzMCA2IDMwIDE2IDI0IDIyIj48L3BvbHlnb24+CiAgICAgICAgICAgIDxwb2x5Z29uIGlkPSJSZWN0YW5nbGUtQ29weS0zIiBmaWxsPSIjNjY2NjY2IiBwb2ludHM9IjMuNjA4MjI0ODNlLTE1IDEyIDUgOCA1IDEyIj48L3BvbHlnb24+CiAgICAgICAgICAgIDxwb2x5Z29uIGlkPSJDb21iaW5lZC1TaGFwZSIgZmlsbD0iIzM2N0ZDOSIgcG9pbnRzPSIxMSAyIDExIDAgMjcgMCAzMCAzLjUwODAyNjEyIDI4LjcwNzEwNjggNS4yOTI4OTMyMiAyNS40MTQyMTM2IDIiPjwvcG9seWdvbj4KICAgICAgICAgICAgPHBvbHlnb24gaWQ9IkNvbWJpbmVkLVNoYXBlIiBmaWxsPSIjMzY3RkM5IiBwb2ludHM9IjI1LjIwNzEwNjggOC43OTI4OTMyMiAyMi40MTQyMTM2IDYgOSA2IDkgMyAyNSAzIDI4IDYiPjwvcG9seWdvbj4KICAgICAgICAgICAgPHBhdGggZD0iTTIzLDEyIEw2LDEyIEw2LDcgTDIyLDcgTDI1LDEwIEwyMywxMiBaIE0yMSwxMSBDMjEuNTUyMjg0NywxMSAyMiwxMC41NTIyODQ4IDIyLDEwIEMyMiw5LjQ0NzcxNTI1IDIxLjU1MjI4NDcsOSAyMSw5IEMyMC40NDc3MTUzLDkgMjAsOS40NDc3MTUyNSAyMCwxMCBDMjAsMTAuNTUyMjg0OCAyMC40NDc3MTUzLDExIDIxLDExIFoiIGlkPSJDb21iaW5lZC1TaGFwZSIgZmlsbD0iIzM2N0ZDOSI+PC9wYXRoPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+');
   }
 </style>

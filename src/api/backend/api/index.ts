@@ -26,7 +26,8 @@ import * as netDiskManage from './netDiskManage';
 import * as netDiskOverview from './netDiskOverview';
 import * as businessTodo from './businessTodo';
 import * as template from './template';
-import * as templateData from './templateData'
+import * as templateData from './templateData';
+import * as templateVersion from './templateVersion';
 
 export default {
   auth,
@@ -54,4 +55,5 @@ export default {
   businessTodo,
   template,
   templateData,
+  templateVersion,
 };

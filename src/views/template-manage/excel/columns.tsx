@@ -126,3 +126,27 @@ export const baseColumns: TableColumnItem[] = [
     },
   },
 ];
+
+export const versionColumns: TableColumnItem[] = [
+  {
+    title: '版本号',
+    dataIndex: 'version',
+  },
+  {
+    title: '版本描述',
+    dataIndex: 'note',
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createdAt',
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    width: 160,
+  },
+];

@@ -65,7 +65,7 @@
   const onSaveTemplateInitialData = function (data) {
     Api.templateData.saveTemplateData(data);
   };
-  const saveTemplate = function (template, sjs) {
+  const saveTemplate = function (template, sjs, selectedVersion) {
     const hideLoading = message.loading({
       content: '模板保存中...',
       duration: 0,
@@ -74,6 +74,16 @@
     const saveTempate = template.id
       ? Api.template.updateExcelTemplate(template, sjs)
       : Api.template.saveExcelTemplate(template, sjs);
+    const saveVersion = selectedVersion
+      ? Api.templateVersion.updateExcelTemplateVersion(selectedVersion.id, selectedVersion.status)
+      : Api.templateVersion.saveExcelTemplateVersion(
+          {
+            templateId: template.id,
+            note: template.note,
+            type: 'excel',
+          },
+          sjs,
+        );
     saveTempate
       .then(() => {
         message.success('模板编辑成功');
@@ -81,6 +91,16 @@
       })
       .catch((err) => {
         message.error('模板编辑失败');
+      })
+      .finally(() => {
+        hideLoading();
+      });
+    saveVersion
+      .then(() => {
+        message.success('模板版本编辑成功');
+      })
+      .catch((err) => {
+        message.error('模板版本编辑失败');
       })
       .finally(() => {
         hideLoading();
