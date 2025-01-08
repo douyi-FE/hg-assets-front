@@ -103,7 +103,7 @@
       });
   };
   const afterOpenChange = function () {
-    console.log('hhh');
+    console.log('hhhh');
   };
   const searchChangeHander = function (filterParams) {
     fetchInvoiceList(filterParams);

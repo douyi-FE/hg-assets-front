@@ -28,7 +28,8 @@ import * as businessTodo from './businessTodo';
 import * as template from './template';
 import * as templateData from './templateData';
 import * as templateVersion from './templateVersion';
-
+import * as outputvalue from './outputvalue';
+import * as flowDesign from './flowDesign';
 export default {
   auth,
   account,
@@ -56,4 +57,6 @@ export default {
   template,
   templateData,
   templateVersion,
+  outputvalue,
+  flowDesign,
 };

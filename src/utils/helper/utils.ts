@@ -139,3 +139,20 @@ export const initWorkbook = function (spread) {
   standardTheme.highlightLastColumnStyle(styleInfo);
   spread.customTableThemes.add(standardTheme);
 };
+
+export const downloadFile = (data: ArrayBuffer, fileName: string, type = 'application/zip') => {
+  const fileBuffer = new Uint8Array(data); // 将 data 数组转换为 Uint8Array
+  const blob = new Blob([fileBuffer], { type }); // 创建 Blob 对象
+
+  // 创建下载链接
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName; // 设置下载文件名
+  document.body.appendChild(a);
+  a.click(); // 自动点击链接进行下载
+  a.remove(); // 移除链接
+
+  // 释放 Blob URL
+  window.URL.revokeObjectURL(url);
+};
