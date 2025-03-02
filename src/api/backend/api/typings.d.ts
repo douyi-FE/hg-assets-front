@@ -1291,5 +1291,6 @@ declare namespace API {
     note: string;
     createdAt: string;
     updateAt: string;
+    file: string;
   };
 }

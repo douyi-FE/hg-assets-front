@@ -25,6 +25,7 @@
   const router = useRouter();
 
   const handleMenuItemClick = (item: RouteRecordRaw) => {
+    console.log('item', item);
     const { isExt, extOpenMode } = item.meta || {};
     if (isExt && extOpenMode !== 2) {
       window.open(item.path);

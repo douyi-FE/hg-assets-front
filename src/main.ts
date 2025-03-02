@@ -6,6 +6,8 @@ import { setupIcons } from './components/basic/icon';
 import { setupStore } from '@/store';
 import { setupI18n } from '@/locales';
 import { setupAntd, setupAssets, setupGlobalMethods } from '@/plugins';
+import './components/basic/ejs-design/css/designTemp.less';
+import './components/basic/ejs-design/css/setFieldsModal.less';
 
 const app = createApp(App);
 

@@ -62,6 +62,7 @@
     "qiniu-js": "^3.4.2",
     "qs": "~6.13.0",
     "sortablejs": "~1.15.3",
+    "sweetalert2": "^11.16.0",
     "tinymce": "^7.4.1",
     "vue": "~3.5.12",
     "vue-echarts": "^7.0.3",

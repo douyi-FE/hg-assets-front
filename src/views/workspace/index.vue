@@ -48,14 +48,7 @@
         </a-card>
       </a-col>
       <a-col :span="8">
-        <a-card title="便捷导航" :bordered="false" style="height: 300px">
-          <template #extra>
-            <a-button size="small" :icon="h(PlusOutlined)" type="primary" ghost>添加</a-button>
-          </template>
-          <a-tag color="#55acee">发票管理 </a-tag>
-          <a-tag color="#55acee">产值管理 </a-tag>
-          <a-tag color="#55acee">考情管理 </a-tag>
-        </a-card>
+        <QuickNav />
         <a-card title="我的日程" :bordered="false" style="height: 500px; margin-top: 20px">
           <a-list size="small" bordered :data-source="[]">
             <template #renderItem="{ item }">
@@ -69,8 +62,7 @@
 </template>
 
 <script setup lang="ts">
-  import { h } from 'vue';
-  import { PlusOutlined } from '@ant-design/icons-vue';
+  import QuickNav from './quick-nav-v2.vue';
 </script>
 
 <style lang="less" scoped>

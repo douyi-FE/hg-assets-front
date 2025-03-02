@@ -147,6 +147,6 @@ export const versionColumns: TableColumnItem[] = [
   {
     title: '操作',
     dataIndex: 'action',
-    width: 160,
+    width: 250,
   },
 ];

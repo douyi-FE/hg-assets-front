@@ -1,28 +1,9 @@
 import { request } from '@/utils/request';
 
-export async function saveExcelTemplateVersion(body: { [key: string]: any }, file?: File) {
-  const formData = new FormData();
-  if (file) {
-    formData.append('file', file);
-  }
-  Object.keys(body).forEach((ele) => {
-    const item = (body as any)[ele];
-
-    if (item !== undefined && item !== null) {
-      if (typeof item === 'object' && !(item instanceof File)) {
-        if (item instanceof Array) {
-          item.forEach((f) => formData.append(ele, f || ''));
-        } else {
-          formData.append(ele, JSON.stringify(item));
-        }
-      } else {
-        formData.append(ele, item);
-      }
-    }
-  });
+export async function saveExcelTemplateVersion(data: any) {
   return request<any>('/api/template/version/save', {
     method: 'POST',
-    data: formData,
+    data: data,
   });
 }
 

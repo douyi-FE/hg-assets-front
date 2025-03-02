@@ -1,10 +1,15 @@
 {
   "version": "v1.4.4",
   "record": {
-    "hosts": ["localhost", "192.168.1.5", "127.0.0.1", "0.0.0.0"],
+    "hosts": [
+      "localhost",
+      "192.168.1.3",
+      "127.0.0.1",
+      "0.0.0.0"
+    ],
     "hash": {
-      "key": "d00ae532e18536478acfe9555ce2b573ed0bba2100512932c06b2e023459d12c",
-      "cert": "4bc01843c0e2618356e03d572e4122b64729b79b38b30a3ba11210d8252d8821"
+      "key": "7d4ede7ce4c870495badc3bcec5867e4edcc4d5bdc15fee7baafca3dd26256ed",
+      "cert": "7db6d05ad6fe3f5874c0ff7ed362cd72b55657c1fe10c8f6792957725887cca4"
     }
   },
   "configFilePath": "D:\\codes\\hg-assets-front\\.cert\\config.json"

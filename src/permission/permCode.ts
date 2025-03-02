@@ -80,6 +80,7 @@ const _permissions = [
   'upload:upload',
   'template:excel:edit',
   'template:excel:delete',
+  'template:excel:publish',
   'template:excel:buildin',
   'template:word:download',
   'template:word:delete',

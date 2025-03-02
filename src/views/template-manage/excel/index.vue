@@ -24,11 +24,7 @@
         </a-button>
       </template>
     </DynamicTable>
-    <TemplateDrawer
-      ref="templateDrawerRef"
-      @save="saveTemplate"
-      @save-template-initial-data="onSaveTemplateInitialData"
-    />
+    <TemplateDrawer ref="templateDrawerRef" @save="saveTemplate" />
   </div>
 </template>
 
@@ -54,16 +50,13 @@
       Api.template
         .getExcelTemplateEjs(record._id!)
         .then((res) => {
-          console.log('模板内容：', res.file);
           templateDrawerRef.value.open(record, res.file, type);
         })
         .catch((err) => {
+          console.log('模板内容获取发生错误：', err);
           message.error('模板内容获取发生错误', 1);
         });
     }
-  };
-  const onSaveTemplateInitialData = function (data) {
-    Api.templateData.saveTemplateData(data);
   };
   const saveTemplate = function (template, sjs, selectedVersion) {
     const hideLoading = message.loading({
@@ -71,36 +64,30 @@
       duration: 0,
     });
     // 有id即认为是编辑
-    const saveTempate = template.id
-      ? Api.template.updateExcelTemplate(template, sjs)
-      : Api.template.saveExcelTemplate(template, sjs);
-    const saveVersion = selectedVersion
-      ? Api.templateVersion.updateExcelTemplateVersion(selectedVersion.id, selectedVersion.status)
-      : Api.templateVersion.saveExcelTemplateVersion(
-          {
-            templateId: template.id,
-            note: template.note,
-            type: 'excel',
-          },
-          sjs,
-        );
-    saveTempate
+    (template.id
+      ? Api.template.updateExcelTemplate({ ...template, sjs })
+      : Api.template.saveExcelTemplate({ ...template, status: 0, sjs })
+    )
+      .then((res) => {
+        template.id
+          ? Api.templateVersion.updateExcelTemplateVersion(
+              selectedVersion.id,
+              selectedVersion.status,
+            )
+          : Api.templateVersion.saveExcelTemplateVersion({
+              templateId: res.id,
+              note: template.note,
+              type: 'excel',
+              sjs,
+            });
+        return template;
+      })
       .then(() => {
         message.success('模板编辑成功');
         templateDrawerRef.value.close();
       })
       .catch((err) => {
         message.error('模板编辑失败');
-      })
-      .finally(() => {
-        hideLoading();
-      });
-    saveVersion
-      .then(() => {
-        message.success('模板版本编辑成功');
-      })
-      .catch((err) => {
-        message.error('模板版本编辑失败');
       })
       .finally(() => {
         hideLoading();
@@ -114,12 +101,33 @@
     });
     dynamicTableInstance?.reload();
   };
+  const publishTemplate = async (record: TableListItem) => {
+    await Api.template
+      .publishExcelTemplate(record._id)
+      .then(() => {
+        // 发布
+        Api.application.publishApplication({
+          templateId: record._id,
+          name: record.name,
+          icon: 'default',
+          content: record.file,
+          description: record.note,
+        });
+      })
+      .then(() => {
+        message.success('发布成功');
+        dynamicTableInstance?.reload();
+      })
+      .catch(() => {
+        message.error('发布失败');
+      });
+  };
 
   const columns: TableColumnItem[] = [
     ...baseColumns,
     {
       title: '操作',
-      width: 130,
+      width: 220,
       dataIndex: 'ACTION',
       hideInSearch: true,
       fixed: 'right',
@@ -135,6 +143,18 @@
           },
         },
         {
+          label: '发布',
+          auth: {
+            perm: 'template:excel:publish',
+          },
+          disabled: record.status === 2,
+          popConfirm: {
+            title: '你确定要发布吗？',
+            placement: 'left',
+            onConfirm: () => publishTemplate(record),
+          },
+        },
+        {
           label: '删除',
           auth: {
             perm: 'template:excel:delete',
@@ -144,7 +164,13 @@
           popConfirm: {
             title: '你确定要删除吗？',
             placement: 'left',
-            onConfirm: () => delRowConfirm(record),
+            onConfirm: () => {
+              if (record.status === 2) {
+                message.error('发布状态的模板不能删除');
+                return;
+              }
+              delRowConfirm(record);
+            },
           },
         },
       ],

@@ -30,6 +30,7 @@ import * as templateData from './templateData';
 import * as templateVersion from './templateVersion';
 import * as outputvalue from './outputvalue';
 import * as flowDesign from './flowDesign';
+import * as application from './application';
 export default {
   auth,
   account,
@@ -59,4 +60,5 @@ export default {
   templateVersion,
   outputvalue,
   flowDesign,
+  application,
 };

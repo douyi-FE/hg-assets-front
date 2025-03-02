@@ -1,0 +1,75 @@
+/* 表格样式 */
+#fieldTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#fieldTable th,
+#fieldTable .td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+#fieldTable th {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+#fieldTable td input {
+  width: 95%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 按钮样式 */
+#addRowBtn {
+  background-color: #3085d6;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+
+#addRowBtn:hover {
+  background-color: #256bb7;
+}
+
+#tableBody button {
+  width: 50px;
+  background-color: #f44336;
+  color: #fff;
+  border: none;
+  padding: 6px 5px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#tableBody button:hover {
+  background-color: #d32f2f;
+}
+
+.tableContainer {
+  height: 300px;
+  width: 500px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.swal2-popup {
+  z-index: 1050; /* 适当提升叠加窗口的层级 */
+}
+
+.swal2-title {
+  pointer-events: none;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}

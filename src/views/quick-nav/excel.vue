@@ -10,24 +10,27 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import { uniqueId } from 'lodash-es';
   import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
   import { getApplicationById, updateApplicationById } from '@/api/backend/api/application';
 
-  const excelBookRef = ref();
+  const route = useRoute();
+  const { id = '' } = route.query;
   const excelBookKey = ref('');
+  const excelBookRef = ref();
   const ejs = ref('');
 
   const getTemplate = function () {
-    getApplicationById('userInfo').then((res) => {
+    getApplicationById(id as string).then((res) => {
       ejs.value = res.content;
     });
   };
 
   const saveWorkBook = function (base64: string) {
     updateApplicationById({
-      id: 'userInfo',
+      id: id as string,
       content: base64,
     }).then(() => {
       message.success('保存成功');

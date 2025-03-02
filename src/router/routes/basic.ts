@@ -61,4 +61,14 @@ export const PAGE_NOT_FOUND_ROUTE: RouteRecordRaw = {
   component: () => import('@/views/error/404.vue'),
 };
 
-export default [REDIRECT_ROUTE, PAGE_NOT_FOUND_ROUTE];
+export const QuickNavRoute: RouteRecordRaw = {
+  path: '/quick-nav',
+  name: 'QuickNav',
+  component: () => import('@/views/quick-nav/excel.vue'),
+  meta: {
+    title: '快捷导航',
+    icon: 'ant-design:home-filled',
+  },
+};
+
+export default [REDIRECT_ROUTE, PAGE_NOT_FOUND_ROUTE, QuickNavRoute];
