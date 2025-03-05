@@ -76,6 +76,7 @@
           return isValid;
         }
         if (isObject(auth)) {
+          // debugger;
           const isValid = hasPermission(auth.perm);
           const isDisable = auth.effect !== 'delete';
           item.disabled ??= !isValid && isDisable;

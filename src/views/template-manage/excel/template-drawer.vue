@@ -31,10 +31,7 @@
             </a-form-item>
             <a-form-item label="是否内置" name="isBuildIn">
               <!-- :disabled="$auth('template:excel:buildin') && isPermissionDisabledByCode()" -->
-              <a-radio-group
-                v-model:value="formState.isBuildIn"
-                v-bind:disabled="formState.isBuildIn === true"
-              >
+              <a-radio-group v-model:value="formState.isBuildIn">
                 <a-radio :value="true">是</a-radio>
                 <a-radio :value="false">否</a-radio>
               </a-radio-group>
@@ -111,7 +108,6 @@
   const handleApplyVersion = function (record: any) {
     selectedVersion.value = record;
     Api.templateVersion.getExcelTemplateVersion(record._id).then((res) => {
-      console.log(res);
       ejsDesignRef.value.setSJS(res.file, record.name + '.xlsx');
     });
   };

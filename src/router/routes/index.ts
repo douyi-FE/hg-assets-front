@@ -19,10 +19,4 @@ export const basicRoutes: Array<RouteRecordRaw> = [
   ...outsideLayout,
   // 基础路由
   ...basic,
-  // 快捷导航
-  {
-    path: '/quick-nav',
-    name: 'QuickNav',
-    component: () => import('@/views/quick-nav/excel.vue'),
-  },
 ];

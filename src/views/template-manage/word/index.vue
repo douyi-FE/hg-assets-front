@@ -44,7 +44,7 @@
         {
           label: '下载',
           auth: {
-            perm: 'template:excel:edit',
+            perm: 'template:word:download',
             effect: 'disable',
           },
           onClick: () => {
@@ -54,7 +54,7 @@
         {
           label: '删除',
           auth: {
-            perm: 'template:excel:delete',
+            perm: 'template:word:delete',
             effect: 'disable',
           },
           popConfirm: {

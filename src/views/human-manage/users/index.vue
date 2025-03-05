@@ -2,7 +2,7 @@
   <excel-book
     ref="excelBookRef"
     class="excel-book"
-    :ejs="ejs"
+    :content="content"
     :key="excelBookKey"
     @saveWorkBook="saveWorkBook"
   />
@@ -10,32 +10,38 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
-  import { uniqueId } from 'lodash-es';
-  import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
-  import { getApplicationById, updateApplicationById } from '@/api/backend/api/application';
+  import { getApplicationById } from '@/api/backend/api/application';
+  import { getApplicationData } from '@/api/backend/api/applicationData';
 
   const excelBookRef = ref();
   const excelBookKey = ref('');
-  const ejs = ref('');
+  const content = ref({
+    ejs: '',
+    dataSource: {
+      table: [],
+    },
+    fileName: '导出数据文件.xlsx',
+  });
 
-  const getTemplate = function () {
-    getApplicationById('userInfo').then((res) => {
-      ejs.value = res.content;
+  const fetchExcel = async function () {
+    Promise.all([
+      getApplicationById('67c8427bd8038b2ee0b9ad6d'),
+      getApplicationData({ templateId: '67c8427bd8038b2ee0b9ad6d' }),
+    ]).then(([template, applicationData]) => {
+      content.value = {
+        ejs: template.content,
+        dataSource: applicationData.applicationData,
+        fileName: template.name,
+      };
     });
   };
 
   const saveWorkBook = function (base64: string) {
-    updateApplicationById({
-      id: 'userInfo',
-      content: base64,
-    }).then(() => {
-      message.success('保存成功');
-    });
+    console.log('base64', base64);
   };
 
   onMounted(() => {
-    excelBookKey.value = uniqueId('ejs_');
-    getTemplate();
+    fetchExcel();
   });
 </script>

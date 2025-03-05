@@ -1,6 +1,7 @@
 <template>
   <div class="work-book-container">
     <div class="work-book-operator">
+      <a-button type="primary" @click="exportExcel">导出</a-button>
       <a-button type="primary" @click="saveWorkBook">保存</a-button>
     </div>
     <div id="work_book_container" class="work-book-container" />
@@ -8,16 +9,25 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, watch } from 'vue';
+  import { onMounted, toRaw, watch } from 'vue';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
 
-  const props = withDefaults(defineProps<{ ejs: string }>(), {
-    ejs: '',
-  });
+  const props = withDefaults(
+    defineProps<{ content: { ejs: string; dataSource: any; fileName: string } }>(),
+    {
+      content: () => ({
+        ejs: '',
+        dataSource: {
+          table: [],
+        },
+        fileName: '导出数据文件.xlsx',
+      }),
+    },
+  );
   const emits = defineEmits(['saveWorkBook']);
   let workBook: any = null;
 
-  const renderExcelBySjs = function (ejs: string) {
+  const renderExcelBySjs = function (ejs: string, dataSource: any = { table: [] }) {
     return new Promise((resolve, reject) => {
       const arrayBuffer = base64ToArrayBuffer(ejs);
       const fileBlob = new Blob([arrayBuffer], {
@@ -37,6 +47,9 @@
           reject(e);
         },
       );
+      workBook
+        .getActiveSheet()
+        .setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
     });
   };
 
@@ -56,10 +69,36 @@
     });
   };
 
+  const exportExcel = function () {
+    workBook.export((blob) => {
+      // 使用 URL 或 webkitURL
+      const URL = window.URL || window.webkitURL;
+      const link = document.createElement('a');
+      const fileName = props.content.fileName || '导出数据文件.xlsx';
+
+      // 设置下载属性
+      link.download = fileName;
+      link.rel = 'noopener';
+      link.href = URL.createObjectURL(blob); // 直接使用原始 blob
+
+      // 如果在同源下，直接触发点击
+      if (link.origin === location.origin) {
+        setTimeout(() => {
+          link.click();
+        }, 0);
+      }
+
+      // 释放 URL 对象
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+      });
+    });
+  };
+
   watch(
-    () => props.ejs,
+    () => props.content,
     (newVal) => {
-      renderExcelBySjs(newVal);
+      renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource));
     },
   );
 
@@ -76,7 +115,10 @@
 
     .work-book-operator {
       padding: 10px;
-      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
       background-color: #fff;
       margin-bottom: 10px;
     }

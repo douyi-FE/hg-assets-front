@@ -1,3 +1,4 @@
+import { cloneDeep } from 'lodash-es';
 import { store } from '../store';
 import { importFile, showAlert } from './commonFunctions';
 import { setHtmlCell } from './htmlCell';
@@ -8,7 +9,7 @@ import { printPreview } from './printPreview';
 // 初始化设计器及相关菜单项
 export function initDesigner(divId) {
   // 获取初始化配置
-  const config = GC.Spread.Sheets.Designer.DefaultConfig;
+  const config = cloneDeep(store.designerConfig);
   // 删除 fileMenu
   // delete config.fileMenu;
 
@@ -151,7 +152,6 @@ export function initDesigner(divId) {
       },
     },
   };
-
   config.ribbon.unshift({
     id: 'templateTab',
     text: '模板',

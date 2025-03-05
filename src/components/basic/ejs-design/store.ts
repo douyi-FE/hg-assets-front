@@ -2,6 +2,7 @@ export const store = {
   designer: null,
   spread: null,
   formulaToRanges: GC.Spread.Sheets.CalcEngine.formulaToRanges,
+  designerConfig: GC.Spread.Sheets.Designer.DefaultConfig,
   fbx: null,
   originalFile: null,
   initDataSource: {},

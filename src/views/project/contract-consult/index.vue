@@ -1,7 +1,27 @@
 <template>
-  <SperedWorkBook :table="[]" template-code="contractConsult" template-name="咨询合同台帐" />
+  <excel-book
+    ref="excelBookRef"
+    class="excel-book"
+    :content="content"
+    :key="excelBookKey"
+    @saveWorkBook="saveWorkBook"
+  />
 </template>
 
 <script setup lang="ts">
-  import SperedWorkBook from '@/components/business/work-book/index.vue';
+  import { ref } from 'vue';
+  import excelBook from '@/components/business/excel-book/index.vue';
+
+  const excelBookRef = ref();
+  const excelBookKey = ref('');
+  const content = ref({
+    ejs: '',
+    dataSource: {
+      table: [],
+    },
+  });
+
+  const saveWorkBook = function (base64: string) {
+    console.log('base64', base64);
+  };
 </script>

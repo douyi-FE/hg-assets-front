@@ -2,7 +2,7 @@
   <excel-book
     ref="excelBookRef"
     class="excel-book"
-    :ejs="ejs"
+    :content="content"
     :key="excelBookKey"
     @saveWorkBook="saveWorkBook"
   />
@@ -15,16 +15,33 @@
   import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
   import { getApplicationById, updateApplicationById } from '@/api/backend/api/application';
+  import { getApplicationData } from '@/api/backend/api/applicationData';
+  import { useUserStore } from '@/store/modules/user';
 
   const route = useRoute();
+  const userStore = useUserStore();
   const { id = '' } = route.query;
   const excelBookKey = ref('');
   const excelBookRef = ref();
-  const ejs = ref('');
+  const content = ref({
+    ejs: '',
+    dataSource: {
+      table: [],
+    },
+  });
 
   const getTemplate = function () {
-    getApplicationById(id as string).then((res) => {
-      ejs.value = res.content;
+    return getApplicationById(id as string).then((res) => {
+      return res.content;
+    });
+  };
+
+  const fetchApplicationData = function () {
+    return getApplicationData({
+      templateId: id as string,
+      userId: userStore.userInfo.id,
+    }).then((res) => {
+      return res.applicationData;
     });
   };
 
@@ -39,6 +56,11 @@
 
   onMounted(() => {
     excelBookKey.value = uniqueId('ejs_');
-    getTemplate();
+    Promise.all([getTemplate(), fetchApplicationData()]).then(([template, applicationData]) => {
+      content.value = {
+        ejs: template,
+        dataSource: applicationData,
+      };
+    });
   });
 </script>

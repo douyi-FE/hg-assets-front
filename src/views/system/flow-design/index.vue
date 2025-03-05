@@ -50,7 +50,7 @@
         {
           label: '编辑',
           auth: {
-            perm: 'template:excel:edit',
+            perm: 'flow:design:edit',
             effect: 'disable',
           },
           onClick: () => {
@@ -60,7 +60,7 @@
         {
           label: '删除',
           auth: {
-            perm: 'template:excel:delete',
+            perm: 'flow:design:delete',
             effect: 'disable',
           },
           disabled: record.isBuildIn,

@@ -41,20 +41,6 @@
           class="nav-icon"
           @click.stop="() => handleNav(item)"
         />
-        <!-- <img
-          v-if="item.checked"
-          src="@/assets/images/remove.png"
-          alt="移除"
-          class="nav-icon"
-          @click.stop="() => handleNav(item)"
-        />
-        <img
-          v-else
-          src="@/assets/images/add.png"
-          alt="添加"
-          class="nav-icon"
-          @click.stop="() => handleNav(item)"
-        /> -->
       </template>
       <img v-if="item.checked" src="@/assets/images/application.png" alt="快捷导航" />
       <img v-else src="@/assets/images/application-default.png" alt="快捷导航" />
@@ -88,11 +74,11 @@
   const isEdit = ref(false);
 
   const fetchData = () => {
-    Promise.all([getApplicationList({}), getQuickNavList({})]).then(
+    Promise.all([getApplicationList({ isBuildIn: false }), getQuickNavList({})]).then(
       ([applicationList, quickNavList]) => {
         applicationCollection.value = applicationList.map((application) => ({
           ...application,
-          checked: quickNavList[0].includes(application.templateId),
+          checked: quickNavList[0]?.includes(application.templateId),
         }));
 
         console.log('applicationCollection', applicationCollection.value);
@@ -109,11 +95,23 @@
   };
 
   const handleClick = (item: any) => {
+    // 1. 先动态添加路由，作为 Layout 的子路由
+    const dynamicRoute = {
+      path: `/quick-nav/${item.templateId}`,
+      name: `QuickNav-${item.templateId}`,
+      component: () => import('@/views/quick-nav/excel.vue'),
+      meta: {
+        title: item.name,
+        icon: 'ant-design:home-filled',
+      },
+    };
+    // 2. 添加为 Layout 的子路由
+    router.addRoute('Layout', dynamicRoute);
+    // 3. 跳转到新路由
     router.push({
-      path: '/quick-nav',
+      name: `QuickNav-${item.templateId}`,
       query: {
         id: item.templateId,
-        title: item.name,
       },
     });
   };

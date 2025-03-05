@@ -84,6 +84,8 @@ const _permissions = [
   'template:excel:buildin',
   'template:word:download',
   'template:word:delete',
+  'flow:design:edit',
+  'flow:design:delete',
 ] as const;
 
 export type PermissionType = (typeof _permissions)[number];

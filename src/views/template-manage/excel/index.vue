@@ -35,6 +35,7 @@
   import TemplateDrawer from './template-drawer.vue';
   import { useTable } from '@/components/core/dynamic-table';
   import Api from '@/api/';
+  import { useUserStore } from '@/store/modules/user';
 
   defineOptions({
     name: 'SystemPermissionRole',
@@ -42,7 +43,7 @@
 
   const templateDrawerRef = ref();
   const [DynamicTable, dynamicTableInstance] = useTable();
-
+  const userStore = useUserStore();
   const openMenuModal = async (record: Partial<TableListItem>, type) => {
     if (type === 'add') {
       templateDrawerRef.value.open(record, undefined, type);
@@ -105,14 +106,22 @@
     await Api.template
       .publishExcelTemplate(record._id)
       .then(() => {
-        // 发布
-        Api.application.publishApplication({
-          templateId: record._id,
-          name: record.name,
-          icon: 'default',
-          content: record.file,
-          description: record.note,
-        });
+        return Promise.all([
+          // 发布模板
+          Api.application.publishApplication({
+            templateId: record._id,
+            isBuildIn: record.isBuildIn,
+            name: record.name,
+            icon: 'default',
+            content: record.file,
+            description: record.note,
+          }),
+          Api.applicationData.saveApplicationData({
+            templateId: record._id,
+            userId: userStore.userInfo.id,
+            applicationData: (record as any).initDataSource,
+          }),
+        ]);
       })
       .then(() => {
         message.success('发布成功');
@@ -134,19 +143,13 @@
       actions: ({ record }) => [
         {
           label: '编辑',
-          auth: {
-            perm: 'template:excel:edit',
-            effect: 'disable',
-          },
+          // disabled: record.status === 2,
           onClick: () => {
             openMenuModal(record, 'edit');
           },
         },
         {
           label: '发布',
-          auth: {
-            perm: 'template:excel:publish',
-          },
           disabled: record.status === 2,
           popConfirm: {
             title: '你确定要发布吗？',
@@ -156,19 +159,11 @@
         },
         {
           label: '删除',
-          auth: {
-            perm: 'template:excel:delete',
-            effect: 'disable',
-          },
-          disabled: record.isBuildIn,
+          disabled: record.status === 2,
           popConfirm: {
             title: '你确定要删除吗？',
             placement: 'left',
             onConfirm: () => {
-              if (record.status === 2) {
-                message.error('发布状态的模板不能删除');
-                return;
-              }
               delRowConfirm(record);
             },
           },
