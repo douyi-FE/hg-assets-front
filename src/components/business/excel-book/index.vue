@@ -33,13 +33,14 @@
       const fileBlob = new Blob([arrayBuffer], {
         type: 'application/octet-stream',
       });
-      // store.setInitDataSource(JSON.parse(data.initDataSource));
-      // 也可以写成 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 等
       workBook.open(
         fileBlob,
         function () {
           // clearSelections();
           workBook.suspendPaint();
+          const sheet = workBook.getActiveSheet();
+          console.log('tables', sheet.tables.all());
+          sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
           workBook.resumePaint();
           resolve(true);
         },
@@ -47,15 +48,11 @@
           reject(e);
         },
       );
-      workBook
-        .getActiveSheet()
-        .setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
     });
   };
 
   const saveWorkBook = function () {
     workBook.save((blob) => {
-      console.log('blob', blob);
       // 将 blob 转为 Base64
       const reader = new FileReader();
       reader.readAsDataURL(blob);

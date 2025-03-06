@@ -25,9 +25,8 @@
     setSJS: (base64: string, fileName: string, initDataSource: any = {}) => {
       openTemplateByBase64(base64, fileName).then(() => {
         if (Object.keys(initDataSource).length > 0) {
-          (store.spread as any)
-            .getActiveSheet()
-            .setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource));
+          const sheet = (store.spread as any).getActiveSheet();
+          sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource));
         }
       });
     },
