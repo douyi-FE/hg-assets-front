@@ -9,9 +9,15 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { onMounted, ref } from 'vue';
+  import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
+  import { getApplicationById } from '@/api/backend/api/application';
+  import { getApplicationData, updateApplicationData } from '@/api/backend/api/applicationData';
+  import { useUserStore } from '@/store/modules/user';
 
+  const userStore = useUserStore();
+  const templateId = '67c97cdc9a8d1883c16036ae';
   const excelBookRef = ref();
   const excelBookKey = ref('');
   const content = ref({
@@ -19,9 +25,37 @@
     dataSource: {
       table: [],
     },
+    fileName: '导出数据文件.xlsx',
   });
 
-  const saveWorkBook = function (base64: string) {
-    console.log('base64', base64);
+  const fetchExcel = async function () {
+    Promise.all([
+      getApplicationById(templateId),
+      getApplicationData({ templateId: templateId }),
+    ]).then(([template, applicationData]) => {
+      content.value = {
+        ejs: template.content,
+        dataSource: applicationData.applicationData,
+        fileName: template.name,
+      };
+    });
   };
+
+  const saveWorkBook = function (data: any) {
+    updateApplicationData({
+      templateId: templateId,
+      userId: userStore.userInfo.id,
+      applicationData: data,
+    })
+      .then(() => {
+        message.success('保存成功');
+      })
+      .catch(() => {
+        message.error('保存失败');
+      });
+  };
+
+  onMounted(() => {
+    fetchExcel();
+  });
 </script>

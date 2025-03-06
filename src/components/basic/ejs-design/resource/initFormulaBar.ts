@@ -78,6 +78,6 @@ export function clearSelections(isImport = false) {
   // 复原autoSetTableColumn
   if (store.autoSetTableColumn) {
     const autoSetTableColumnCommand = GC.Spread.Sheets.Designer.getCommand('AutoSetTableColumn');
-    autoSetTableColumnCommand.execute(store.designer);
+    autoSetTableColumnCommand?.execute(store.designer);
   }
 }

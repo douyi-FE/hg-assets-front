@@ -18,3 +18,12 @@ export async function saveApplicationData(params: any, options?: RequestOptions)
     data: params,
   });
 }
+
+// 根据应用模板id和userId更新应用数据
+export async function updateApplicationData(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/application/data',
+    method: 'PUT',
+    data: params,
+  });
+}
