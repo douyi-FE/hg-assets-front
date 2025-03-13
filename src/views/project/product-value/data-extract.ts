@@ -17,15 +17,15 @@ const basicKey = '合同编号';
  */
 export const getExtractData = (sourceData: any, targetData: any) => {
   const extractData: any[] = cloneDeep(targetData);
-  sourceData.forEach((sourceItem: any) => {
-    const matchTarget: any =
-      targetData.find((targetItem: any) => targetItem[basicKey] === sourceItem[basicKey]) || {};
-    if (Object.keys(matchTarget).length === 0) {
-      extractData.unshift(matchTarget);
-    }
-    Object.entries(fieldMap).forEach(([key, value]) => {
-      matchTarget[key] = sourceItem[value];
-    });
-  });
+  // sourceData.forEach((sourceItem: any) => {
+  //   const matchTarget: any =
+  //     targetData.find((targetItem: any) => targetItem[basicKey] === sourceItem[basicKey]) || {};
+  //   if (Object.keys(matchTarget).length === 0) {
+  //     extractData.unshift(matchTarget);
+  //   }
+  //   Object.entries(fieldMap).forEach(([key, value]) => {
+  //     matchTarget[key] = sourceItem[value];
+  //   });
+  // });
   return extractData;
 };

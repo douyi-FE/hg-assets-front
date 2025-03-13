@@ -18,9 +18,9 @@
   import { useUserStore } from '@/store/modules/user';
   const userStore = useUserStore();
   // 产值模板id
-  const templateId = '67c981179a8d1883c16036dc';
+  const templateId = '67cbfe242863e20432278b6e';
   // 咨询合同台账id
-  const contractTemplateId = '67c97cdc9a8d1883c16036ae';
+  const contractTemplateId = '67cbfd142863e20432278b59';
   const excelBookRef = ref();
   const excelBookKey = ref('');
   const content = ref<any>({

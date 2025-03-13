@@ -20,60 +20,77 @@ export const columns: TableColumn<ListItemType>[] = [
     width: 200,
     resizable: true,
     formItemProps: {
-      defaultValue: '',
-      required: true,
+      colProps: {
+        span: 4,
+      },
     },
   },
   {
     title: '原发票编号',
-    dataIndex: 'owner',
+    dataIndex: 'InvoiceCode',
     width: 200,
     resizable: true,
-    formItemProps: {
-      defaultValue: '',
-      required: true,
-    },
+    hideInSearch: true,
   },
   {
     title: '发票编号',
     dataIndex: 'InvoiceCode',
     width: 200,
     resizable: true,
+    hideInSearch: true,
   },
   {
     title: '发票类型',
     dataIndex: 'InvoiceTypeName',
     width: 300,
     resizable: true,
+    formItemProps: {
+      colProps: {
+        span: 4,
+      },
+    },
   },
   {
     title: '项目编号',
     dataIndex: 'ProjectCode',
     width: 300,
     resizable: true,
+    formItemProps: {
+      colProps: {
+        span: 4,
+      },
+    },
   },
   {
     title: '开票机构',
     dataIndex: 'BillingUnitName',
     width: 300,
     resizable: true,
+    formItemProps: {
+      colProps: {
+        span: 4,
+      },
+    },
   },
   {
     title: '发票抬头',
     dataIndex: 'CustomerName',
     width: 300,
     resizable: true,
+    hideInSearch: true,
   },
   {
     title: '合同编号',
     dataIndex: 'ContractCode',
     width: 300,
     resizable: true,
+    hideInSearch: true,
   },
   {
     title: '开票金额',
     dataIndex: 'InvoiceAmount',
     width: 300,
     resizable: true,
+    hideInSearch: true,
   },
 ];

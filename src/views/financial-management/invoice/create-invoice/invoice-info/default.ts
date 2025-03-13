@@ -1,0 +1,18 @@
+export const invoiceInfoDefault = {
+  invoiceType: '',
+  invoiceTitle: '',
+  invoiceContent: '',
+  specificationAndModel: '',
+  unit: '',
+  quantity: 0,
+  unitPrice: 0,
+  invoiceAmount: 0,
+  customerTaxRegistrationNumber: '',
+  customerAddress: '',
+  customerPhone: '',
+  customerBank: '',
+  customerBankAccount: '',
+  expectedPaymentTime: '',
+  email: '',
+  invoiceRemark: '',
+};

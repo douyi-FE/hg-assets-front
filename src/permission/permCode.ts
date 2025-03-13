@@ -86,6 +86,7 @@ const _permissions = [
   'template:word:delete',
   'flow:design:edit',
   'flow:design:delete',
+  'financial:invoice:create',
 ] as const;
 
 export type PermissionType = (typeof _permissions)[number];
