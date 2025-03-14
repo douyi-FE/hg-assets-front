@@ -45,12 +45,13 @@
   import { useInvoiceStore } from '@/store/modules/invioce';
   import { deleteFileStorage, uploadFileStorage } from '@/api/backend/api/fileStorage';
 
-  const invoiceStore = useInvoiceStore();
-  const invoiceAttachmentList = ref<UploadProps['fileList']>([]);
-  let errUploadFileList: any[] = [];
   const props = defineProps<{
     formState: any;
   }>();
+
+  const invoiceStore = useInvoiceStore();
+  const invoiceAttachmentList = ref<UploadProps['fileList']>(props.formState.invoiceAttachment);
+  let errUploadFileList: any[] = [];
 
   const emit = defineEmits<{
     (e: 'update:formState', value: any): void;

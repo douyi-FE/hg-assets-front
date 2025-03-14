@@ -48,5 +48,8 @@
         };
       }
     },
+    {
+      immediate: true,
+    },
   );
 </script>

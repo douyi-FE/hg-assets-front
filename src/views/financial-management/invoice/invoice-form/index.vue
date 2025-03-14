@@ -34,7 +34,8 @@
     <template #extra>
       <a-space>
         <a-button @click="onClose">取消</a-button>
-        <a-button type="primary" @click="onSubmit">提交</a-button>
+        <a-button type="primary" @click="() => onSubmit('draft')">保存</a-button>
+        <a-button @click="() => onSubmit('pending')">提交</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -76,12 +77,14 @@
 
   const emit = defineEmits<{
     (e: 'update:isOpen', value: boolean): void;
+    (e: 'submit', value: any): void;
   }>();
 
   const onClose = () => {
     emit('update:isOpen', false);
   };
 
+  // 获取发票应用信息
   const fetchInvoiceApplicationData = () => {
     Api.applicationData
       .getApplicationData({
@@ -92,6 +95,7 @@
       });
   };
 
+  // 获取合同台账应用信息
   const fetchInvoiceProductData = () => {
     Api.applicationData
       .getApplicationData({
@@ -102,10 +106,17 @@
       });
   };
 
-  const onSubmit = () => {
+  const onSubmit = (process: string) => {
     formRef.value.validate().then((res) => {
-      console.log(res);
+      emit('submit', { ...res, status: process });
     });
+  };
+
+  const setFormState = (data: any) => {
+    formState.value = {
+      ...formState.value,
+      ...data,
+    };
   };
 
   watch(
@@ -118,7 +129,7 @@
           Array.from({ length: 1 }, () => Math.random().toString(36).split('.')[1]).join('-');
         formState.value = {
           ...formState.value,
-          code,
+          code: formState.value.applyCode || code,
         };
       }
     },
@@ -127,5 +138,9 @@
   onMounted(() => {
     fetchInvoiceApplicationData();
     fetchInvoiceProductData();
+  });
+
+  defineExpose({
+    setFormState,
   });
 </script>

@@ -90,7 +90,7 @@ service.interceptors.response.use(
     if (!(error instanceof CanceledError)) {
       // 处理 422 或者 500 的错误异常提示
       const errMsg = error?.response?.data?.message ?? UNKNOWN_ERROR;
-      $message.error({ content: errMsg, key: errMsg });
+      $message.error({ content: `操作失败: ${errMsg}`, key: errMsg });
       error.message = errMsg;
     }
     return Promise.reject(error);

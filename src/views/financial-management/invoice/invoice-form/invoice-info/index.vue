@@ -91,7 +91,11 @@
     </a-col>
     <a-col :span="12">
       <a-form-item label="预计回款时间" name="expectedPaymentTime">
-        <a-date-picker v-model:value="formState.expectedPaymentTime" picker="year" />
+        <a-date-picker
+          v-model:value="formState.expectedPaymentTime"
+          :format="formatDate"
+          picker="year"
+        />
       </a-form-item>
     </a-col>
     <a-col :span="12">
@@ -108,15 +112,16 @@
 </template>
 
 <script setup lang="ts">
+  import dayjs from 'dayjs';
   import { useInvoiceStore } from '@/store/modules/invioce';
 
   const invoiceStore = useInvoiceStore();
 
-  const props = defineProps<{
+  defineProps<{
     formState: any;
   }>();
 
-  const emits = defineEmits<{
-    (e: 'update:formState', value: any): void;
-  }>();
+  const formatDate = (value: any) => {
+    return dayjs(value).format('YYYY');
+  };
 </script>

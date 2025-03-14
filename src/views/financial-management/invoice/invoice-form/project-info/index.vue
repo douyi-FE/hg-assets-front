@@ -36,7 +36,7 @@
         <a-input v-model:value="formState.department" disabled /> </a-form-item
     ></a-col>
     <a-col :span="12">
-      <a-form-item label="所属分支机构" name="date1">
+      <a-form-item label="所属分支机构" name="branch">
         <a-input v-model:value="formState.branch" /> </a-form-item
     ></a-col>
     <a-col :span="12">
@@ -182,17 +182,26 @@
   import api from '@/api/backend/api';
   import { deleteFileStorage, uploadFileStorage } from '@/api/backend/api/fileStorage';
 
-  const userStore = useUserStore();
-  const invoiceStore = useInvoiceStore();
-  let errUploadFileList: any[] = [];
-  const invoiceOtherAttachmentList = ref<UploadProps['fileList']>([]);
-  const invoiceAcceptanceAttachmentList = ref<UploadProps['fileList']>([]);
-  const invoiceSummaryAttachmentList = ref<UploadProps['fileList']>([]);
-  const paymentApplicationAttachmentsList = ref<UploadProps['fileList']>([]);
-
   const props = defineProps<{
     formState: any;
   }>();
+
+  const userStore = useUserStore();
+  const invoiceStore = useInvoiceStore();
+  let errUploadFileList: any[] = [];
+  const invoiceOtherAttachmentList = ref<UploadProps['fileList']>(
+    props.formState.invoiceOtherAttachment,
+  );
+  const invoiceAcceptanceAttachmentList = ref<UploadProps['fileList']>(
+    props.formState.invoiceAcceptanceAttachment,
+  );
+  const invoiceSummaryAttachmentList = ref<UploadProps['fileList']>(
+    props.formState.invoiceSummaryAttachment,
+  );
+  const paymentApplicationAttachmentsList = ref<UploadProps['fileList']>(
+    props.formState.paymentApplicationAttachments,
+  );
+
   const emit = defineEmits<{
     (e: 'update:formState', value: any): void;
   }>();
@@ -213,6 +222,7 @@
     });
   };
   const uploadChange = (info: UploadChangeParam, type: string) => {
+    console.log(type, info);
     const file: any = info.file;
     const attachmentList = {
       paymentApplicationAttachments: paymentApplicationAttachmentsList,
@@ -222,10 +232,9 @@
     }[type];
     let resFileList = [...info.fileList];
     const matchFile = resFileList.find((item) => item.uid === file.uid);
-    let fileRequest = Promise.resolve();
     // 存在则是上传
     if (matchFile) {
-      fileRequest = uploadFile(file)
+      uploadFile(file)
         .then((filename) => {
           matchFile.url = filename;
           emit('update:formState', {
@@ -252,7 +261,7 @@
     }
     // 不存在则是删除
     else {
-      fileRequest = deleteFileStorage(file.url)
+      deleteFileStorage(file.url)
         .then(() => {
           emit('update:formState', {
             ...props.formState,

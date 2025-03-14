@@ -1,3 +1,4 @@
+import { Tag } from 'ant-design-vue';
 import type { TableColumn } from '@/components/core/dynamic-table';
 
 // 数据项类型
@@ -11,12 +12,13 @@ export type ListItemType = {
   name: string;
   owner: string;
   province: string;
+  status: string;
 };
 // 使用TableColumn<ListItemType> 将会限制dataIndex的类型，但换来的是dataIndex有类型提示
 export const columns: TableColumn<ListItemType>[] = [
   {
     title: '申请编号',
-    dataIndex: 'InvoiceApplyCode',
+    dataIndex: 'applyCode',
     width: 200,
     resizable: true,
     formItemProps: {
@@ -41,7 +43,7 @@ export const columns: TableColumn<ListItemType>[] = [
   },
   {
     title: '发票类型',
-    dataIndex: 'InvoiceTypeName',
+    dataIndex: 'invoiceType',
     width: 300,
     resizable: true,
     formItemProps: {
@@ -51,8 +53,8 @@ export const columns: TableColumn<ListItemType>[] = [
     },
   },
   {
-    title: '项目编号',
-    dataIndex: 'ProjectCode',
+    title: '项目名称',
+    dataIndex: 'name',
     width: 300,
     resizable: true,
     formItemProps: {
@@ -63,7 +65,7 @@ export const columns: TableColumn<ListItemType>[] = [
   },
   {
     title: '开票机构',
-    dataIndex: 'BillingUnitName',
+    dataIndex: 'anency',
     width: 300,
     resizable: true,
     formItemProps: {
@@ -74,23 +76,36 @@ export const columns: TableColumn<ListItemType>[] = [
   },
   {
     title: '发票抬头',
-    dataIndex: 'CustomerName',
+    dataIndex: 'invoiceTitle',
     width: 300,
     resizable: true,
     hideInSearch: true,
   },
   {
     title: '合同编号',
-    dataIndex: 'ContractCode',
-    width: 300,
+    dataIndex: 'contractCode',
     resizable: true,
     hideInSearch: true,
   },
   {
     title: '开票金额',
-    dataIndex: 'InvoiceAmount',
-    width: 300,
+    dataIndex: 'invoiceAmount',
     resizable: true,
     hideInSearch: true,
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    resizable: true,
+    hideInSearch: false,
+    customRender: ({ record }) => (
+      <Tag
+        color={
+          record.status === 'draft' ? 'blue' : record.status === 'pending' ? 'orange' : 'green'
+        }
+      >
+        {record.status === 'draft' ? '草稿' : record.status === 'pending' ? '审批中' : '已审批'}
+      </Tag>
+    ),
   },
 ];
