@@ -1,4 +1,5 @@
 import { store } from '../store';
+import { setTableRowChangedCellType } from './fileUploadCellType';
 
 // 监听表格行变化，自动带入列样式
 export function tableRowChanged() {
@@ -28,15 +29,35 @@ function setTableRows(sheet, tableRange, fromRow, row, rowCount) {
   const col = tableRange.col;
   const colCount = tableRange.colCount;
   for (let c = col; c < col + colCount; c++) {
+    // // 如果不是超链接（文件上传下载），只需要配置样式和验证
+    // const style = sheet.getStyle(tableStartRow + fromRow, c);
+    // const validator = sheet.getDataValidator(tableStartRow + fromRow, c);
+    // for (let r = row; r < row + rowCount; r++) {
+    //   if (style) {
+    //     sheet.setStyle(tableStartRow + r, c, style);
+    //   }
+    //   if (validator) {
+    //     sheet.setDataValidator(tableStartRow + r, c, validator);
+    //   }
+    // }
+    //TODO: 尝试识别单元格类型，不要耦合
     // 如果不是超链接（文件上传下载），只需要配置样式和验证
-    const style = sheet.getStyle(tableStartRow + fromRow, c);
-    const validator = sheet.getDataValidator(tableStartRow + fromRow, c);
-    for (let r = row; r < row + rowCount; r++) {
-      if (style) {
-        sheet.setStyle(tableStartRow + r, c, style);
+    const cellType = sheet.getCellType(tableStartRow + fromRow, c);
+    if (cellType.typeName !== 'FileUploadCellType') {
+      const style = sheet.getStyle(tableStartRow + fromRow, c);
+      const validator = sheet.getDataValidator(tableStartRow + fromRow, c);
+      for (let r = row; r < row + rowCount; r++) {
+        if (style) {
+          sheet.setStyle(tableStartRow + r, c, style);
+        }
+        if (validator) {
+          sheet.setDataValidator(tableStartRow + r, c, validator);
+        }
       }
-      if (validator) {
-        sheet.setDataValidator(tableStartRow + r, c, validator);
+    } else {
+      // 如果是超链接（文件上传下载）
+      for (let r = row; r < row + rowCount; r++) {
+        setTableRowChangedCellType(sheet.getRange(tableStartRow + r, c, 1, 1));
       }
     }
   }

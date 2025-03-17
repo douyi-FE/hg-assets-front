@@ -33,7 +33,7 @@ export function importFile(file) {
 // 将设计器中的数据转换为 json 格式
 export function spreadToJson() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName('table');
+  const table = sheet.tables.findByName(store.tableName);
   if (table) {
     table.expandBoundRows(true);
   }
@@ -46,6 +46,47 @@ export function spreadToJson() {
     json.designerBindingPathSchema = JSON.parse(designerBindingPathSchema);
   }
   return json;
+}
+
+// 将设计器中的模板转换为 base64 格式
+export function spreadToBase64() {
+  return new Promise((resolve, reject) => {
+    (store.spread as any).save(
+      async function (blob) {
+        const fileBlob = new Blob([blob], { type: 'application/vnd.ms-excel' });
+        // 将 fileBlob 转换为 base64
+        const base64 = await fileToBase64(fileBlob);
+        resolve(base64.split(',')[1]);
+      },
+      function (e) {
+        reject(e);
+      },
+      { includeBindingSource: true },
+    );
+  });
+}
+
+// 将 base64 加载到设计器中
+export function base64ToSpread(base64, callback) {
+  (store.spread as any).open(
+    base64ToBlob(base64),
+    callback,
+    function (e) {
+      console.log('加载模板出错 ============= >>> ', e);
+    },
+    { openMode: GC.Spread.Sheets.OpenMode.lazy },
+  );
+}
+
+// base64 转 blob
+export function base64ToBlob(base64) {
+  const byteString = atob(base64);
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: 'application/octet-stream' });
 }
 
 // 文件转 base64
@@ -236,7 +277,7 @@ export function openTemplate() {
 // 初始化表单数据
 export function getInitDataSource() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName('table');
+  const table = sheet.tables.findByName(store.tableName);
   const dataSource = {};
   const tableData: any[] = [];
   let hasData = false;
@@ -268,6 +309,11 @@ export function getInitDataSource() {
       3000,
     );
   }
-  dataSource['table'] = tableData;
+  dataSource[store.tableName] = tableData;
   return dataSource;
+}
+
+// 生成 UUID 方法
+export function generateUUID() {
+  return crypto.randomUUID();
 }

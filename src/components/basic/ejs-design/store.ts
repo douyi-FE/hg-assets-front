@@ -11,6 +11,11 @@ export const store = {
     sheet: '',
     range: '',
   },
+  tableName: 'table',
+  emptyText: '上传',
+  emptyToolTip: '点击上传文件',
+  previewToolTip: '点击查看文件列表',
+  isFilling: true,
   message: (options: any) => {
     alert(options.message);
   },

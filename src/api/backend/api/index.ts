@@ -28,6 +28,7 @@ import * as businessTodo from './businessTodo';
 import * as template from './template';
 import * as templateData from './templateData';
 import * as templateVersion from './templateVersion';
+import * as templateAttach from './templateAttach';
 import * as outputvalue from './outputvalue';
 import * as flowDesign from './flowDesign';
 import * as application from './application';
@@ -60,6 +61,7 @@ export default {
   template,
   templateData,
   templateVersion,
+  templateAttach,
   outputvalue,
   flowDesign,
   application,

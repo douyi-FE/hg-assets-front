@@ -38,7 +38,7 @@ export function setAutoSetTableColumn() {
 
 function setTableColumn(range, setting, type) {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName('table');
+  const table = sheet.tables.findByName(store.tableName);
   if (table) {
     const tableRange = table.dataRange();
     const intersection = tableRange.getIntersect(range);

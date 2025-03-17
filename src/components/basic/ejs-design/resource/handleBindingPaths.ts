@@ -1,5 +1,6 @@
 import { store } from '../store';
 import { showAlert } from './commonFunctions';
+import { setAttachColumn } from './fileUploadCellType';
 
 // 处理选中的区域
 export function handleRangeValue(range, selectType, area) {
@@ -9,6 +10,11 @@ export function handleRangeValue(range, selectType, area) {
     case 'tableTitle':
       (store.spread as any).suspendPaint();
       bindingTablePath(range);
+      (store.spread as any).resumePaint();
+      break;
+    case 'fileAttach':
+      (store.spread as any).suspendPaint();
+      setAttachColumn(range);
       (store.spread as any).resumePaint();
       break;
     default:
@@ -49,7 +55,7 @@ export function bindingTablePath(range) {
     showAlert('未选中有效表头区域，请重新选择', 'error');
     return;
   }
-  if (store.bindingPaths['table']) {
+  if (store.bindingPaths[store.tableName]) {
     showAlert('已绑定表单，请重置后重新绑定', 'error');
     return;
   }
@@ -73,7 +79,7 @@ export function bindingTablePath(range) {
   if (range.rowCount === 1) {
     // 获取表单字段
     table = sheet.tables.add(
-      'table',
+      store.tableName,
       tableRange.row,
       tableRange.col,
       tableRange.rowCount,
@@ -89,7 +95,7 @@ export function bindingTablePath(range) {
       tableColumn.dataField(field);
       tableColumns.push(tableColumn);
     });
-    table.bindingPath('table');
+    table.bindingPath(store.tableName);
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
     initFillData();
@@ -102,7 +108,7 @@ export function bindingTablePath(range) {
     // 插入表头行
     sheet.addRows(tableRange.row, 1);
     table = sheet.tables.add(
-      'table',
+      store.tableName,
       tableRange.row,
       tableRange.col,
       tableRange.rowCount + 1,
@@ -154,7 +160,7 @@ export function bindingTablePath(range) {
         // i += colCount - 1;
       }
     }
-    table.bindingPath('table');
+    table.bindingPath(store.tableName);
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
     initFillData();
@@ -197,7 +203,7 @@ export function bindingTablePath(range) {
 // 处理多行表头的筛选
 function addMultiTitleTableFilter() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName('table');
+  const table = sheet.tables.findByName(store.tableName);
   // 保存 table range
   const tableRange = table.range();
   // 隐藏表头
@@ -232,7 +238,7 @@ function addMultiTitleTableFilter() {
 // 初始化表单数据
 function initFillData() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName('table');
+  const table = sheet.tables.findByName(store.tableName);
   const dataSource = {};
   const tableData: any[] = [];
   let hasData = false;
@@ -264,7 +270,7 @@ function initFillData() {
       3000,
     );
   }
-  dataSource['table'] = tableData;
+  dataSource[store.tableName] = tableData;
   store.setInitDataSource({
     ...store.initDataSource,
     table: tableData,

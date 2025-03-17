@@ -151,6 +151,16 @@ export function initDesigner(divId) {
         });
       },
     },
+    SetAttach: {
+      title: '设置附件',
+      text: '设置附件',
+      iconClass: 'ribbon-button-namemanager',
+      bigButton: 'false',
+      commandName: 'setAttach',
+      execute: async (context, propertyName) => {
+        startSelectMode('选择附件区域', 'fileAttach');
+      },
+    },
   };
   config.ribbon.unshift({
     id: 'templateTab',

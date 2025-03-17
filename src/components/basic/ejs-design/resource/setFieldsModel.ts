@@ -75,7 +75,7 @@ export function setFieldsModel(bindingPaths: any) {
       // 根据 bindingPaths 创建初始化数据
       const initData: any[] = [];
       Object.keys(bindingPaths).forEach((key) => {
-        if (key === 'table') {
+        if (key === store.tableName) {
           return;
         }
         initData.push({
@@ -94,7 +94,7 @@ export function setFieldsModel(bindingPaths: any) {
       // 回写到 bindingPaths
       if (result.value.length > 0) {
         result.value.forEach((data) => {
-          if (data.fieldName === 'table') {
+          if (data.fieldName === store.tableName) {
             return;
           }
           const refRange = data.refRange;
