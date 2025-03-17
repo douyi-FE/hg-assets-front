@@ -49,20 +49,12 @@
       actions: ({ record }) => [
         {
           label: '编辑',
-          auth: {
-            perm: 'flow:design:edit',
-            effect: 'disable',
-          },
           onClick: () => {
             flowDrawerRef.value.openDrawer(record);
           },
         },
         {
           label: '删除',
-          auth: {
-            perm: 'flow:design:delete',
-            effect: 'disable',
-          },
           disabled: record.isBuildIn,
           popConfirm: {
             title: '你确定要删除吗？',
