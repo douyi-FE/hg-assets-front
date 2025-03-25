@@ -6,10 +6,12 @@
 </template>
 
 <script lang="ts" setup>
+  import 'bpmn-js/dist/assets/bpmn-js.css';
   import 'bpmn-js/dist/assets/diagram-js.css';
   import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
   import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-codes.css';
   import 'bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css';
+  import '@bpmn-io/properties-panel/dist/assets/properties-panel.css';
   import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
   import BpmnModeler from 'bpmn-js/lib/Modeler';
   import {
@@ -17,8 +19,10 @@
     BpmnPropertiesProviderModule,
   } from 'bpmn-js-properties-panel';
   import gridModule from 'diagram-js-grid';
+  import camundaModdleDescriptor from 'camunda-bpmn-moddle/resources/camunda.json';
   import { xmlStr as defaultXmlStr } from './xml';
   import translations from './customTranslate';
+  import customPaletteModule from './custom-modules/palette';
 
   const props = defineProps({
     xmlStr: {
@@ -54,8 +58,11 @@
         BpmnPropertiesProviderModule,
         gridModule,
         { translate: ['value', translations] },
+        customPaletteModule,
       ],
-      moddleExtensions: {},
+      moddleExtensions: {
+        camunda: camundaModdleDescriptor,
+      },
     });
     createNewDiagram();
   };
@@ -106,8 +113,24 @@
     initBpmn();
   };
 
-  const getXml = () => {
-    return bpmnModeler.saveXML({ format: true });
+  const getXml = async () => {
+    try {
+      const result = await bpmnModeler.saveXML({ format: true });
+      const modeler = bpmnModeler.get('moddle');
+      const elementRegistry = bpmnModeler.get('elementRegistry');
+
+      elementRegistry.getAll().forEach((element) => {
+        if (element.type === 'bpmn:Task') {
+          element.type = 'bpmn:UserTask';
+          element.businessObject.$type = 'bpmn:UserTask';
+        }
+      });
+
+      return await bpmnModeler.saveXML({ format: true });
+    } catch (err) {
+      console.error('Error saving XML:', err);
+      return null;
+    }
   };
 
   const getSvg = () => {

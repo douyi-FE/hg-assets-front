@@ -1,4 +1,3 @@
-import { Tag } from 'ant-design-vue';
 import type { TableColumn } from '@/components/core/dynamic-table';
 
 // 数据项类型
@@ -98,14 +97,6 @@ export const columns: TableColumn<ListItemType>[] = [
     dataIndex: 'status',
     resizable: true,
     hideInSearch: false,
-    customRender: ({ record }) => (
-      <Tag
-        color={
-          record.status === 'draft' ? 'blue' : record.status === 'pending' ? 'orange' : 'green'
-        }
-      >
-        {record.status === 'draft' ? '草稿' : record.status === 'pending' ? '审批中' : '已审批'}
-      </Tag>
-    ),
+    width: 100,
   },
 ];

@@ -3,53 +3,75 @@
   <input id="uploadFileInput" type="file" style="display: none" multiple />
   <div id="ejs_design" class="ejs-design" ref="ejsDesign" />
 
-  <!-- 附件列表模态框 -->
-  <div id="fileListModal" class="modal fade" tabindex="-1" role="dialog">
-    <div class="modal-dialog dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">×</span>
-          </button>
-          <h4 class="modal-title">附件列表</h4>
-        </div>
-        <div class="modal-body">
-          <button id="addFile" class="btn btn-primary">添加附件</button>
-          <button id="downloadAll" class="btn btn-default">下载全部</button>
-          <div id="fileListContainer" class="fileListContainer"></div>
-        </div>
-      </div>
+  <!-- 附件列表模态框v2 -->
+  <a-modal
+    v-model:open="openAttachList"
+    title="附件列表"
+    width="800px"
+    :destroyOnClose="true"
+    :footer="false"
+  >
+    <div style="display: flex; gap: 10px; padding-bottom: 10px">
+      <a-button type="primary" @click="uploadAttachFile">添加附件</a-button>
+      <a-button @click="downloadAttachAll">下载全部</a-button>
     </div>
-  </div>
+    <a-table
+      :columns="attachListColumns"
+      :dataSource="attachListData"
+      :pagination="false"
+      style="height: calc(100vh - 600px)"
+    >
+      <template #bodyCell="{ column, record, index }">
+        <template v-if="column.dataIndex === 'fileTime'">
+          <span>{{ dayjs(record.fileTime).format('YYYY-MM-DD HH:mm:ss') }}</span>
+        </template>
+        <template v-if="column.dataIndex === 'fileSize'">
+          <span>{{ (record.fileSize / 1024).toFixed(2) + 'KB' }}</span>
+        </template>
+        <template v-if="column.dataIndex === 'action'">
+          <a-button type="link" @click="previewFile(record.fileId)">预览</a-button>
+          <a-button type="link" @click="downloadFile(record)">下载</a-button>
+          <a-popconfirm
+            v-if="Boolean(store.isFilling)"
+            title="确定删除该附件吗？"
+            @confirm="deleteFile(record.fileId, index)"
+            @cancel="() => {}"
+          >
+            <a-button type="link">删除</a-button>
+          </a-popconfirm>
+        </template>
+      </template>
+    </a-table>
+  </a-modal>
 
-  <!-- 文件预览模态框 -->
-  <div id="filePreviewModal" class="modal fade" tabindex="-1" role="dialog">
-    <div class="modal-dialog dialog">
-      <!-- 模态框大小、居中 -->
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">×</span>
-          </button>
-          <h4 class="modal-title">文件预览</h4>
-        </div>
-        <div class="modal-body">
-          <div id="viewContainer" class="viewContainer"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- 模态框依赖，必须放到 body 下方，否则无法初始化 -->
+  <!-- 文件预览模态框v2 -->
+  <a-modal
+    v-model:open="openPreviewFile"
+    title="文件预览"
+    width="60%"
+    :destroyOnClose="true"
+    :footer="false"
+    wrapClassName="viewContainer"
+  >
+    <div id="viewContainer" style="height: calc(100vh - 200px)" />
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { onMounted, onUnmounted, ref } from 'vue';
+  import dayjs from 'dayjs';
+  import { message } from 'ant-design-vue';
   import { initDesigner } from './resource/initDesigner';
   import { store } from './store';
-  import { getSpreadSJS, openTemplateByBase64 } from './resource/commonFunctions';
+  import { getSpreadSJS, openTemplateByBase64, base64ToBlob } from './resource/commonFunctions';
   import { initUploadFile } from './resource/fileUploadCellType';
-
+  import { attachListColumns } from './config';
+  import { eventBus } from '@/utils/event-bus';
+  import Api from '@/api';
   const ejsDesign = ref();
+  const openAttachList = ref(false);
+  const openPreviewFile = ref(false);
+  const attachListData = ref<any[]>([]);
 
   const initSpread = () => {
     const designer = initDesigner('ejs_design');
@@ -57,10 +79,71 @@
     store.setSpread((designer as any).getWorkbook());
   };
 
+  /********附件列表模态框v2-begin *********/
+  const uploadAttachFile = () => {
+    eventBus.emit('addAttach');
+  };
+
+  const downloadAttachAll = () => {
+    eventBus.emit('downloadAll', attachListData.value);
+  };
+  const previewFile = (fileId: string) => {
+    eventBus.emit('previewFile', fileId);
+  };
+  const downloadFile = async (record: any) => {
+    // 下载文件
+    const response = await Api.templateAttach.download({
+      fileId: record.fileId,
+    });
+    if (response && response._doc) {
+      const file = await response._doc.fileContent;
+      const fileBlob = base64ToBlob(file);
+      const fileName = record.originalFileName;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(fileBlob);
+      a.download = fileName;
+      a.click();
+    } else {
+      message.error('下载失败');
+    }
+  };
+  const deleteFile = async (fileId: string, index: number) => {
+    try {
+      await Api.templateAttach.deleteFile({
+        fileId: fileId,
+      });
+      attachListData.value.splice(index, 1);
+      eventBus.emit('deleteFile', attachListData.value.length);
+      message.success('删除成功');
+    } catch (error) {
+      message.error('删除失败');
+    }
+  };
+
+  /********附件列表模态框v2-end *********/
+
   // 组件挂载时
   onMounted(async () => {
+    eventBus.on('openAttachList', () => {
+      console.log('openAttachList');
+      openAttachList.value = true;
+    });
+    eventBus.on('setAttachListData', (data: any[]) => {
+      console.log('setAttachListData', data);
+      attachListData.value = [...data];
+    });
+    eventBus.on('openPreviewFileModal', () => {
+      openPreviewFile.value = true;
+    });
     initSpread();
     initUploadFile();
+  });
+
+  onUnmounted(() => {
+    eventBus.off('openAttachList');
+    eventBus.off('setAttachListData');
+    eventBus.off('downloadAll');
+    eventBus.off('addAttach');
   });
 
   defineExpose({

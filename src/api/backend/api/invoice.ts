@@ -43,3 +43,12 @@ export async function deleteInvoiceData(params: any, options?: RequestOptions) {
     data: params,
   });
 }
+
+// 根据发票code提交发票数据
+export async function submitInvoiceData(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/invoice/apply',
+    method: 'POST',
+    data: params,
+  });
+}

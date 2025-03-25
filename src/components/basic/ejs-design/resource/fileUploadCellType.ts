@@ -1,10 +1,11 @@
-import Swal from 'sweetalert2';
-
+import { nextTick } from 'vue';
+import { message } from 'ant-design-vue';
 import { store } from '../store';
 import { downloadZipUrl } from '../config';
 import { fileToBase64, generateUUID, showAlert, base64ToBlob } from './commonFunctions';
 import { renderPic, renderWord, renderPdf, renderExcel, renderUnknown } from './fileRenders';
 import Api from '@/api/';
+import { eventBus } from '@/utils/event-bus';
 
 // 文件列表列配置
 const fileListColInfos = [
@@ -167,35 +168,14 @@ function fileUploadEvent(args) {
   const uploadCellType = args.cellStyle.cellType;
   const val = sheet.getValue(row, col);
   if (val && val.length > 0) {
-    // 用 modal 重新实现
-    const fileListModal = document.getElementById('fileListModal');
-    // 禁止 esc 关闭
-    const modal = new Modal({ el: fileListModal }).show();
-    document.getElementsByClassName('modal-backdrop')[0].remove();
-    const fileList = new GC.Spread.Sheets.Workbook('fileListContainer');
-    fileList.options.newTabVisible = false;
-    fileList.options.allowUserDragFill = false;
-    fileList.options.allowContextMenu = false;
-    fileList.options.tabStripVisible = false;
-    fileList.options.scrollbarMaxAlign = true;
-
-    // 设置文件列表列
-    setFileListColumn(fileList.getActiveSheet(), val);
-
-    // 添加文件按钮事件
-    const addFile = document.getElementById('addFile');
     const addFileEvent = () => {
-      const fileInput = document.getElementById('uploadFileInput');
+      const fileInput: any = document.getElementById('uploadFileInput')!;
       fileInput.row = row;
       fileInput.col = col;
       fileInput.click();
     };
-    addFile.addEventListener('click', addFileEvent);
-
-    // 下载全部按钮事件
-    const downloadAll = document.getElementById('downloadAll');
-    const downloadAllEvent = () => {
-      const fileIds = val.map((item) => item.fileId);
+    const downloadAllEvent = (list = []) => {
+      const fileIds = list.map((item: any) => item.fileId);
       if (fileIds.length === 0) {
         showAlert('请先上传文件', 'error');
         return;
@@ -204,25 +184,42 @@ function fileUploadEvent(args) {
       const fileName = '文件包.zip';
       window.open(`${downloadZipUrl}?fileIds=${fileIds.join(',')}&fileName=${fileName}`, '_blank');
     };
-    downloadAll.addEventListener('click', downloadAllEvent);
-
-    modal.on('hide', function () {
-      // 释放SpreadJS
-      const fileList = GC.Spread.Sheets.findControl('fileListContainer');
-      if (fileList) {
-        fileList.destroy();
-      }
-      // 解绑事件
-      addFile.removeEventListener('click', addFileEvent);
-      downloadAll.removeEventListener('click', downloadAllEvent);
+    const closeDestory = () => {
       // 重绘sheet, 改变的文件数据需要刷新
       sheet.repaint();
-    });
+    };
+    const previewFile = (fileId) => {
+      // 打开预览模态框
+      eventBus.emit('openPreviewFileModal');
+      nextTick(() => {
+        // 渲染预览
+        renderViewer(fileId);
+      });
+    };
+    const deleteFile = (length) => {
+      const sheet = (store.spread as any).getActiveSheet();
+      // 重绘sheet
+      sheet.repaint();
+      // 手动删除最后一行
+      sheet.deleteRows(length, 1);
+    };
+    eventBus.off('downloadAll');
+    eventBus.off('addAttach');
+    eventBus.off('closeDestory');
+    eventBus.off('previewFile');
+    eventBus.off('deleteFile');
+    eventBus.on('downloadAll', downloadAllEvent);
+    eventBus.on('addAttach', addFileEvent);
+    eventBus.on('previewFile', previewFile);
+    eventBus.on('deleteFile', deleteFile);
+    eventBus.emit('openAttachList');
+    eventBus.emit('setAttachListData', val);
+    eventBus.on('closeDestory', closeDestory);
   } else {
     // 上传
     uploadCellType.text(store.emptyText);
     uploadCellType.linkToolTip(store.emptyToolTip);
-    const btnFile = document.getElementById('uploadFileInput');
+    const btnFile: any = document.getElementById('uploadFileInput')!;
     btnFile.row = row;
     btnFile.col = col;
     btnFile.click();
@@ -258,207 +255,91 @@ function setFileListColumn(sheet, val) {
     new GC.Spread.Sheets.Range(0, 0, val.length, columnCount - 1),
   );
   sheet.rowFilter(filter);
-  // 添加操作按钮
-  sheet.setStyle(-1, columnCount - 1, getOperationStyle(val, dataSource));
   sheet.resumePaint();
-}
-
-// 创建操作列样式
-function getOperationStyle(val, dataSource) {
-  // 添加操作按钮
-  const operationStyle = new GC.Spread.Sheets.Style();
-  operationStyle.hAlign = GC.Spread.Sheets.HorizontalAlign.center;
-  operationStyle.vAlign = GC.Spread.Sheets.VerticalAlign.center;
-  operationStyle.foreColor = 'white';
-  operationStyle.fontSize = '11px';
-  operationStyle.locked = false;
-  const buttons = [
-    {
-      caption: '预览',
-      useButtonStyle: true,
-      buttonBackColor: '#008CBA',
-      command: async (sheet, row, col, option) => {
-        const filePreviewModal = document.getElementById('filePreviewModal');
-        // 禁止 esc 关闭
-        const modal = new Modal({ el: filePreviewModal }).show();
-        document.getElementsByClassName('modal-backdrop')[0].remove();
-        await renderViewer(dataSource[row].fileId);
-        modal.on('hidden', function () {
-          // 释放资源
-          clearViewContainer();
-        });
-      },
-    },
-    {
-      caption: '下载',
-      useButtonStyle: true,
-      buttonBackColor: '#82BC00',
-      command: async (sheet, row, col, option) => {
-        // 下载文件
-        const response = await Api.templateAttach.download({
-          fileId: dataSource[row].fileId,
-        });
-        if (response && response._doc) {
-          const file = await response._doc.fileContent;
-          const fileBlob = base64ToBlob(file);
-          const fileName = dataSource[row].originalFileName;
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(fileBlob);
-          a.download = fileName;
-          a.click();
-        } else {
-          showAlert('下载失败', 'error');
-          console.log(response);
-        }
-      },
-    },
-  ];
-  if (isAllowDeleteFile()) {
-    buttons.push({
-      caption: '删除',
-      useButtonStyle: true,
-      buttonBackColor: '#F44336',
-      command: async (sheet, row, col, option) => {
-        // 提醒是否删除
-        Swal.fire({
-          title: '删除选中文件，是否继续？',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            // 删除文件
-            const fileId = dataSource[row].fileId;
-            try {
-              await Api.templateAttach.deleteFile({
-                fileId: fileId,
-              });
-              dataSource.splice(row, 1);
-              // 删除原始数据中对应ID的文件
-              val.map((item, index) => {
-                if (item.fileId === fileId) {
-                  val.splice(index, 1);
-                }
-              });
-              // 重绘sheet
-              sheet.repaint();
-              // 手动删除最后一行
-              sheet.deleteRows(dataSource.length, 1);
-              showAlert('删除成功', 'success');
-            } catch (error) {
-              showAlert('删除失败', 'error');
-            }
-          }
-        });
-      },
-    });
-  }
-  operationStyle.cellButtons = buttons;
-  return operationStyle;
 }
 
 // 初始化模板中已经设置的上传文件单元格
 export async function initUploadFile() {
-  document.getElementById('uploadFileInput')?.addEventListener('change', async function (event) {
-    // 获取上传的文件列表
-    const files = event.target.files;
-    // 如果有文件
-    if (files.length > 0) {
-      const btnFile = event.target;
-      const row = btnFile.row;
-      const col = btnFile.col;
-      // 本次上传的数据
-      const uploadFiles = [];
-      // 当前单元格的值 —— 追加数据
-      const sheet = (store.spread as any).getActiveSheet();
-      let val = sheet.getValue(row, col);
-      // 如果val为空，则初始化val为[]
-      if (!val) {
-        val = [];
-      }
-
-      for (let i = 0; i < files.length; i++) {
-        const item = {};
-        const file = files[i];
-        try {
-          let base64 = await fileToBase64(file);
-          base64 = base64.split(',')[1];
-          item.fileId = generateUUID();
-          item.originalFileName = file.name;
-          item.fileName = item.fileId + '_' + file.name;
-          item.fileContent = base64;
-          item.fileExtension = file.name.split('.').pop().toLowerCase();
-          item.fileTime = new Date().getTime();
-          item.fileSize = file.size;
-          // 不含fileContent的附件数据
-          val.push({
-            fileId: item.fileId,
-            originalFileName: item.originalFileName,
-            fileName: item.fileName,
-            fileExtension: item.fileExtension,
-            fileTime: item.fileTime,
-            fileSize: item.fileSize,
-          });
-          // 含fileContent的附件数据
-          uploadFiles.push(item);
-        } catch (error) {
-          console.error('文件转换失败:', error);
-          showAlert('文件转换失败', 'error');
-          return;
-        }
-      }
-      try {
-        // 上传文件
-        await Api.templateAttach.upload({
-          files: uploadFiles,
-        });
-
-        // 上传成功后回显
+  document
+    .getElementById('uploadFileInput')
+    ?.addEventListener('change', async function (event: any) {
+      // 获取上传的文件列表
+      const files = event.target.files;
+      // 如果有文件
+      if (files.length > 0) {
+        const btnFile = event.target;
+        const row = btnFile.row;
+        const col = btnFile.col;
+        // 本次上传的数据
+        const uploadFiles: any[] = [];
+        // 当前单元格的值 —— 追加数据
         const sheet = (store.spread as any).getActiveSheet();
-        sheet.setValue(row, col, val);
-        // 重新设置文件列表列
-        const fileList = GC.Spread.Sheets.findControl('fileListContainer');
-        if (fileList) {
-          const fileListSheet = fileList.getActiveSheet();
-          setFileListColumn(fileListSheet, val);
+        let val = sheet.getValue(row, col);
+        // 如果val为空，则初始化val为[]
+        if (!val) {
+          val = [];
         }
-        showAlert('上传成功', 'success');
-      } catch (error) {
-        // 处理非200响应
-        let errorMessage;
-        try {
-          errorMessage = error.message || '上传失败';
-        } catch (e) {
-          errorMessage = '上传失败';
-        }
-        showAlert(`Error: ${errorMessage}`, 'error');
-      }
-    }
-  });
-}
 
-/*
-  val 数据结构：
-  {
-    fileId: '1234567890', // 文件ID: UUID
-    originalFileName: 'test.jpg', // 原始文件名
-    fileName: '1234567890_test.jpg', // 实际文件名 = fileId + '_' + originalFileName
-    fileContent: 'base64', // 文件内容
-    fileExtension: 'jpg', // 文件扩展名
-    fileTime: 1713333333333, // 文件上传时间
-    fileSize: 1024, // 文件大小
-  }
-*/
-// 动态添加文件选项
-function addFileOptions(val) {
-  const fileSelector = document.getElementById('fileSelector');
-  // 遍历文件列表并添加选项
-  val.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.fileId;
-    option.textContent = item.originalFileName;
-    fileSelector.appendChild(option);
-  });
+        for (let i = 0; i < files.length; i++) {
+          const item: any = {};
+          const file = files[i];
+          try {
+            let base64 = await fileToBase64(file);
+            base64 = (base64 as string).split(',')[1];
+            item.fileId = generateUUID();
+            item.originalFileName = file.name;
+            item.fileName = item.fileId + '_' + file.name;
+            item.fileContent = base64;
+            item.fileExtension = file.name.split('.').pop().toLowerCase();
+            item.fileTime = new Date().getTime();
+            item.fileSize = file.size;
+            // 不含fileContent的附件数据
+            val.push({
+              fileId: item.fileId,
+              originalFileName: item.originalFileName,
+              fileName: item.fileName,
+              fileExtension: item.fileExtension,
+              fileTime: item.fileTime,
+              fileSize: item.fileSize,
+            });
+            // 含fileContent的附件数据
+            uploadFiles.push(item);
+          } catch (error) {
+            console.error('文件转换失败:', error);
+            showAlert('文件转换失败', 'error');
+            return;
+          }
+        }
+        try {
+          // 上传文件
+          await Api.templateAttach.upload({
+            files: uploadFiles,
+          });
+
+          // 上传成功后回显
+          const sheet = (store.spread as any).getActiveSheet();
+          sheet.setValue(row, col, val);
+          // 重新设置文件列表列
+          const fileList = GC.Spread.Sheets.findControl('fileListContainer');
+          if (fileList) {
+            const fileListSheet = fileList.getActiveSheet();
+            setFileListColumn(fileListSheet, val);
+          }
+          message.success('上传成功');
+          // 更新附件列表数据
+          eventBus.emit('setAttachListData', val);
+        } catch (error) {
+          // 处理非200响应
+          let errorMessage;
+          try {
+            errorMessage = error.message || '上传失败';
+          } catch (e) {
+            errorMessage = '上传失败';
+          }
+          showAlert(`Error: ${errorMessage}`, 'error');
+        }
+      }
+    });
 }
 
 // 清空预览区域
@@ -467,7 +348,7 @@ function clearViewContainer() {
   if (viewSpread) {
     viewSpread.destroy();
   }
-  document.getElementById('viewContainer').innerHTML = '';
+  document.getElementById('viewContainer')!.innerHTML = '';
 }
 
 // 更新预览区域
@@ -522,9 +403,4 @@ async function getFileById(fileId) {
   } catch (error) {
     showAlert(`服务器错误，请稍后再试`, 'error');
   }
-}
-
-// 是否允许删除附件
-function isAllowDeleteFile() {
-  return !!store.isFilling;
 }
