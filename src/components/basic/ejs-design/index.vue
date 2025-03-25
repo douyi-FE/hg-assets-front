@@ -1,7 +1,7 @@
 <template>
   <input id="selectedFile" type="file" name="files[]" accept=".xlsx" style="display: none" />
   <input id="uploadFileInput" type="file" style="display: none" multiple />
-  <div id="ejs_design" class="ejs-design" ref="ejsDesign" />
+  <div id="ejs_design" ref="ejsDesign" class="ejs-design" />
 
   <!-- 附件列表模态框v2 -->
   <a-modal
@@ -113,7 +113,7 @@
         fileId: fileId,
       });
       attachListData.value.splice(index, 1);
-      eventBus.emit('deleteFile', attachListData.value.length);
+      eventBus.emit('deleteFile', attachListData.value);
       message.success('删除成功');
     } catch (error) {
       message.error('删除失败');
@@ -163,24 +163,25 @@
 
 <style lang="less" scoped>
   .ejs-design {
-    height: 100%;
     width: 100%;
+    height: 100%;
   }
+
   .dialog {
     width: calc(100vw - 200px);
     max-width: 1200px;
   }
 
   .fileListContainer {
-    height: calc(100vh - 300px);
     width: 100%;
+    height: calc(100vh - 300px);
     overflow: auto;
   }
 
   .viewContainer {
     height: calc(100vh - 200px);
+    margin: 0 auto;
     overflow: auto;
     text-align: center;
-    margin: 0 auto;
   }
 </style>

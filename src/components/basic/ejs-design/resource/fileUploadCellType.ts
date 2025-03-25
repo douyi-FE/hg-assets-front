@@ -174,7 +174,7 @@ function fileUploadEvent(args) {
       fileInput.col = col;
       fileInput.click();
     };
-    const downloadAllEvent = (list = []) => {
+    const downloadAllEvent = async (list = []) => {
       const fileIds = list.map((item: any) => item.fileId);
       if (fileIds.length === 0) {
         showAlert('请先上传文件', 'error');
@@ -196,12 +196,14 @@ function fileUploadEvent(args) {
         renderViewer(fileId);
       });
     };
-    const deleteFile = (length) => {
+    const deleteFile = (val) => {
       const sheet = (store.spread as any).getActiveSheet();
-      // 重绘sheet
+      // 重新设置val
+      sheet.setValue(row, col, val);
+      // 重置单元格类型内容
+      resetFileUploadCellType(row, col);
+      // 重绘
       sheet.repaint();
-      // 手动删除最后一行
-      sheet.deleteRows(length, 1);
     };
     eventBus.off('downloadAll');
     eventBus.off('addAttach');
@@ -403,4 +405,46 @@ async function getFileById(fileId) {
   } catch (error) {
     showAlert(`服务器错误，请稍后再试`, 'error');
   }
+}
+
+// 重置上传文件单元格类型
+function resetFileUploadCellType(row, col) {
+  const sheet = (store.spread as any).getActiveSheet();
+  // 如果 row 和 col 为数字，则转换为行和列
+  if (typeof row !== 'number' && typeof col !== 'number') {
+    row = sheet.getActiveRowIndex();
+    col = sheet.getActiveColumnIndex();
+  }
+  const fileUploadCellType = sheet.getCellType(row, col);
+  if (fileUploadCellType && fileUploadCellType.typeName === 'FileUploadCellType') {
+    const val = sheet.getValue(row, col);
+    if (val && val.length > 0) {
+      // 显示文件名称
+      let fileNamesStr = val.map((item) => item.originalFileName).join('\n');
+      // 如果文件名称字符数量超过10，则只显示前10个字符
+      if (fileNamesStr.length > 10) {
+        fileNamesStr = fileNamesStr.substring(0, 10);
+        fileNamesStr += '...';
+      }
+      fileUploadCellType.text(fileNamesStr);
+      fileUploadCellType.linkToolTip(store.previewToolTip);
+    } else {
+      fileUploadCellType.text(store.emptyText);
+      fileUploadCellType.linkToolTip(store.emptyToolTip);
+    }
+  }
+}
+
+// 重置所有上传文件单元格类型
+function resetAllFileUploadCellType() {
+  const sheet = (store.spread as any).getActiveSheet();
+  sheet.suspendPaint();
+  const rowCount = sheet.getRowCount();
+  const colCount = sheet.getColumnCount();
+  for (let i = 0; i < rowCount; i++) {
+    for (let j = 0; j < colCount; j++) {
+      resetFileUploadCellType(i, j);
+    }
+  }
+  sheet.resumePaint();
 }
