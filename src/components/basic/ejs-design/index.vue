@@ -53,7 +53,7 @@
     :footer="false"
     wrapClassName="viewContainer"
   >
-    <div id="viewContainer" style="height: calc(100vh - 200px)" />
+    <div id="viewContainer" style="height: calc(100vh - 600px)" />
   </a-modal>
 </template>
 
@@ -170,12 +170,6 @@
   .dialog {
     width: calc(100vw - 200px);
     max-width: 1200px;
-  }
-
-  .fileListContainer {
-    width: 100%;
-    height: calc(100vh - 300px);
-    overflow: auto;
   }
 
   .viewContainer {

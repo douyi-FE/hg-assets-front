@@ -2,30 +2,10 @@ import { nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { store } from '../store';
 import { downloadZipUrl } from '../config';
-import { fileToBase64, generateUUID, showAlert, base64ToBlob } from './commonFunctions';
+import { fileToBase64, generateUUID, base64ToBlob } from './commonFunctions';
 import { renderPic, renderWord, renderPdf, renderExcel, renderUnknown } from './fileRenders';
 import Api from '@/api/';
 import { eventBus } from '@/utils/event-bus';
-
-// 文件列表列配置
-const fileListColInfos = [
-  { name: 'fileId', displayName: '文件ID', size: 1 },
-  { name: 'originalFileName', displayName: '文件名称', size: '*' },
-  { name: 'fileExtension', displayName: '文件类型', size: 80 },
-  { name: 'fileSize', displayName: '文件大小', size: 80 },
-  { name: 'fileTime', displayName: '上传时间', size: 160 },
-  { name: 'operation', displayName: '操作', size: 120 },
-];
-
-// 文件列表表单保护配置
-const fileListProtectionOptions = {
-  allowSelectLockedCells: true,
-  allowSelectUnlockedCells: true,
-  allowSort: true,
-  allowFilter: true,
-  allowResizeRows: true,
-  allowResizeColumns: true,
-};
 
 // 文件上传单元格类型
 function FileUploadCellType(this: any) {
@@ -87,13 +67,13 @@ export function setAttachColumn(range, bindingPath = 'fileAttach') {
   const sheet = (store.spread as any).getActiveSheet();
   // 未绑定的表格不允许设置附件
   if (!store.bindingPaths[store.tableName]) {
-    showAlert('请先设置绑定', 'error');
+    message.error('请先设置绑定');
     return;
   }
   // 绑定的表格
   const table = sheet.tables.findByName(store.tableName);
   if (!table || table.bindingPath() === null) {
-    showAlert('请先设置绑定', 'error');
+    message.error('请先设置绑定');
     return;
   }
   const tableRange = table.dataRange();
@@ -177,7 +157,7 @@ function fileUploadEvent(args) {
     const downloadAllEvent = async (list = []) => {
       const fileIds = list.map((item: any) => item.fileId);
       if (fileIds.length === 0) {
-        showAlert('请先上传文件', 'error');
+        message.error('请先上传文件');
         return;
       }
       // 下载文件名称默认为文件包
@@ -228,38 +208,6 @@ function fileUploadEvent(args) {
   }
 }
 
-// 设置文件列表列
-function setFileListColumn(sheet, val) {
-  sheet.suspendPaint();
-  sheet.options.protectionOptions = fileListProtectionOptions;
-  sheet.options.isProtected = true;
-  const dataSource = val.map((item) => {
-    return {
-      fileId: item.fileId,
-      originalFileName: item.originalFileName,
-      fileExtension: item.fileExtension,
-      // 换算成KB
-      fileSize: (item.fileSize / 1024).toFixed(2) + 'KB',
-      fileTime: new Date(item.fileTime).toLocaleString(),
-      operation: '',
-    };
-  });
-  sheet.setDataSource(dataSource);
-  sheet.bindColumns(fileListColInfos);
-  const defaultStyle = sheet.getDefaultStyle();
-  defaultStyle.hAlign = GC.Spread.Sheets.HorizontalAlign.center;
-  defaultStyle.vAlign = GC.Spread.Sheets.VerticalAlign.center;
-  sheet.setDefaultStyle(defaultStyle);
-  // 计算出dataSource每一个元素有多少个属性
-  const columnCount = Object.keys(dataSource[0]).length;
-  // 添加筛选
-  const filter = new GC.Spread.Sheets.Filter.HideRowFilter(
-    new GC.Spread.Sheets.Range(0, 0, val.length, columnCount - 1),
-  );
-  sheet.rowFilter(filter);
-  sheet.resumePaint();
-}
-
 // 初始化模板中已经设置的上传文件单元格
 export async function initUploadFile() {
   document
@@ -308,7 +256,7 @@ export async function initUploadFile() {
             uploadFiles.push(item);
           } catch (error) {
             console.error('文件转换失败:', error);
-            showAlert('文件转换失败', 'error');
+            message.error('文件转换失败');
             return;
           }
         }
@@ -321,12 +269,6 @@ export async function initUploadFile() {
           // 上传成功后回显
           const sheet = (store.spread as any).getActiveSheet();
           sheet.setValue(row, col, val);
-          // 重新设置文件列表列
-          const fileList = GC.Spread.Sheets.findControl('fileListContainer');
-          if (fileList) {
-            const fileListSheet = fileList.getActiveSheet();
-            setFileListColumn(fileListSheet, val);
-          }
           message.success('上传成功');
           // 更新附件列表数据
           eventBus.emit('setAttachListData', val);
@@ -338,7 +280,7 @@ export async function initUploadFile() {
           } catch (e) {
             errorMessage = '上传失败';
           }
-          showAlert(`Error: ${errorMessage}`, 'error');
+          message.error(`Error: ${errorMessage}`);
         }
       }
     });
@@ -384,13 +326,13 @@ async function renderViewer(fileId) {
         break;
     }
   } else {
-    showAlert(`服务器错误，请稍后再试`, 'error');
+    message.error('服务器错误，请稍后再试');
   }
 }
 
 async function getFileById(fileId) {
   if (!fileId) {
-    showAlert('请输入合法ID', 'error');
+    message.error('请输入合法ID');
     return;
   }
   try {
@@ -400,10 +342,10 @@ async function getFileById(fileId) {
     if (response && response[0]) {
       return response[0]._doc;
     } else {
-      showAlert(`服务器错误，请稍后再试`, 'error');
+      message.error('服务器错误，请稍后再试');
     }
   } catch (error) {
-    showAlert(`服务器错误，请稍后再试`, 'error');
+    message.error('服务器错误，请稍后再试');
   }
 }
 
@@ -433,18 +375,4 @@ function resetFileUploadCellType(row, col) {
       fileUploadCellType.linkToolTip(store.emptyToolTip);
     }
   }
-}
-
-// 重置所有上传文件单元格类型
-function resetAllFileUploadCellType() {
-  const sheet = (store.spread as any).getActiveSheet();
-  sheet.suspendPaint();
-  const rowCount = sheet.getRowCount();
-  const colCount = sheet.getColumnCount();
-  for (let i = 0; i < rowCount; i++) {
-    for (let j = 0; j < colCount; j++) {
-      resetFileUploadCellType(i, j);
-    }
-  }
-  sheet.resumePaint();
 }
