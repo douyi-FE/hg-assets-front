@@ -15,9 +15,10 @@
   import { getApplicationById } from '@/api/backend/api/application';
   import { getApplicationData, updateApplicationData } from '@/api/backend/api/applicationData';
   import { useUserStore } from '@/store/modules/user';
+  import { getTemplateDataByApplicationName } from '@/api/backend/api/templateData';
 
   const userStore = useUserStore();
-  const templateId = '67cbfd142863e20432278b59';
+  let templateId = '';
   const excelBookRef = ref();
   const excelBookKey = ref('');
   const content = ref({
@@ -29,19 +30,35 @@
   });
 
   const fetchExcel = async function () {
-    Promise.all([
-      getApplicationById(templateId),
-      getApplicationData({ templateId: templateId }),
-    ]).then(([template, applicationData]) => {
-      content.value = {
-        ejs: template.content,
-        dataSource: applicationData.applicationData,
-        fileName: template.name,
-      };
-    });
+    getTemplateDataByApplicationName({ applicationName: '咨询合同台帐' })
+      .then((res) => {
+        console.log('res', res);
+        templateId = res.templateId;
+        if (!templateId) {
+          message.error('模板ID不存在');
+          return;
+        }
+        Promise.all([
+          getApplicationById(templateId),
+          getApplicationData({ templateId: templateId }),
+        ]).then(([template, applicationData]) => {
+          content.value = {
+            ejs: template.content,
+            dataSource: applicationData.applicationData,
+            fileName: template.name,
+          };
+        });
+      })
+      .catch((err) => {
+        message.error('获取模板数据失败');
+      });
   };
 
   const saveWorkBook = function (data: any) {
+    if (!templateId) {
+      message.error('模板ID不存在');
+      return;
+    }
     updateApplicationData({
       templateId: templateId,
       userId: userStore.userInfo.id,
