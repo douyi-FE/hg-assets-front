@@ -5,6 +5,7 @@
     :content="content"
     :key="excelBookKey"
     @saveWorkBook="saveWorkBook"
+    @cellClick="cellClick"
   />
 </template>
 
@@ -57,6 +58,10 @@
 
   const saveWorkBook = function (base64: string) {
     console.log('base64', base64);
+  };
+
+  const cellClick = function (data: any) {
+    console.log('data', data);
   };
 
   onMounted(() => {

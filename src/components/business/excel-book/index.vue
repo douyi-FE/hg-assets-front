@@ -31,8 +31,8 @@
       }),
     },
   );
-  const emits = defineEmits(['saveWorkBook']);
-  let workBook: any = null;
+  const emits = defineEmits(['saveWorkBook', 'cellClick']);
+  let spread: any = null;
   const isFullscreen = ref(false);
   const currentInstance = getCurrentInstance();
 
@@ -44,8 +44,8 @@
     appEl.style.setProperty('visibility', isFullscreen.value ? 'hidden' : 'visible');
     appEl.style.setProperty('position', isFullscreen.value ? 'absolute' : 'relative');
     nextTick(() => {
-      workBook.addSheet(1, new GC.Spread.Sheets.Worksheet('custom'));
-      workBook.removeSheet(1);
+      spread.addSheet(1, new GC.Spread.Sheets.Worksheet('custom'));
+      spread.removeSheet(1);
     });
   };
 
@@ -54,8 +54,8 @@
     updateAppContainerStyle();
   };
 
-  function getSheetTableData(workBook: any) {
-    const sheet = workBook.getActiveSheet();
+  function getSheetTableData(spread: any) {
+    const sheet = spread.getActiveSheet();
     const table = sheet.tables.findByName('table');
     const tableData: any[] = [];
     let hasData = false;
@@ -89,14 +89,14 @@
       const fileBlob = new Blob([arrayBuffer], {
         type: 'application/octet-stream',
       });
-      workBook.open(
+      spread.open(
         fileBlob,
         function () {
           // clearSelections();
-          workBook.suspendPaint();
-          const sheet = workBook.getActiveSheet();
+          spread.suspendPaint();
+          const sheet = spread.getActiveSheet();
           sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
-          workBook.resumePaint();
+          spread.resumePaint();
           resolve(true);
         },
         function (e) {
@@ -107,7 +107,7 @@
   };
 
   const saveWorkBookEjs = function () {
-    workBook.save((blob) => {
+    spread.save((blob) => {
       // 将 blob 转为 Base64
       const reader = new FileReader();
       reader.readAsDataURL(blob);
@@ -122,14 +122,14 @@
   };
 
   const saveWorkBookData = function () {
-    const tableData = getSheetTableData(workBook);
+    const tableData = getSheetTableData(spread);
     emits('saveWorkBook', {
       table: tableData,
     });
   };
 
   const exportExcel = function () {
-    workBook.export((blob) => {
+    spread.export((blob) => {
       // 使用 URL 或 webkitURL
       const URL = window.URL || window.webkitURL;
       const link = document.createElement('a');
@@ -154,6 +154,24 @@
     });
   };
 
+  const registerEvent = function () {
+    console.log('registerEvent');
+    const sheet = spread.getActiveSheet();
+    sheet.bind(GC.Spread.Sheets.Events.CellClick, function (e, info) {
+      const ds = info.sheet.getDataSource().getSource();
+      var table = info.sheet.tables.findByName('table');
+      const tableRange = table.dataRange();
+      const tableCol = info.col - tableRange.col;
+      const dataField = table.getColumnDataField(tableCol);
+      emits('cellClick', {
+        row: info.row,
+        col: info.col,
+        dataField: dataField,
+        rowData: ds['table'][info.row - tableRange.row - 1],
+      });
+    });
+  };
+
   watch(
     () => props.content,
     (newVal) => {
@@ -162,7 +180,11 @@
   );
 
   onMounted(() => {
-    workBook = new GC.Spread.Sheets.Workbook('work_book_container');
+    spread = new GC.Spread.Sheets.Workbook('work_book_container');
+    // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
+    setTimeout(() => {
+      registerEvent();
+    }, 300);
   });
 </script>
 
