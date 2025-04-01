@@ -23,6 +23,7 @@
   import { xmlStr as defaultXmlStr } from './xml';
   import translations from './customTranslate';
   import customPaletteModule from './custom-modules/palette';
+  import CustomPropertiesProvider from './properties-provider/CustomPropertiesProvider'; // 导入自定义提供器
 
   const props = defineProps({
     xmlStr: {
@@ -59,6 +60,11 @@
         gridModule,
         { translate: ['value', translations] },
         customPaletteModule,
+        {
+          // 注入自定义属性提供器
+          __init__: ['customPropertiesProvider'],
+          customPropertiesProvider: ['type', CustomPropertiesProvider],
+        },
       ],
       moddleExtensions: {
         camunda: camundaModdleDescriptor,

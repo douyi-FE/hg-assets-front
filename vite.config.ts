@@ -9,7 +9,6 @@ import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import Unocss from 'unocss/vite';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import dayjs from 'dayjs';
-import mockServerPlugin from '@admin-pkg/vite-plugin-msw/vite';
 import TinymceResourcePlugin from '@admin-pkg/vite-plugin-tinymce-resource';
 import Http2Proxy from '@admin-pkg/vite-plugin-http2-proxy';
 import Inspector from 'vite-plugin-vue-inspector';
@@ -64,7 +63,6 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       }),
       // 开启 http2 代理
       Http2Proxy(),
-      mockServerPlugin({ build: isBuild && VITE_MOCK_IN_PROD === 'true' }),
       TinymceResourcePlugin({ baseUrl: '/tinymce-resource/' }),
       createSvgIconsPlugin({
         // Specify the icon folder to be cached

@@ -10,7 +10,12 @@
     />
     <template-bind
       v-model:isShowTemplateSetting="isShowTemplateSetting"
-      @bind-success="fetchExcel"
+      @bind-success="
+        () => {
+          fetchExcel();
+          isShowTemplateSetting = false;
+        }
+      "
     />
   </div>
 </template>
@@ -23,6 +28,7 @@
   import { getApplicationById } from '@/api/backend/api/application';
   import { getApplicationData } from '@/api/backend/api/applicationData';
   import { getTemplateDataByApplicationName } from '@/api/backend/api/templateData';
+  import { useUserStore } from '@/store/modules/user';
 
   const APPLICATION_NAME = '人员信息';
   let templateId = '';
@@ -36,6 +42,7 @@
     fileName: '导出数据文件.xlsx',
   });
   const isShowTemplateSetting = ref(false);
+  const userStore = useUserStore();
   const getTemplateId = async function () {
     return getTemplateDataByApplicationName({ applicationName: APPLICATION_NAME });
   };
@@ -70,7 +77,7 @@
   };
 
   const saveWorkBook = function (base64: string) {
-    console.log('base64', base64);
+    console.log('userStore.userInfo', userStore.userInfo);
   };
 
   const cellClick = function (data: any) {
