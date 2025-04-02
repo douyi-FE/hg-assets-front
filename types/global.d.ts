@@ -10,10 +10,12 @@ declare global {
   };
   const tinymce: TinyMCE;
 
-  // declare interface Window {
-  //   // Global vue app instance
-  //   __APP__: App<Element>;
-  // }
+  declare interface Window {
+    // Global vue app instance
+    __APP__: App<Element>;
+    docx: any;
+    pdfjsLib: any;
+  }
 
   // vue
   declare type PropType<T> = VuePropType<T>;

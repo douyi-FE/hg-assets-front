@@ -56,7 +56,7 @@ export function spreadToBase64() {
         const fileBlob = new Blob([blob], { type: 'application/vnd.ms-excel' });
         // 将 fileBlob 转换为 base64
         const base64 = await fileToBase64(fileBlob);
-        resolve(base64.split(',')[1]);
+        resolve((base64 as string).split(',')[1]);
       },
       function (e) {
         reject(e);

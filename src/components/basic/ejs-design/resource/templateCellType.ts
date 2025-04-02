@@ -1,11 +1,17 @@
 // 模板单元格类型
 // 结合了显示绑定路径和校验信息两个特性
-export function TemplateCellType() {
+export function TemplateCellType(this: any) {
   GC.Spread.Sheets.CellTypes.Text.call(this);
   this.typeName = 'TemplateCellType';
 }
 TemplateCellType.prototype = new GC.Spread.Sheets.CellTypes.Text();
-TemplateCellType.prototype.getHitInfo = function (x, y, cellStyle, cellRect, context) {
+TemplateCellType.prototype.getHitInfo = function (
+  x: any,
+  y: any,
+  cellStyle: any,
+  cellRect: any,
+  context: { row: any; col: any; sheetArea: any },
+) {
   const info = {
     x: x,
     y: y,
@@ -19,7 +25,16 @@ TemplateCellType.prototype.getHitInfo = function (x, y, cellStyle, cellRect, con
 };
 
 // 绘制绑定路径
-TemplateCellType.prototype.paint = function (ctx, value, x, y, w, h, style, context) {
+TemplateCellType.prototype.paint = function (
+  ctx: any,
+  value: string,
+  x: any,
+  y: any,
+  w: any,
+  h: any,
+  style: any,
+  context: { sheet: any; row: any; col: any },
+) {
   const sheet = context.sheet;
   if (sheet) {
     const bindingPath = sheet.getBindingPath(context.row, context.col);
@@ -31,7 +46,11 @@ TemplateCellType.prototype.paint = function (ctx, value, x, y, w, h, style, cont
 };
 
 // 控制数据校验错误提示的出现
-TemplateCellType.prototype.processMouseMove = function (hitInfo) {
+TemplateCellType.prototype.processMouseMove = function (hitInfo: {
+  sheet: any;
+  row: any;
+  col: any;
+}) {
   const sheet = hitInfo.sheet;
   const dv = sheet.getDataValidator(hitInfo.row, hitInfo.col);
   const val = sheet.getValue(hitInfo.row, hitInfo.col);
@@ -41,7 +60,11 @@ TemplateCellType.prototype.processMouseMove = function (hitInfo) {
   }
   return false;
 };
-TemplateCellType.prototype.processMouseLeave = function (hitInfo) {
+TemplateCellType.prototype.processMouseLeave = function (hitInfo: {
+  sheet: any;
+  row: any;
+  col: any;
+}) {
   const sheet = hitInfo.sheet;
   const dv = sheet.getDataValidator(hitInfo.row, hitInfo.col);
   if (dv) {
