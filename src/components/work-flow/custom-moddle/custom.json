@@ -1,0 +1,29 @@
+{
+  "name": "CustomProperties",
+  "prefix": "custom",
+  "uri": "http://custom/properties",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "CustomTask",
+      "extends": [
+        "bpmn:UserTask"
+      ],
+      "properties": [
+        {
+          "name": "approvalType",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "approver",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    }
+  ]
+}

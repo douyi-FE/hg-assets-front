@@ -97,7 +97,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
           eslint: {
             useFlatConfig: true,
             lintCommand:
-              'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-pattern "public/**"',
+              'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --max-warnings 5 --format compact',
           },
           overlay: {
             initialIsOpen: false,

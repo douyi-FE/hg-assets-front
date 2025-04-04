@@ -1,6 +1,6 @@
 {
-  "name": "vue3-antdv-admin",
-  "version": "2.0.0",
+  "name": "hg-all-manage",
+  "version": "1.0.0",
   "packageManager": "pnpm@9.4.0",
   "type": "module",
   "engines": {
@@ -8,7 +8,7 @@
     "pnpm": ">=9.0.2"
   },
   "author": {
-    "name": "buqiyuan",
+    "name": "chenkaihua",
     "email": "1743369777@qq.com",
     "url": "https://github.com/buqiyuan"
   },
@@ -54,9 +54,11 @@
     "camunda-bpmn-moddle": "^7.0.1",
     "crypto-js": "^4.2.0",
     "dayjs": "~1.11.13",
+    "diagram-js": "^15.2.4",
     "diagram-js-grid": "^1.1.0",
     "echarts": "^5.5.1",
     "file-saver": "~2.0.5",
+    "htm": "^3.1.1",
     "lodash-es": "~4.17.21",
     "mitt": "~3.0.1",
     "nprogress": "~1.0.0-1",

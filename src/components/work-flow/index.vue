@@ -23,7 +23,8 @@
   import { xmlStr as defaultXmlStr } from './xml';
   import translations from './customTranslate';
   import customPaletteModule from './custom-modules/palette';
-  import CustomPropertiesProvider from './properties-provider/CustomPropertiesProvider'; // 导入自定义提供器
+  import CustomPropertiesProvider from './provider/custom-task'; // 导入自定义提供器
+  import customModdleDescriptor from './custom-moddle/custom.json';
 
   const props = defineProps({
     xmlStr: {
@@ -60,14 +61,11 @@
         gridModule,
         { translate: ['value', translations] },
         customPaletteModule,
-        {
-          // 注入自定义属性提供器
-          __init__: ['customPropertiesProvider'],
-          customPropertiesProvider: ['type', CustomPropertiesProvider],
-        },
+        CustomPropertiesProvider,
       ],
       moddleExtensions: {
         camunda: camundaModdleDescriptor,
+        custom: customModdleDescriptor,
       },
     });
     createNewDiagram();
@@ -121,8 +119,6 @@
 
   const getXml = async () => {
     try {
-      const result = await bpmnModeler.saveXML({ format: true });
-      const modeler = bpmnModeler.get('moddle');
       const elementRegistry = bpmnModeler.get('elementRegistry');
 
       elementRegistry.getAll().forEach((element) => {
@@ -131,7 +127,6 @@
           element.businessObject.$type = 'bpmn:UserTask';
         }
       });
-
       return await bpmnModeler.saveXML({ format: true });
     } catch (err) {
       console.error('Error saving XML:', err);
