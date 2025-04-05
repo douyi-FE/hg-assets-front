@@ -61,7 +61,10 @@
     (newVal) => {
       try {
         elementData.value = JSON.parse(newVal);
-        console.log('elementData.value', newVal);
+        form.value = {
+          ...form.value,
+          ...elementData.value['extends'],
+        };
       } catch (error) {
         elementData.value = null;
         console.error('解析元素数据失败:', error);

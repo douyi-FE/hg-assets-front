@@ -34,6 +34,7 @@
   import { message } from 'ant-design-vue';
   import Api from '@/api';
 
+  const id = ref(undefined);
   const name = ref('');
   const note = ref('');
   const xml = ref('');
@@ -42,12 +43,15 @@
   const isRender = ref(false);
   const workFlowRef = ref<any>(null);
 
+  const emit = defineEmits(['refresh']);
+
   const openDrawer = (record: any) => {
     isOpen.value = true;
     if (record) {
       name.value = record.name;
       note.value = record.note;
       xml.value = record.xml;
+      id.value = record._id;
       type.value = 'edit';
     } else {
       type.value = 'add';
@@ -69,9 +73,12 @@
           name: name.value,
           note: note.value,
           xml: xml.xml,
+          id: id.value,
         })
         .then(() => {
           message.success('保存成功');
+          closeDrawer();
+          emit('refresh');
         });
     });
   };

@@ -24,7 +24,11 @@
         </a-button>
       </template>
     </DynamicTable>
-    <flow-drawer ref="flowDrawerRef" :form-state="{ id: '', name: '', note: '' }" />
+    <flow-drawer
+      ref="flowDrawerRef"
+      :form-state="{ id: '', name: '', note: '' }"
+      @refresh="handleRefresh"
+    />
   </div>
 </template>
 
@@ -70,6 +74,10 @@
       ],
     },
   ];
+
+  const handleRefresh = () => {
+    dynamicTableInstance?.reload();
+  };
 </script>
 
 <style lang="less" scoped>

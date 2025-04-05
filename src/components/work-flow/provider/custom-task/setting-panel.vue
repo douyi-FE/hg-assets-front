@@ -90,9 +90,10 @@
     (newVal) => {
       try {
         console.log('elementData.value', JSON.parse(newVal)['extends']);
-        elementData.value = JSON.parse(newVal)['extends'];
+        elementData.value = JSON.parse(newVal);
         form.value = {
-          ...elementData.value,
+          ...form.value,
+          ...elementData.value['extends'],
         };
       } catch (error) {
         elementData.value = null;

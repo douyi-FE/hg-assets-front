@@ -1,6 +1,7 @@
 import { defineCustomElement } from 'vue';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { html } from 'diagram-js/lib/ui/index';
+import { message } from 'ant-design-vue';
 import SettingPanel from './setting-panel.vue';
 import { eventBus } from '@/utils/event-bus';
 
@@ -75,6 +76,7 @@ function createCustomGroup(element: any, translate: any, modeling: any, bpmnFact
             modeling.updateProperties(props.element, {
               extensionElements: extensionElements, // ✅ 符合 BPMN 规范
             });
+            message.success('保存成功');
           });
 
           const elementData = {
