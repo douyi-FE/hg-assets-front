@@ -196,6 +196,8 @@ export default defineFlatConfig([
       '.idea',
       'dist/**',
       'public/**',
+      '/public/**',
+      '/public',
       '/docs',
       '.husky',
       '.local',

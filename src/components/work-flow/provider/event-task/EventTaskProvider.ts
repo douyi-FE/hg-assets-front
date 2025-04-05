@@ -8,7 +8,7 @@ const LOW_PRIORITY = 500;
 
 // 将 Vue 组件转换为 Web Component
 const MyElement = defineCustomElement(SettingPanel, { shadowRoot: false });
-customElements.define('custom-task', MyElement);
+customElements.define('event-task', MyElement);
 
 function isJsonString(str: string): boolean {
   try {
@@ -56,17 +56,17 @@ function createExtensionElements(bpmnFactory, payload = {}) {
   return extensionElements;
 }
 
-function createCustomGroup(element: any, translate: any, modeling: any, bpmnFactory: any) {
-  const customGroup = {
-    id: 'custom_task',
-    label: translate('任务配置'),
+function createMagicGroup(element: any, translate: any, modeling: any, bpmnFactory: any) {
+  const eventGroup = {
+    id: 'event_task',
+    label: translate('事件配置'),
     entries: [
       {
-        id: 'custom_task',
+        id: 'event_task',
         element: element,
         component: (props: any) => {
-          eventBus.off(`bpmn-action-${props.element.id}`);
-          eventBus.on(`bpmn-action-${props.element.id}`, (event: any) => {
+          eventBus.off(`bpmn-action-event-task-${props.element.id}`);
+          eventBus.on(`bpmn-action-event-task-${props.element.id}`, (event: any) => {
             console.log('收到事件:', modeling, event.payload);
             // 1. 创建 ExtensionElements 容器
             const extensionElements = createExtensionElements(bpmnFactory, event.payload);
@@ -82,17 +82,17 @@ function createCustomGroup(element: any, translate: any, modeling: any, bpmnFact
             extends: convertExtensionsToObject(props.element.di.bpmnElement.extensionElements),
           };
 
-          return html`<custom-task element="${JSON.stringify(elementData)}"></custom-task>`;
+          return html`<event-task element="${JSON.stringify(elementData)}"></event-task>`;
         },
         isEdited: () => false,
       },
     ],
   };
 
-  return customGroup;
+  return eventGroup;
 }
 
-export default function CustomPropertiesProvider(this: any, injector: any) {
+export default function EventTaskProvider(this: any, injector: any) {
   const modeling = injector.get('modeling');
   const bpmnFactory = injector.get('bpmnFactory');
   const translate = injector.get('translate');
@@ -101,7 +101,7 @@ export default function CustomPropertiesProvider(this: any, injector: any) {
     return function (groups: any) {
       // Add the "magic" group
       if (is(element, 'bpmn:UserTask')) {
-        groups.push(createCustomGroup(element, translate, modeling, bpmnFactory));
+        groups.push(createMagicGroup(element, translate, modeling, bpmnFactory));
       }
 
       return groups;
@@ -110,4 +110,4 @@ export default function CustomPropertiesProvider(this: any, injector: any) {
   propertiesPanel.registerProvider(LOW_PRIORITY, this);
 }
 
-CustomPropertiesProvider.$inject = ['injector'];
+EventTaskProvider.$inject = ['injector'];

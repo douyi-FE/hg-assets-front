@@ -2,40 +2,29 @@
   <div class="bpmn-vue-container">
     <a-form ref="formRef" :model="form" layout="vertical" :rules="rules">
       <a-form-item label="审批类型" name="approvalType">
-        <a-select v-model:value="form.approvalType" placeholder="请选择审批类型">
-          <a-select-option value="1">普通审批</a-select-option>
-        </a-select>
+        <a-radio-group v-model:value="form.approvalType">
+          <a-radio :value="1">普通审批</a-radio>
+        </a-radio-group>
       </a-form-item>
-      <a-form-item label="审批人" required>
-        <a-space direction="vertical" style="width: 100%">
-          <a-space-compact block>
-            <a-form-item name="approverRole" no-style>
-              <a-select
-                v-model:value="form.approverRole"
-                placeholder="请选择审批角色"
-                mode="multiple"
-              >
-                <a-select-option value="1">直属领导</a-select-option>
-                <a-select-option value="2">部门领导</a-select-option>
-              </a-select>
-            </a-form-item>
-            <a-form-item name="approverUser" no-style>
-              <a-select
-                v-model:value="form.approverUser"
-                placeholder="请选择审批人"
-                mode="multiple"
-              >
-                <a-select-option value="1">张三</a-select-option>
-                <a-select-option value="2">李四</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-space-compact>
-        </a-space>
+      <a-form-item name="approverRole" label="审批角色">
+        <a-radio-group v-model:value="form.approverRole">
+          <a-radio :value="0">自身</a-radio>
+          <a-radio :value="1">直属领导</a-radio>
+          <a-radio :value="2">指定部门</a-radio>
+          <a-radio :value="3" disabled>指定审批人</a-radio>
+        </a-radio-group>
+      </a-form-item>
+      <a-form-item name="approverDepartment" label="审批部门" v-if="form.approverRole === 2">
+        <a-tree-select
+          v-model:value="form.approverDepartment"
+          placeholder="请选择审批部门"
+          :tree-data="treeData"
+        />
       </a-form-item>
       <a-form-item label="驳回处理方式" name="rejectType">
         <a-radio-group v-model:value="form.rejectType">
-          <a-radio value="1">直接结束</a-radio>
-          <a-radio value="2" disabled>返回上节点</a-radio>
+          <a-radio :value="1">直接结束</a-radio>
+          <a-radio :value="2" disabled>返回上节点</a-radio>
         </a-radio-group>
       </a-form-item>
       <a-form-item>
@@ -46,9 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch, onUnmounted, toRaw } from 'vue';
+  import { ref, watch, onUnmounted, toRaw, onMounted } from 'vue';
   import { Button } from 'ant-design-vue';
   import { eventBus } from '@/utils/event-bus';
+  import { deptList } from '@/api/backend/api/systemDept';
 
   const AButton = Button;
 
@@ -71,16 +61,17 @@
   const elementData = ref<any>(null);
   const formRef = ref<any>(null);
   const form = ref({
-    approvalType: undefined,
-    approverRole: [],
-    approverUser: [],
-    rejectType: '1',
+    approvalType: 1,
+    approverRole: 1,
+    approverDepartment: undefined,
+    rejectType: 1,
   });
+  const treeData = ref<any>([]);
   const rules = {
     approverRole: [{ required: true, message: '请选择审批角色' }],
-    approverUser: [{ required: true, message: '请选择审批人' }],
     approvalType: [{ required: true, message: '请选择审批类型' }],
     rejectType: [{ required: true, message: '请选择驳回处理方式' }],
+    approverDepartment: [{ required: true, message: '请选择审批部门' }],
   };
 
   const handleClick = () => {
@@ -98,8 +89,11 @@
     () => props.element,
     (newVal) => {
       try {
-        elementData.value = JSON.parse(newVal);
-        console.log('elementData.value', newVal);
+        console.log('elementData.value', JSON.parse(newVal)['extends']);
+        elementData.value = JSON.parse(newVal)['extends'];
+        form.value = {
+          ...elementData.value,
+        };
       } catch (error) {
         elementData.value = null;
         console.error('解析元素数据失败:', error);
@@ -107,6 +101,26 @@
     },
     { immediate: true },
   );
+
+  // 获取部门列表
+  const getDepartmentList = () => {
+    deptList({}).then((res) => {
+      treeData.value = res.map((item) => ({
+        title: item.name,
+        value: item.id,
+        key: item.id,
+        children: item.children?.map((child) => ({
+          title: child.name,
+          value: child.id,
+          key: child.id,
+        })),
+      }));
+    });
+  };
+
+  onMounted(() => {
+    getDepartmentList();
+  });
 
   onUnmounted(() => {
     elementData.value = null;

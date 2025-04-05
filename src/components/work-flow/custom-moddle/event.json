@@ -1,0 +1,22 @@
+{
+  "name": "EventProperties",
+  "prefix": "event",
+  "uri": "http://event/properties",
+  "xml": {
+    "tagAlias": "lowerCase"
+  },
+  "associations": [],
+  "types": [
+    {
+      "name": "EventTask",
+      "extends": ["bpmn:UserTask"],
+      "properties": [
+        {
+          "name": "eventType",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    }
+  ]
+}

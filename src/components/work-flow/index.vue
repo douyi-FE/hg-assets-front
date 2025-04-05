@@ -25,6 +25,8 @@
   import customPaletteModule from './custom-modules/palette';
   import CustomPropertiesProvider from './provider/custom-task'; // 导入自定义提供器
   import customModdleDescriptor from './custom-moddle/custom.json';
+  import EventTaskProvider from './provider/event-task'; // 导入自定义提供器
+  import eventModdleDescriptor from './custom-moddle/event.json';
 
   const props = defineProps({
     xmlStr: {
@@ -62,10 +64,12 @@
         { translate: ['value', translations] },
         customPaletteModule,
         CustomPropertiesProvider,
+        EventTaskProvider,
       ],
       moddleExtensions: {
         camunda: camundaModdleDescriptor,
         custom: customModdleDescriptor,
+        event: eventModdleDescriptor,
       },
     });
     createNewDiagram();
