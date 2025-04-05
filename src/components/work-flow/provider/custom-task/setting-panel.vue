@@ -8,7 +8,7 @@
       </a-form-item>
       <a-form-item name="approverRole" label="审批角色">
         <a-radio-group v-model:value="form.approverRole">
-          <a-radio :value="0">自身</a-radio>
+          <a-radio :value="userStore.userInfo.id">自身</a-radio>
           <a-radio :value="1">直属领导</a-radio>
           <a-radio :value="2">指定部门</a-radio>
           <a-radio :value="3" disabled>指定审批人</a-radio>
@@ -39,8 +39,10 @@
   import { Button } from 'ant-design-vue';
   import { eventBus } from '@/utils/event-bus';
   import { deptList } from '@/api/backend/api/systemDept';
+  import { useUserStore } from '@/store/modules/user';
 
   const AButton = Button;
+  const userStore = useUserStore();
 
   const props = defineProps({
     element: {
