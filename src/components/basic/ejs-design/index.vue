@@ -136,7 +136,7 @@
       openPreviewFile.value = true;
     });
     initSpread();
-    initUploadFile();
+    initUploadFile(store.spread);
   });
 
   onUnmounted(() => {

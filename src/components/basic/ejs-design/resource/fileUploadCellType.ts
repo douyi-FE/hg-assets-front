@@ -8,7 +8,7 @@ import Api from '@/api/';
 import { eventBus } from '@/utils/event-bus';
 
 // 文件上传单元格类型
-function FileUploadCellType(this: any) {
+export function FileUploadCellType(this: any) {
   GC.Spread.Sheets.CellTypes.HyperLink.apply(this, arguments);
   this.typeName = 'FileUploadCellType';
   this.text(store.emptyText);
@@ -62,9 +62,11 @@ FileUploadCellType.prototype.paint = function (ctx, val, x, y, w, h, style, cont
   }
 };
 
+window.FileUploadCellType = FileUploadCellType;
+
 // 设置附件列
-export function setAttachColumn(range, bindingPath = 'fileAttach') {
-  const sheet = (store.spread as any).getActiveSheet();
+export function setAttachColumn(spread, range, bindingPath = 'fileAttach') {
+  const sheet = spread.getActiveSheet();
   // 未绑定的表格不允许设置附件
   if (!store.bindingPaths[store.tableName]) {
     message.error('请先设置绑定');
@@ -78,8 +80,8 @@ export function setAttachColumn(range, bindingPath = 'fileAttach') {
   }
   const tableRange = table.dataRange();
   if (tableRange.contains(range.row, range.col)) {
-    // 设置表格绑定列
-    table.setColumnDataField(range.col, '上传附件');
+    // 设置表格绑定列(后缀两位随机字符)
+    table.setColumnDataField(range.col, '上传附件' + Math.random().toString(36).substring(2, 15));
     // 为每一行设置表格单元格类型
     const rowCount = tableRange.rowCount;
     sheet.suspendPaint();
@@ -122,8 +124,8 @@ export function setAttachColumn(range, bindingPath = 'fileAttach') {
 }
 
 // 针对 tableRowChanged 的单元格类型设置
-export function setTableRowChangedCellType(range) {
-  const sheet = (store.spread as any).getActiveSheet();
+export function setTableRowChangedCellType(spread, range) {
+  const sheet = spread.getActiveSheet();
   const row = range.row;
   const col = range.col;
   const rowCount = range.rowCount;
@@ -141,7 +143,7 @@ export function setTableRowChangedCellType(range) {
 }
 
 // 上传文件点击事件
-function fileUploadEvent(args) {
+export function fileUploadEvent(args) {
   const row = args.row;
   const col = args.col;
   const sheet = args.sheet;
@@ -177,11 +179,11 @@ function fileUploadEvent(args) {
       });
     };
     const deleteFile = (val) => {
-      const sheet = (store.spread as any).getActiveSheet();
+      const sheet = args.sheet;
       // 重新设置val
       sheet.setValue(row, col, val);
       // 重置单元格类型内容
-      resetFileUploadCellType(row, col);
+      resetFileUploadCellType(sheet.getParent(), row, col);
       // 重绘
       sheet.repaint();
     };
@@ -209,7 +211,7 @@ function fileUploadEvent(args) {
 }
 
 // 初始化模板中已经设置的上传文件单元格
-export async function initUploadFile() {
+export async function initUploadFile(spread) {
   document
     .getElementById('uploadFileInput')
     ?.addEventListener('change', async function (event: any) {
@@ -223,7 +225,7 @@ export async function initUploadFile() {
         // 本次上传的数据
         const uploadFiles: any[] = [];
         // 当前单元格的值 —— 追加数据
-        const sheet = (store.spread as any).getActiveSheet();
+        const sheet = spread.getActiveSheet();
         let val = sheet.getValue(row, col);
         // 如果val为空，则初始化val为[]
         if (!val) {
@@ -267,7 +269,7 @@ export async function initUploadFile() {
           });
 
           // 上传成功后回显
-          const sheet = (store.spread as any).getActiveSheet();
+          const sheet = spread.getActiveSheet();
           sheet.setValue(row, col, val);
           message.success('上传成功');
           // 更新附件列表数据
@@ -350,8 +352,8 @@ async function getFileById(fileId) {
 }
 
 // 重置上传文件单元格类型
-function resetFileUploadCellType(row, col) {
-  const sheet = (store.spread as any).getActiveSheet();
+function resetFileUploadCellType(spread, row, col) {
+  const sheet = spread.getActiveSheet();
   // 如果 row 和 col 为数字，则转换为行和列
   if (typeof row !== 'number' && typeof col !== 'number') {
     row = sheet.getActiveRowIndex();

@@ -14,7 +14,7 @@ export function tableRowChanged() {
       // 默认从前插入行，没有开放从后边插入行
       // const isAfter = data.isAfter;
       // 插入行后，自动带入列设置
-      setTableRows(sheet, table.dataRange(), fromRow, row, count);
+      setTableRows(store.spread, sheet, table.dataRange(), fromRow, row, count);
     }
   });
   (store.spread as any).bind(GC.Spread.Sheets.Events.TableResized, function (e, data) {
@@ -23,7 +23,7 @@ export function tableRowChanged() {
   });
 }
 
-function setTableRows(sheet, tableRange, fromRow, row, rowCount) {
+function setTableRows(spread, sheet, tableRange, fromRow, row, rowCount) {
   sheet.suspendPaint();
   const tableStartRow = tableRange.row;
   const col = tableRange.col;
@@ -57,7 +57,7 @@ function setTableRows(sheet, tableRange, fromRow, row, rowCount) {
     } else {
       // 如果是超链接（文件上传下载）
       for (let r = row; r < row + rowCount; r++) {
-        setTableRowChangedCellType(sheet.getRange(tableStartRow + r, c, 1, 1));
+        setTableRowChangedCellType(spread, sheet.getRange(tableStartRow + r, c, 1, 1));
       }
     }
   }

@@ -14,7 +14,7 @@ export function handleRangeValue(range, selectType, area) {
       break;
     case 'fileAttach':
       (store.spread as any).suspendPaint();
-      setAttachColumn(range);
+      setAttachColumn(store.spread, range);
       (store.spread as any).resumePaint();
       break;
     default:

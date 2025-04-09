@@ -8,16 +8,125 @@
           <FullscreenOutlined v-if="!isFullscreen" @click="toggleFullscreen" />
           <FullscreenExitOutlined v-else @click="toggleFullscreen" />
         </div>
+        <input id="uploadFileInput" type="file" style="display: none" multiple />
         <div id="work_book_container" class="work-book-container" />
       </div>
     </Teleport>
   </div>
+
+  <!-- 附件列表模态框v2 -->
+  <a-modal
+    v-model:open="openAttachList"
+    title="附件列表"
+    width="800px"
+    :destroyOnClose="true"
+    :footer="false"
+  >
+    <div style="display: flex; gap: 10px; padding-bottom: 10px">
+      <a-button type="primary" @click="uploadAttachFile">添加附件</a-button>
+      <a-button @click="downloadAttachAll">下载全部</a-button>
+    </div>
+    <a-table
+      :columns="attachListColumns"
+      :dataSource="attachListData"
+      :pagination="false"
+      style="height: calc(100vh - 600px)"
+    >
+      <template #bodyCell="{ column, record, index }">
+        <template v-if="column.dataIndex === 'fileTime'">
+          <span>{{ dayjs(record.fileTime).format('YYYY-MM-DD HH:mm:ss') }}</span>
+        </template>
+        <template v-if="column.dataIndex === 'fileSize'">
+          <span>{{ (record.fileSize / 1024).toFixed(2) + 'KB' }}</span>
+        </template>
+        <template v-if="column.dataIndex === 'action'">
+          <a-button type="link" @click="previewFile(record.fileId)">预览</a-button>
+          <a-button type="link" @click="downloadFile(record)">下载</a-button>
+          <a-popconfirm
+            v-if="isFilling"
+            title="确定删除该附件吗？"
+            @confirm="deleteFile(record.fileId, index)"
+            @cancel="() => {}"
+          >
+            <a-button type="link">删除</a-button>
+          </a-popconfirm>
+        </template>
+      </template>
+    </a-table>
+  </a-modal>
+
+  <!-- 文件预览模态框v2 -->
+  <a-modal
+    v-model:open="openPreviewFile"
+    title="文件预览"
+    width="60%"
+    :destroyOnClose="true"
+    :footer="false"
+    wrapClassName="viewContainer"
+  >
+    <div id="viewContainer" style="height: calc(100vh - 600px)" />
+  </a-modal>
 </template>
 
 <script setup lang="ts">
   import { getCurrentInstance, nextTick, onMounted, ref, toRaw, watch } from 'vue';
+  import dayjs from 'dayjs';
   import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
-  import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
+  import { message } from 'ant-design-vue';
+  import Api from '@/api';
+  import {
+    base64ToArrayBuffer,
+    base64ToBlob,
+  } from '@/components/basic/ejs-design/resource/commonFunctions';
+  import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
+  import { eventBus } from '@/utils/event-bus';
+  import { attachListColumns } from '@/components/basic/ejs-design/config';
+  const openAttachList = ref(false);
+  const openPreviewFile = ref(false);
+  const attachListData = ref<any[]>([]);
+  const isFilling = ref(true);
+  /********附件列表模态框v2-begin *********/
+  const uploadAttachFile = () => {
+    eventBus.emit('addAttach');
+  };
+
+  const downloadAttachAll = () => {
+    eventBus.emit('downloadAll', attachListData.value);
+  };
+  const previewFile = (fileId: string) => {
+    eventBus.emit('previewFile', fileId);
+  };
+  const downloadFile = async (record: any) => {
+    // 下载文件
+    const response = await Api.templateAttach.download({
+      fileId: record.fileId,
+    });
+    if (response && response._doc) {
+      const file = await response._doc.fileContent;
+      const fileBlob = base64ToBlob(file);
+      const fileName = record.originalFileName;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(fileBlob);
+      a.download = fileName;
+      a.click();
+    } else {
+      message.error('下载失败');
+    }
+  };
+  const deleteFile = async (fileId: string, index: number) => {
+    try {
+      await Api.templateAttach.deleteFile({
+        fileId: fileId,
+      });
+      attachListData.value.splice(index, 1);
+      eventBus.emit('deleteFile', attachListData.value);
+      message.success('删除成功');
+    } catch (error) {
+      message.error('删除失败');
+    }
+  };
+
+  /********附件列表模态框v2-end *********/
 
   const props = withDefaults(
     defineProps<{ content: { ejs: string; dataSource: any; fileName: string } }>(),
@@ -97,6 +206,7 @@
           const sheet = spread.getActiveSheet();
           sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
           spread.resumePaint();
+          initUploadFile(spread);
           resolve(true);
         },
         function (e) {
@@ -183,6 +293,17 @@
     spread = new GC.Spread.Sheets.Workbook('work_book_container');
     // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
     setTimeout(() => {
+      eventBus.on('openAttachList', () => {
+        console.log('openAttachList');
+        openAttachList.value = true;
+      });
+      eventBus.on('setAttachListData', (data: any[]) => {
+        console.log('setAttachListData', data);
+        attachListData.value = [...data];
+      });
+      eventBus.on('openPreviewFileModal', () => {
+        openPreviewFile.value = true;
+      });
       registerEvent();
     }, 300);
   });
@@ -192,20 +313,21 @@
   .work-book-container {
     height: 100%;
   }
+
   .work-book-content {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    height: 100%;
     background: #f5f5f5;
 
     .work-book-operator {
-      padding: 10px;
       display: flex;
-      justify-content: flex-end;
       align-items: center;
-      gap: 10px;
-      background-color: #fff;
+      justify-content: flex-end;
       margin-bottom: 10px;
+      padding: 10px;
+      background-color: #fff;
+      gap: 10px;
     }
 
     .work-book-container {
