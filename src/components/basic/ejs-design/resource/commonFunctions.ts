@@ -315,5 +315,5 @@ export function getInitDataSource() {
 
 // 生成 UUID 方法
 export function generateUUID() {
-  return crypto.randomUUID();
+  return Math.random().toString(36).substring(2, 15);
 }
