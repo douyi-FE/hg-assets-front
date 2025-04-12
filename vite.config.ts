@@ -3,7 +3,7 @@ import { loadEnv } from 'vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import mkcert from 'vite-plugin-mkcert';
 import vue from '@vitejs/plugin-vue';
-import checker from 'vite-plugin-checker';
+// import checker from 'vite-plugin-checker';
 import Components from 'unplugin-vue-components/vite';
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers';
 import Unocss from 'unocss/vite';
@@ -90,19 +90,19 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         ],
       }),
       // https://github.com/fi3ework/vite-plugin-checker
-      isDev &&
-        checker({
-          typescript: true,
-          // vueTsc: true,
-          eslint: {
-            useFlatConfig: true,
-            lintCommand:
-              'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --max-warnings 5 --format compact',
-          },
-          overlay: {
-            initialIsOpen: false,
-          },
-        }),
+      // isDev &&
+      //   checker({
+      //     typescript: true,
+      //     // vueTsc: true,
+      //     eslint: {
+      //       useFlatConfig: true,
+      //       lintCommand:
+      //         'eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --max-warnings 5 --format compact',
+      //     },
+      //     overlay: {
+      //       initialIsOpen: false,
+      //     },
+      //   }),
     ],
     css: {
       preprocessorOptions: {

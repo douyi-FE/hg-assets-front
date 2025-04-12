@@ -5,6 +5,7 @@ dist
 .turbo
 .nx
 .nx/cache
+.cert
 
 tests/server/static
 tests/server/static/upload
