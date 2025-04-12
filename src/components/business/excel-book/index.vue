@@ -3,6 +3,7 @@
     <Teleport to="body" :disabled="!isFullscreen">
       <div class="work-book-content">
         <div class="work-book-operator">
+          <DeptSelecter />
           <a-button type="primary" @click="exportExcel">导出</a-button>
           <a-button type="primary" @click="saveWorkBookData">保存</a-button>
           <FullscreenOutlined v-if="!isFullscreen" @click="toggleFullscreen" />
@@ -165,30 +166,6 @@
 
   function getSheetTableData(spread: any) {
     const sheet = spread.getActiveSheet();
-    // const table = sheet.tables.findByName('table');
-    // const tableData: any[] = [];
-    // let hasData = false;
-    // if (table) {
-    //   const dataRange = table.dataRange();
-    //   const data = sheet.getArray(
-    //     dataRange.row,
-    //     dataRange.col,
-    //     dataRange.rowCount,
-    //     dataRange.colCount,
-    //   );
-    //   if (data.length > 0) {
-    //     for (let i = 0; i < data.length; i++) {
-    //       const item = {};
-    //       for (let j = 0; j < data[i].length; j++) {
-    //         if (data[i][j]) {
-    //           hasData = true;
-    //         }
-    //         item[table.getColumnDataField(j)] = data[i][j];
-    //       }
-    //       tableData.push(item);
-    //     }
-    //   }
-    // }
     return sheet.getDataSource().getSource();
   }
 

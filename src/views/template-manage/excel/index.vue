@@ -115,6 +115,7 @@
             icon: 'default',
             content: record.file,
             description: record.note,
+            initDataSource: (record as any).initDataSource,
           }),
           Api.applicationData.saveApplicationData({
             templateId: record._id,

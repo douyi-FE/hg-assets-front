@@ -5,6 +5,7 @@
       :key="excelBookKey"
       class="excel-book"
       :content="content"
+      :dataSource="dataSource"
       @saveWorkBook="saveWorkBook"
       @cellClick="cellClick"
     />
@@ -28,7 +29,7 @@
   import { getApplicationById } from '@/api/backend/api/application';
   import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
   import { useUserStore } from '@/store/modules/user';
-
+  import { eventBus } from '@/utils/event-bus';
   const APPLICATION_NAME = '电气仪表-工程量计算书';
   const APPLICATION_ID = '67f9f22c572177c961d2062b';
   let templateId = '';
@@ -37,9 +38,13 @@
   const content = ref({
     ejs: '',
     dataSource: {
-      table: [],
+      table: [[]],
     },
     fileName: '导出数据文件.xlsx',
+  });
+  const deptId = ref<number>(0);
+  const dataSource = ref({
+    table: [[]],
   });
   const isShowTemplateSetting = ref(false);
   const userStore = useUserStore();
@@ -57,12 +62,13 @@
         }
         Promise.all([
           getApplicationById(templateId),
-          getApplicationData({ templateId: templateId }),
+          getApplicationData({ templateId: templateId, deptId: deptId.value }),
         ])
           .then(([template, applicationData]) => {
+            dataSource.value = template.initDataSource;
             content.value = {
               ejs: template.content,
-              dataSource: applicationData.applicationData,
+              dataSource: applicationData?.applicationData || dataSource,
               fileName: template.name,
             };
           })
@@ -80,7 +86,8 @@
     saveApplicationData({
       templateId: APPLICATION_ID,
       userId: userStore.userInfo.id,
-      applicationData: data,
+      deptId: deptId.value,
+      applicationData: data || dataSource.value,
     })
       .then((res) => {
         message.success('保存数据成功');
@@ -96,7 +103,14 @@
 
   onMounted(() => {
     fetchExcel();
+    deptId.value = userStore.userInfo.dept?.id;
+    eventBus.on('deptChange', handleDeptChange);
   });
+
+  const handleDeptChange = function (_deptId: number) {
+    deptId.value = _deptId;
+    fetchExcel();
+  };
 </script>
 
 <style lang="less" scoped>

@@ -70,6 +70,7 @@
           icon: 'default',
           content: file,
           description: '',
+          initDataSource,
         }),
         saveApplicationData({
           templateId: id,
