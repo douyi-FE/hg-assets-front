@@ -8,13 +8,17 @@
       </a-form-item>
       <a-form-item name="approverRole" label="审批角色">
         <a-radio-group v-model:value="form.approverRole">
-          <a-radio :value="userStore.userInfo.id">自身</a-radio>
-          <a-radio :value="1">直属领导</a-radio>
-          <a-radio :value="2">指定部门</a-radio>
-          <a-radio :value="3" disabled>指定审批人</a-radio>
+          <a-radio value="self">自身</a-radio>
+          <a-radio value="leader">直属领导</a-radio>
+          <a-radio value="department">指定部门</a-radio>
+          <a-radio value="approver">指定审批人</a-radio>
         </a-radio-group>
       </a-form-item>
-      <a-form-item name="approverDepartment" label="审批部门" v-if="form.approverRole === 2">
+      <a-form-item
+        name="approverDepartment"
+        label="审批部门"
+        v-if="form.approverRole === 'department'"
+      >
         <a-tree-select
           v-model:value="form.approverDepartment"
           placeholder="请选择审批部门"
@@ -64,7 +68,7 @@
   const formRef = ref<any>(null);
   const form = ref({
     approvalType: 1,
-    approverRole: 1,
+    approverRole: 'self',
     approverDepartment: undefined,
     rejectType: 1,
   });

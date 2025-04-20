@@ -34,6 +34,7 @@ import * as flowDesign from './flowDesign';
 import * as application from './application';
 import * as applicationData from './applicationData';
 import * as invoice from './invoice';
+import * as leave from './leave';
 export default {
   auth,
   account,
@@ -67,4 +68,5 @@ export default {
   application,
   applicationData,
   invoice,
+  leave,
 };

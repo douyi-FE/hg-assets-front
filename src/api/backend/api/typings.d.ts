@@ -1293,4 +1293,15 @@ declare namespace API {
     updateAt: string;
     file: string;
   };
+
+  interface LeaveListItem {
+    approverStatus: string;
+    id: string; // ID
+    leaveType: string; // 休假类型 (Annual Leave/Sick Leave/Personal Leave)
+    startDate: string; // 开始日期
+    endDate: string; // 结束日期
+    duration: number; // 请假天数
+    reason: string; // 请假原因
+    status: string; // 审批状态 (Pending/Approved/Rejected)
+  }
 }
