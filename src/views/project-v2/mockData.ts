@@ -1,0 +1,26 @@
+export const projectMockData = [
+  {
+    index: 1,
+    project_name: '项目A',
+    project_code: 'PROJ-001',
+    contract_name: '项目A合同',
+    contract_party_a: '甲方公司A',
+    contract_party_b: '乙方公司A',
+    industry: '制造业',
+    sign_date: '2024-01-15',
+    contract_amount: 1000000,
+    operation: '查看',
+  },
+  {
+    index: 2,
+    project_name: '项目B',
+    project_code: 'PROJ-002',
+    contract_name: '项目B合同',
+    contract_party_a: '甲方公司B',
+    contract_party_b: '乙方公司B',
+    industry: '建筑业',
+    sign_date: '2024-02-20',
+    contract_amount: 2000000,
+    operation: '查看',
+  },
+];

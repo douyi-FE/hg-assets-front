@@ -35,6 +35,7 @@ import * as application from './application';
 import * as applicationData from './applicationData';
 import * as invoice from './invoice';
 import * as leave from './leave';
+import * as project from './project';
 export default {
   auth,
   account,
@@ -69,4 +70,5 @@ export default {
   applicationData,
   invoice,
   leave,
+  project,
 };
