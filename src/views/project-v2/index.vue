@@ -3,7 +3,7 @@
     <a-table
       :columns="projectColumns"
       :data-source="projectDataSource"
-      row-key="code"
+      row-key="_id"
       @expand="
         (expanded, record) => {
           record.childred = fetchDeviceData(record.project_code);
