@@ -52,7 +52,7 @@
         <slot name="expandTable" :row="record" />
       </template>
     </a-table>
-    <a-modal v-model:open="open" title="Basic Modal" @ok="handleOk()">
+    <a-modal v-model:open="open" title="装置信息" @ok="handleOk()">
       <DeviceForm ref="deviceFormRef" :device="currentDevice" />
     </a-modal>
   </div>
