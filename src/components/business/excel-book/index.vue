@@ -13,60 +13,60 @@
         <div id="work_book_container" class="work-book-container" />
       </div>
     </Teleport>
-  </div>
 
-  <!-- 附件列表模态框v2 -->
-  <a-modal
-    v-model:open="openAttachList"
-    title="附件列表"
-    width="800px"
-    :destroyOnClose="true"
-    :footer="false"
-  >
-    <div style="display: flex; gap: 10px; padding-bottom: 10px">
-      <a-button type="primary" @click="uploadAttachFile">添加附件</a-button>
-      <a-button @click="downloadAttachAll">下载全部</a-button>
-    </div>
-    <a-table
-      :columns="attachListColumns"
-      :dataSource="attachListData"
-      :pagination="false"
-      style="height: calc(100vh - 600px)"
+    <!-- 附件列表模态框v2 -->
+    <a-modal
+      v-model:open="openAttachList"
+      title="附件列表"
+      width="800px"
+      :destroyOnClose="true"
+      :footer="false"
     >
-      <template #bodyCell="{ column, record, index }">
-        <template v-if="column.dataIndex === 'fileTime'">
-          <span>{{ dayjs(record.fileTime).format('YYYY-MM-DD HH:mm:ss') }}</span>
+      <div style="display: flex; gap: 10px; padding-bottom: 10px">
+        <a-button type="primary" @click="uploadAttachFile">添加附件</a-button>
+        <a-button @click="downloadAttachAll">下载全部</a-button>
+      </div>
+      <a-table
+        :columns="attachListColumns"
+        :dataSource="attachListData"
+        :pagination="false"
+        style="height: calc(100vh - 600px)"
+      >
+        <template #bodyCell="{ column, record, index }">
+          <template v-if="column.dataIndex === 'fileTime'">
+            <span>{{ dayjs(record.fileTime).format('YYYY-MM-DD HH:mm:ss') }}</span>
+          </template>
+          <template v-if="column.dataIndex === 'fileSize'">
+            <span>{{ (record.fileSize / 1024).toFixed(2) + 'KB' }}</span>
+          </template>
+          <template v-if="column.dataIndex === 'action'">
+            <a-button type="link" @click="previewFile(record.fileId)">预览</a-button>
+            <a-button type="link" @click="downloadFile(record)">下载</a-button>
+            <a-popconfirm
+              v-if="isFilling"
+              title="确定删除该附件吗？"
+              @confirm="deleteFile(record.fileId, index)"
+              @cancel="() => {}"
+            >
+              <a-button type="link">删除</a-button>
+            </a-popconfirm>
+          </template>
         </template>
-        <template v-if="column.dataIndex === 'fileSize'">
-          <span>{{ (record.fileSize / 1024).toFixed(2) + 'KB' }}</span>
-        </template>
-        <template v-if="column.dataIndex === 'action'">
-          <a-button type="link" @click="previewFile(record.fileId)">预览</a-button>
-          <a-button type="link" @click="downloadFile(record)">下载</a-button>
-          <a-popconfirm
-            v-if="isFilling"
-            title="确定删除该附件吗？"
-            @confirm="deleteFile(record.fileId, index)"
-            @cancel="() => {}"
-          >
-            <a-button type="link">删除</a-button>
-          </a-popconfirm>
-        </template>
-      </template>
-    </a-table>
-  </a-modal>
+      </a-table>
+    </a-modal>
 
-  <!-- 文件预览模态框v2 -->
-  <a-modal
-    v-model:open="openPreviewFile"
-    title="文件预览"
-    width="60%"
-    :destroyOnClose="true"
-    :footer="false"
-    wrapClassName="viewContainer"
-  >
-    <div id="viewContainer" style="height: calc(100vh - 600px)" />
-  </a-modal>
+    <!-- 文件预览模态框v2 -->
+    <a-modal
+      v-model:open="openPreviewFile"
+      title="文件预览"
+      width="60%"
+      :destroyOnClose="true"
+      :footer="false"
+      wrapClassName="viewContainer"
+    >
+      <div id="viewContainer" style="height: calc(100vh - 600px)" />
+    </a-modal>
+  </div>
 </template>
 
 <script setup lang="ts">

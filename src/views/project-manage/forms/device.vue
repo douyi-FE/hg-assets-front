@@ -1,0 +1,55 @@
+<template>
+  <a-form
+    ref="deviceFormRef"
+    :model="formState"
+    :rules="rules"
+    :label-col="{ span: 6 }"
+    :wrapper-col="{ span: 18 }"
+  >
+    <!-- 隐藏id -->
+    <a-form-item name="id" hidden>
+      <a-input v-model:value="formState.id" />
+    </a-form-item>
+    <a-form-item name="name" label="装置名称">
+      <a-input v-model:value="formState.name" placeholder="请输入装置名称" />
+    </a-form-item>
+    <a-form-item name="code" label="装置编码">
+      <a-input v-model:value="formState.code" placeholder="请输入装置编码" />
+    </a-form-item>
+  </a-form>
+</template>
+
+<script setup lang="ts">
+  import { ref, defineProps, defineExpose, watch, toRaw } from 'vue';
+  import { cloneDeep } from 'lodash-es';
+  const props = defineProps<{
+    device: any;
+  }>();
+
+  const deviceFormRef = ref();
+  const rules = {
+    name: [{ required: true, message: '请输入装置名称' }],
+    code: [{ required: true, message: '请输入装置编码' }],
+  };
+  const formState = ref({
+    id: undefined,
+    name: '',
+    code: '',
+  });
+
+  watch(
+    () => props.device,
+    (newVal) => {
+      formState.value = cloneDeep(toRaw(newVal));
+    },
+    {
+      immediate: true,
+    },
+  );
+
+  defineExpose({
+    getData() {
+      return deviceFormRef.value.validate();
+    },
+  });
+</script>

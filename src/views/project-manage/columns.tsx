@@ -15,43 +15,35 @@ export const projectColumns: TableColumnItem[] = [
   },
   {
     title: '项目名称',
-    dataIndex: 'project_name',
+    dataIndex: '项目名称',
   },
   {
     title: '项目编号',
-    dataIndex: 'project_code',
-  },
-  {
-    title: '项目名称',
-    dataIndex: 'project_name',
+    dataIndex: '项目名称',
   },
   {
     title: '合同名称',
-    dataIndex: 'contract_name',
+    dataIndex: '合同名称',
   },
   {
     title: '合同甲方',
-    dataIndex: 'contract_party_a',
+    dataIndex: '合同甲方',
   },
   {
     title: '合同乙方',
-    dataIndex: 'contract_party_b',
+    dataIndex: '合同乙方',
   },
   {
     title: '行业',
-    dataIndex: 'industry',
+    dataIndex: '行业',
   },
   {
     title: '签订日期',
     dataIndex: 'sign_date',
   },
   {
-    title: '合同金额',
-    dataIndex: 'contract_amount',
-  },
-  {
-    title: '操作',
-    dataIndex: 'operation',
+    title: '合同金额\n（万元）',
+    dataIndex: '合同金额\n（万元）',
   },
 ];
 
@@ -66,7 +58,7 @@ export const deviceColumns = [
     },
   },
   {
-    title: '设备名称',
+    title: '装置名称',
     dataIndex: 'name',
   },
   {
@@ -95,6 +87,22 @@ export const engineerColumns = [
   },
   {
     title: '工程编号',
+    dataIndex: 'code',
+  },
+  {
+    title: '操作',
+    dataIndex: 'operation',
+  },
+];
+
+// 工程数据字段
+export const engineerDataColumns = [
+  {
+    title: '类型',
+    dataIndex: 'type',
+  },
+  {
+    title: '编码',
     dataIndex: 'code',
   },
   {
