@@ -20,12 +20,12 @@
     <!-- 时间选择 -->
     <a-row :gutter="16">
       <a-col :span="12">
-        <a-form-item label="开始时间" required>
+        <a-form-item label="开始时间" required name="startDate">
           <a-date-picker v-model:value="form.startDate" show-time style="width: 100%" />
         </a-form-item>
       </a-col>
       <a-col :span="12">
-        <a-form-item label="结束时间" required>
+        <a-form-item label="结束时间" required name="endDate">
           <a-date-picker v-model:value="form.endDate" show-time style="width: 100%" />
         </a-form-item>
       </a-col>
@@ -50,22 +50,14 @@
         <a-button> 选择文件 </a-button>
       </a-upload>
     </a-form-item>
-
-    <!-- 提交按钮 -->
-    <a-form-item>
-      <a-button type="primary" @click="submitForm"> 提交申请 </a-button>
-    </a-form-item>
   </a-form>
 </template>
 
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { message, type UploadChangeParam } from 'ant-design-vue';
+  import { type UploadChangeParam } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
   import { uploadFileStorage } from '@/api/backend/api/fileStorage';
-  import { createLeave } from '@/api/backend/api/leave';
-
-  const emits = defineEmits(['createSuccess']);
 
   const userInfo = useUserStore();
   const formRef = ref<any>();
@@ -103,7 +95,6 @@
   };
 
   const uploadChange = (info: UploadChangeParam) => {
-    console.log('info', info);
     const file: any = info.file;
     uploadFile(file).then((filename) => {
       (form.value.attachments as any[]).push({
@@ -114,13 +105,9 @@
     });
   };
 
-  const submitForm = () => {
-    formRef.value.validate().then((res) => {
-      console.log('res', res);
-      createLeave(form.value).then((res) => {
-        message.success('提交成功');
-        emits('createSuccess');
-      });
-    });
-  };
+  defineExpose({
+    getFormData: () => {
+      return formRef.value.validate();
+    },
+  });
 </script>

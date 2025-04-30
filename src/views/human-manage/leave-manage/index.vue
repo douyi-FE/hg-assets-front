@@ -25,22 +25,36 @@
       </template>
     </DynamicTable>
     <a-drawer title="请假申请" :width="500" :visible="visible" @close="closeDrawer">
-      <LeaveForm ref="leaveFormRef" @createSuccess="createSuccess" />
+      <template #extra>
+        <a-button type="primary" @click="saveLeave">提交</a-button>
+      </template>
+      <LeaveForm ref="leaveFormRef" />
     </a-drawer>
+    <FlowBind
+      module="leave"
+      :is-show-flow-bind-setting="isShowFlowBind"
+      @bind-success="bindSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { onMounted, ref } from 'vue';
+  import { message } from 'ant-design-vue';
   import { baseColumns } from './column';
   import LeaveForm from './leave-form.vue';
+  import FlowBind from '@/components/business/flow-bind/index.vue';
   import Api from '@/api';
   import { useTable } from '@/components/core/dynamic-table';
   import { eventBus } from '@/utils/event-bus';
+  import { getFlowBindList } from '@/api/backend/api/flowBind';
+  import { createLeave } from '@/api/backend/api/leave';
 
   const [DynamicTable, dynamicTableInstance] = useTable();
   const columns = baseColumns;
   const visible = ref(false);
+  const isShowFlowBind = ref(false);
+  const bindFlowId = ref('');
   const leaveFormRef = ref();
   const openMenuModal = (record: any, type: string) => {
     console.log(record, type);
@@ -53,10 +67,38 @@
   eventBus.on('leave-reload', () => {
     dynamicTableInstance.reload();
   });
-  const createSuccess = () => {
-    visible.value = false;
-    dynamicTableInstance.reload();
+  const bindSuccess = () => {
+    message.success('绑定成功');
+    isShowFlowBind.value = false;
   };
+  const saveLeave = () => {
+    leaveFormRef.value
+      .getFormData()
+      .then((res) => {
+        console.log('res', res);
+        return createLeave({
+          ...res,
+          flowId: bindFlowId.value,
+        });
+      })
+      .then((res) => {
+        message.success('提交成功');
+        visible.value = false;
+        dynamicTableInstance.reload();
+      });
+  };
+
+  onMounted(() => {
+    getFlowBindList({ module: 'leave' }).then((res) => {
+      console.log('flowBindList', res);
+      if (res.length === 0) {
+        isShowFlowBind.value = true;
+      } else {
+        isShowFlowBind.value = false;
+        bindFlowId.value = res[0].flowId;
+      }
+    });
+  });
 </script>
 
 <style scoped lang="less"></style>
