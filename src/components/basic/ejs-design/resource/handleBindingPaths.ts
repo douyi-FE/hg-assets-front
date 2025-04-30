@@ -307,7 +307,11 @@ function getTableRange(titleRange) {
     let bottomRow = titleRange.row + titleRange.rowCount;
     for (let i = titleRange.row + titleRange.rowCount; i < rowCount; i++) {
       const cell = sheet.getCell(i, titleRange.col);
-      if (!cell.borderLeft()) {
+      if (cell.borderLeft() || cell.borderRight()) {
+        bottomRow = i;
+      }
+      if (!cell.borderLeft() && !cell.borderRight()) {
+        sheet.addRows(i, 1);
         bottomRow = i;
         break;
       }
