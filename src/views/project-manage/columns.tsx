@@ -6,7 +6,7 @@ export type TableColumnItem = TableColumn<TableListItem>;
 // 项目字段
 export const projectColumns: TableColumnItem[] = [
   {
-    title: '#',
+    title: '序号',
     dataIndex: 'index',
     width: 55,
     customRender({ index }) {
@@ -19,7 +19,8 @@ export const projectColumns: TableColumnItem[] = [
   },
   {
     title: '项目编号',
-    dataIndex: '项目名称',
+    dataIndex: '项目编号',
+    width: 150,
   },
   {
     title: '合同名称',
@@ -50,7 +51,7 @@ export const projectColumns: TableColumnItem[] = [
 // 设备字段
 export const deviceColumns = [
   {
-    title: '#',
+    title: '序号',
     dataIndex: 'index',
     width: 55,
     customRender({ index }) {
@@ -74,7 +75,7 @@ export const deviceColumns = [
 // 工程字段
 export const engineerColumns = [
   {
-    title: '#',
+    title: '序号',
     dataIndex: 'index',
     width: 55,
     customRender({ index }) {

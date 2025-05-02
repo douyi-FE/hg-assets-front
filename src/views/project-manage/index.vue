@@ -21,14 +21,19 @@
   import { projectColumns } from './columns';
   import Engineer from './engineer.vue';
   import Device from './device.vue';
+  import { getApplicationByName } from '@/api/backend/api/application';
   import { getApplicationData } from '@/api/backend/api/applicationData';
 
   const projectDataSource = reactive<any[]>([]);
   // 获取项目数据
   const fetchProjectData = async function () {
-    const result: any[] = await getApplicationData({ templateId: '67cbfd142863e20432278b59' }).then(
-      (res) => {
-        return res.applicationData.table;
+    const result: any[] = await getApplicationByName('咨询合同台帐').then(
+      async (res) => {
+        return await getApplicationData({ templateId: res.templateId }).then(
+          (res) => {
+            return res.applicationData.table;
+          },
+        );
       },
     );
     projectDataSource.splice(0, projectDataSource.length, ...result);

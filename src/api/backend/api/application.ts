@@ -29,6 +29,13 @@ export async function getApplicationById(id: string, options?: RequestOptions) {
   });
 }
 
+export async function getApplicationByName(name: string, options?: RequestOptions) {
+  return request<any>({
+    url: `/api/application/name/${name}`,
+    method: 'GET',
+    ...(options || {}),
+  });
+}
 // 根据id更新应用
 export async function updateApplicationById(params: any, options?: RequestOptions) {
   return request<any>({

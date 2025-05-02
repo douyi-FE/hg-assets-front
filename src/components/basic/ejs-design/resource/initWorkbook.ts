@@ -23,7 +23,7 @@ export function initWorkbook(spread) {
   const styleInfo = new GC.Spread.Sheets.Tables.TableStyle(
     '#ffffff',
     '#000000',
-    'normal normal 16px 仿宋',
+    'normal normal 12px Calibri',
     border,
     border,
     border,
@@ -44,5 +44,5 @@ export function initWorkbook(spread) {
   // 设置自动应用到整列
   store.setAutoSetTableColumn(true);
   // 监听表格行变化，自动带入列样式
-  tableRowChanged();
+  tableRowChanged(spread);
 }

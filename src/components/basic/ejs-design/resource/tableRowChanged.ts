@@ -1,9 +1,8 @@
-import { store } from '../store';
 import { setTableRowChangedCellType } from './fileUploadCellType';
 
 // 监听表格行变化，自动带入列样式
-export function tableRowChanged() {
-  (store.spread as any).bind(GC.Spread.Sheets.Events.TableRowsChanged, function (e, data) {
+export function tableRowChanged(spread: any) {
+  spread.bind(GC.Spread.Sheets.Events.TableRowsChanged, function (e, data) {
     const propertyName = data.propertyName;
     if (propertyName === 'tableInsertRows') {
       const sheet = data.sheet;
@@ -14,16 +13,16 @@ export function tableRowChanged() {
       // 默认从前插入行，没有开放从后边插入行
       // const isAfter = data.isAfter;
       // 插入行后，自动带入列设置
-      setTableRows(store.spread, sheet, table.dataRange(), fromRow, row, count);
+      setTableRows(spread, sheet, table.dataRange(), fromRow, row, count);
     }
   });
-  (store.spread as any).bind(GC.Spread.Sheets.Events.TableResized, function (e, data) {
+  spread.bind(GC.Spread.Sheets.Events.TableResized, function (e, data) {
     // 监听，暂不处理
     console.log('tableResized', data);
   });
 }
 
-function setTableRows(spread, sheet, tableRange, fromRow, row, rowCount) {
+export function setTableRows(spread, sheet, tableRange, fromRow, row, rowCount) {
   sheet.suspendPaint();
   const tableStartRow = tableRange.row;
   const col = tableRange.col;

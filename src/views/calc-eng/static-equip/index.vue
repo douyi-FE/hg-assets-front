@@ -1,121 +1,134 @@
 <template>
   <div class="excel-book-container">
-    <excel-book
-      ref="excelBookRef"
-      :key="excelBookKey"
-      class="excel-book"
-      :content="content"
-      :dataSource="dataSource"
-      @saveWorkBook="saveWorkBook"
-      @cellClick="cellClick"
-    />
-    <template-bind
-      v-model:isShowTemplateSetting="isShowTemplateSetting"
-      @bind-success="
-        () => {
-          fetchExcel();
-          isShowTemplateSetting = false;
-        }
-      "
-    />
+    <excel-book ref="excelBookRef" :key="excelBookKey" class="excel-book" :content="content" :dataSource="dataSource"
+      @saveWorkBook="saveWorkBook" @cellClick="cellClick" />
+    <template-bind v-model:isShowTemplateSetting="isShowTemplateSetting" @bind-success="
+      () => {
+        fetchExcel();
+        isShowTemplateSetting = false;
+      }
+    " />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
-  import { message } from 'ant-design-vue';
-  import excelBook from '@/components/business/excel-book/index.vue';
-  import templateBind from '@/components/business/template-bind/index.vue';
-  import { getApplicationById } from '@/api/backend/api/application';
-  import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
-  import { useUserStore } from '@/store/modules/user';
-  import { eventBus } from '@/utils/event-bus';
-  const APPLICATION_NAME = '静设备-工程量计算书';
-  const APPLICATION_ID = '67f9e3d3572177c961d205e7';
-  let templateId = '';
-  const excelBookRef = ref();
-  const excelBookKey = ref('');
-  const content = ref({
-    ejs: '',
-    dataSource: {
-      table: [[]],
-    },
-    fileName: '导出数据文件.xlsx',
-  });
-  const deptId = ref<number>(0);
-  const dataSource = ref({
-    table: [[]],
-  });
-  const isShowTemplateSetting = ref(false);
-  const userStore = useUserStore();
-  const getTemplateId = async function () {
-    return getApplicationById(APPLICATION_ID);
-  };
+import { onMounted, ref } from 'vue';
+import { message } from 'ant-design-vue';
+import excelBook from '@/components/business/excel-book/index.vue';
+import templateBind from '@/components/business/template-bind/index.vue';
+import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
+import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDevice';
+import { useUserStore } from '@/store/modules/user';
+import { useRoute } from 'vue-router';
+// import { eventBus } from '@/utils/event-bus';
+const APPLICATION_NAME = '静设备-工程量计算书';
+let templateId = '';
+let type = '', project = '', device = '', engineer = '';
+const excelBookRef = ref();
+const excelBookKey = ref('');
+const content = ref({
+  ejs: '',
+  dataSource: {
+    table: [{}],
+  },
+  summaryData: {
+    table: [{}],
+  },
+  summaryDataByType: {
+    table: [{}],
+  },
+  fileName: APPLICATION_NAME + '.xlsx',
+});
+// const deptId = ref<number>(0);
+const userStore = useUserStore();
+const dataSource = ref({
+  table: [{}],
+  userId: userStore.userInfo.id,
+  type: '',
+  project: '',
+  device: '',
+  engineer: '',
+});
+const isShowTemplateSetting = ref(false);
+const route = useRoute();
+const getTemplateId = async function () {
+  return getApplicationByName(APPLICATION_NAME);
+};
 
-  const fetchExcel = async function () {
-    getTemplateId()
-      .then((res) => {
-        templateId = res.templateId;
-        if (!templateId) {
-          message.error('模板ID不存在');
-          return;
-        }
-        Promise.all([
-          getApplicationById(templateId),
-          getApplicationData({ templateId: templateId, deptId: deptId.value }),
-        ])
-          .then(([template, applicationData]) => {
-            dataSource.value = template.initDataSource;
-            content.value = {
-              ejs: template.content,
-              dataSource: applicationData?.applicationData || dataSource,
-              fileName: template.name,
-            };
-          })
-          .catch(() => {
-            message.error('获取模板数据失败');
-            isShowTemplateSetting.value = true;
-          });
-      })
-      .catch(() => {
-        message.error('获取模板数据失败');
-      });
-  };
-
-  const saveWorkBook = function (data: any) {
-    saveApplicationData({
-      templateId: APPLICATION_ID,
-      userId: userStore.userInfo.id,
-      deptId: deptId.value,
-      applicationData: data || dataSource.value,
+const fetchExcel = async function () {
+  getTemplateId()
+    .then((res) => {
+      templateId = res.templateId;
+      if (!templateId) {
+        message.error('模板ID不存在');
+        return;
+      }
+      Promise.all([
+        getApplicationById(templateId),
+        getProjectDevice({ userId: userStore.userInfo.id, type, project, device, engineer }),
+      ])
+        .then(([template, projectData]) => {
+          dataSource.value = template.initDataSource;
+          dataSource.value.userId = userStore.userInfo.id;
+          dataSource.value.type = type;
+          dataSource.value.project = project;
+          dataSource.value.device = device;
+          dataSource.value.engineer = engineer;
+          content.value = {
+            ejs: template.content,
+            dataSource: projectData?.projectDeviceWithUserId?.projectData || dataSource,
+            summaryData: projectData?.projectDeviceSummary?.projectData || dataSource,
+            summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
+            fileName: template.name,
+          };
+        })
+        .catch(() => {
+          message.error('获取模板数据失败');
+          isShowTemplateSetting.value = true;
+        });
     })
-      .then((res) => {
-        message.success('保存数据成功');
-      })
-      .catch((err) => {
-        message.error('保存数据失败');
-      });
-  };
+    .catch(() => {
+      message.error('获取模板数据失败');
+    });
+};
 
-  const cellClick = function (data: any) {
-    console.log('data', data);
-  };
+const saveWorkBook = function (data: any) {
+  saveProjectDevice({
+    userId: userStore.userInfo.id,
+    type,
+    project,
+    device,
+    engineer,
+    templateId,
+    projectData: data || dataSource.value,
+  })
+    .then((res) => {
+      message.success('保存数据成功');
+      fetchExcel();
+    })
+    .catch((err) => {
+      message.error('保存数据失败');
+    });
+};
 
-  onMounted(() => {
-    fetchExcel();
-    deptId.value = userStore.userInfo.dept?.id;
-    eventBus.on('deptChange', handleDeptChange);
-  });
+const cellClick = function (data: any) {
+  console.log('data', data);
+};
 
-  const handleDeptChange = function (_deptId: number) {
-    deptId.value = _deptId;
-    fetchExcel();
-  };
+onMounted(() => {
+  // 从URL参数获取项目编号、装置编号以及工程编号
+  type = route.query.type as string;
+  project = route.query.project as string;
+  device = route.query.device as string;
+  engineer = route.query.engineer as string;
+  fetchExcel();
+});
+
 </script>
 
 <style lang="less" scoped>
-  .excel-book-container {
-    width: 100%;
-    height: 100%;
-  }
+.excel-book-container {
+  width: 100%;
+  height: 100%;
+}
 </style>

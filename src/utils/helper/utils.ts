@@ -120,7 +120,7 @@ export const initWorkbook = function (spread) {
   const styleInfo = new GC.Spread.Sheets.Tables.TableStyle(
     '#ffffff',
     '#000000',
-    'normal normal 16px 仿宋',
+    'normal normal 12px Calibri',
     border,
     border,
     border,
