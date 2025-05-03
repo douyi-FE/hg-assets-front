@@ -1,8 +1,8 @@
 import { store } from '../store';
 
 // 自动设置表单列
-export function setAutoSetTableColumn() {
-  (store.spread as any).commandManager().addListener('anyscLicenser', function () {
+export function setAutoSetTableColumn(spread: any) {
+  spread.commandManager().addListener('anyscLicenser', function () {
     if (store.autoSetTableColumn) {
       for (let i = 0; i < arguments.length; i++) {
         const cmd = arguments[i].command;
@@ -10,24 +10,24 @@ export function setAutoSetTableColumn() {
           const activeRowIndex = cmd.activeRowIndex;
           const activeColIndex = cmd.activeColIndex;
           const selections = cmd.selections;
-          const sheet = (store.spread as any).getActiveSheet();
+          const sheet = spread.getActiveSheet();
           if (cmd.cmd === 'Designer.setFormatDialog') {
             const style = sheet.getStyle(activeRowIndex, activeColIndex);
             if (selections.length > 0) {
-              (store.spread as any).suspendPaint();
+              spread.suspendPaint();
               selections.forEach((range) => {
-                setTableColumn(range, style, 'style');
+                setTableColumn(spread, range, style, 'style');
               });
-              (store.spread as any).resumePaint();
+              spread.resumePaint();
             }
           } else if (cmd.cmd === 'Designer.setDataValidation') {
             const validation = sheet.getDataValidator(activeRowIndex, activeColIndex);
             if (selections.length > 0) {
-              (store.spread as any).suspendPaint();
+              spread.suspendPaint();
               selections.forEach((range) => {
-                setTableColumn(range, validation, 'validation');
+                setTableColumn(spread, range, validation, 'validation');
               });
-              (store.spread as any).resumePaint();
+              spread.resumePaint();
             }
           }
         }
@@ -36,9 +36,9 @@ export function setAutoSetTableColumn() {
   });
 }
 
-function setTableColumn(range, setting, type) {
-  const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName(store.tableName);
+function setTableColumn(spread, range, setting, type) {
+  const sheet = spread.getActiveSheet();
+  const table = sheet.tables.all()[0];
   if (table) {
     const tableRange = table.dataRange();
     const intersection = tableRange.getIntersect(range);

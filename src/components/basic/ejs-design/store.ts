@@ -5,13 +5,6 @@ export const store = {
   designerConfig: GC.Spread.Sheets.Designer.DefaultConfig,
   fbx: null,
   originalFile: null,
-  initDataSource: {},
-  bindingPaths: {},
-  selections: {
-    sheet: '',
-    range: '',
-  },
-  tableName: 'table',
   emptyText: '上传',
   emptyToolTip: '点击上传文件',
   previewToolTip: '点击查看文件列表',
@@ -37,17 +30,8 @@ export const store = {
   setOriginalFile(value: any) {
     this.originalFile = value;
   },
-  setInitDataSource(value: any) {
-    this.initDataSource = value;
-  },
-  setBindingPaths(value: any) {
-    this.bindingPaths = value;
-  },
   setAutoSetTableColumn(value: any) {
     this.autoSetTableColumn = value;
-  },
-  setSelections(value: any) {
-    this.selections = value;
   },
   setMessage(value: any) {
     this.message = value;

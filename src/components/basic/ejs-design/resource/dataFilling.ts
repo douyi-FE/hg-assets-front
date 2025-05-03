@@ -31,7 +31,6 @@ function getTemplates() {
         }
         fetch(templateUrl + id)
           .then((response) => response.json())
-
           .then((data) => {
             if (data.base64Data) {
               // 打开模板
@@ -45,9 +44,13 @@ function getTemplates() {
                 fileBlob,
                 function () {
                   (store.spread as any).resumePaint();
-                  (store.spread as any)
-                    .getActiveSheet()
-                    .setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource));
+                  const sheetCount = (store.spread as any).getSheetCount();
+                  for (let i = 0; i < sheetCount; i++) {
+                    const sheet = (store.spread as any).getSheet(i);
+                    sheet.setDataSource(
+                      new GC.Spread.Sheets.Bindings.CellBindingSource(JSON.parse(initDataSource)[sheet.name()]),
+                    );
+                  }
                 },
                 function (e) {
                   showAlert('模板加载失败', 'error');

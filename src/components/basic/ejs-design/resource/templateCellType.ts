@@ -4,6 +4,7 @@ export function TemplateCellType(this: any) {
   GC.Spread.Sheets.CellTypes.Text.call(this);
   this.typeName = 'TemplateCellType';
 }
+window.TemplateCellType = TemplateCellType;
 TemplateCellType.prototype = new GC.Spread.Sheets.CellTypes.Text();
 TemplateCellType.prototype.getHitInfo = function (
   x: any,
@@ -42,7 +43,8 @@ TemplateCellType.prototype.paint = function (
       value = '[' + bindingPath + ']';
     }
   }
-  GC.Spread.Sheets.CellTypes.Text.prototype.paint.apply(this, arguments);
+  GC.Spread.Sheets.CellTypes.Text.prototype.paint.apply(this, [ctx, value, x, y, w, h, style, context]);
+  // GC.Spread.Sheets.CellTypes.Text.prototype.paint.apply(this, arguments);
 };
 
 // 控制数据校验错误提示的出现
