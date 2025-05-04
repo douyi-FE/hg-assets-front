@@ -13,13 +13,13 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref, watch } from 'vue';
+  import { onMounted, ref } from 'vue';
   // import Api from '@/api';
   import { eventBus } from '@/utils/event-bus';
   import { getSubDepts } from '@/api/backend/api/customerApis';
   import { useUserStore } from '@/store/modules/user';
 
-  const treeData = ref([]);
+  const treeData = ref<any[]>([]);
   const selectedDeptId = ref<number>(0);
 
   const userStore = useUserStore();
@@ -42,7 +42,7 @@
 
   // 递归处理所有子部门
   const convertTreeData = (data) => {
-    const result = [];
+    const result: any[] = [];
     const stack = [...data];
 
     while (stack.length) {

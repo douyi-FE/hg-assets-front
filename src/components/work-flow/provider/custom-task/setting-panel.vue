@@ -39,7 +39,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch, onUnmounted, toRaw, onMounted } from 'vue';
+  import { ref, watch, onUnmounted, toRaw } from 'vue';
   import { Button } from 'ant-design-vue';
   import { eventBus } from '@/utils/event-bus';
   import { deptList } from '@/api/backend/api/systemDept';
@@ -90,6 +90,16 @@
     });
   };
 
+  watch(
+    () => form.value.approverRole,
+    (newRole) => {
+      console.log('kkkk:', newRole);
+      if (newRole === 'department') {
+        getDepartmentList();
+      }
+    },
+  );
+
   // 调试用 - 监听元素变化
   watch(
     () => props.element,
@@ -124,10 +134,6 @@
       }));
     });
   };
-
-  onMounted(() => {
-    getDepartmentList();
-  });
 
   onUnmounted(() => {
     elementData.value = null;

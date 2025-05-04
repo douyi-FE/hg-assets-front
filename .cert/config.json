@@ -3,14 +3,15 @@
   "record": {
     "hosts": [
       "localhost",
-      "192.168.1.6",
+      "198.18.0.1",
+      "192.168.1.85",
       "127.0.0.1",
       "0.0.0.0"
     ],
     "hash": {
-      "key": "e32094ec71f509e03345568bc62c40c1e8bcd8315ef11313f25e4c49377c26d7",
-      "cert": "7417ff437fcec571b0a5727c917355a8a96e93231033058771eebd1f542f2739"
+      "key": "d2be03af9f97c9423101af17a1a75d981028ac6616e157d6c98da52a5132a6f1",
+      "cert": "acf851d0b7df323f452c76c6c377e9909c69844cb6aafba50adf5d8df0442ce7"
     }
   },
-  "configFilePath": "D:\\codes\\hg-assets-front\\.cert\\config.json"
+  "configFilePath": "C:\\Users\\wangj\\Desktop\\个人项目\\hg-assets-front\\.cert\\config.json"
 }
