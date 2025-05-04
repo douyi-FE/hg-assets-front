@@ -65,6 +65,7 @@ import {
 import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
 import { eventBus } from '@/utils/event-bus';
 import { attachListColumns } from '@/components/basic/ejs-design/config';
+import { TemplateCellType } from '@/components/basic/ejs-design/resource/templateCellType';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const attachListData = ref<any[]>([]);
@@ -117,7 +118,7 @@ const deleteFile = async (fileId: string, index: number) => {
 /********附件列表模态框v2-end *********/
 // summaryData 设置非必填
 const props = withDefaults(
-  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string } }>(),
+  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[] } }>(),
   {
     content: () => ({
       ejs: '',
@@ -131,6 +132,7 @@ const props = withDefaults(
         // table: [],
       },
       fileName: '导出数据文件.xlsx',
+      dictData: [],
     }),
   },
 );
@@ -186,7 +188,7 @@ function setSummarySheet(spread: any, summaryData: any) {
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
 }
 
-const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}) {
+const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}) {
   return new Promise((resolve, reject) => {
     const arrayBuffer = base64ToArrayBuffer(ejs);
     const fileBlob = new Blob([arrayBuffer], {
@@ -197,6 +199,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
       function () {
         // clearSelections();
         // initWorkbook(spread);
+        console.log('renderExcelBySjs', dictData);
         spread.suspendPaint();
         const sheet = spread.getActiveSheet();
         addSheetRows(sheet, dataSource);
@@ -214,6 +217,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         spread.setActiveSheet(sheet.name());
         spread.resumePaint();
         initUploadFile(spread);
+        setFieldDict(dictData);
         resolve(true);
       },
       function (e) {
@@ -317,10 +321,68 @@ const canSwitchSummaryType = function () {
   summaryByTypeDisabled.value = false;
 };
 
+/*
+  先预处理 dictData 数据， 结果如下：
+  {
+    'Sheet名称': {
+      '字段名称': {
+        '字典值': ['字典名称1', '字典名称2', '字典名称3']
+      }
+    }
+  }
+*/
+const setFieldDict = function (dictData: any) {
+  // 预处理 dictData 数据
+  if (!dictData || dictData.length === 0) {
+    return;
+  }
+  spread.suspendPaint();
+  const sheetDictData = {};
+  dictData.forEach((item) => {
+    if (!sheetDictData[item['Sheet名称']]) {
+      sheetDictData[item['Sheet名称']] = {};
+    }
+    if (!sheetDictData[item['Sheet名称']][item['字段名称']]) {
+      sheetDictData[item['Sheet名称']][item['字段名称']] = [];
+    }
+    sheetDictData[item['Sheet名称']][item['字段名称']].push(item['可选值']);
+  });
+  console.log('sheetDictData', sheetDictData);
+  const sheetCount = spread.getSheetCount();
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = spread.getSheet(i);
+    const table = sheet.tables.all()[0];
+    const tableRange = table.dataRange();
+    const colCount = tableRange.colCount;
+    const col = tableRange.col;
+    const rowCount = tableRange.rowCount;
+    const row = tableRange.row;
+    for (let j = 0; j < colCount; j++) {
+      const tableCol = table.getColumnDataField(j);
+      if (sheetDictData[sheet.name()] && sheetDictData[sheet.name()][tableCol]) {
+        const colValues = sheetDictData[sheet.name()][tableCol];
+        const comboItems = colValues.map((item) => ({ text: item, value: item }));
+        const combo = new GC.Spread.Sheets.CellTypes.ComboBox();
+        combo.items(comboItems).editorValueType(GC.Spread.Sheets.CellTypes.EditorValueType.text);
+        sheet.setCellType(-1, col + j, combo);
+      }
+    }
+    const sheetRowCount = sheet.getRowCount();
+    const rowCellType = new TemplateCellType();
+    for (let r = 0; r < sheetRowCount; r++) {
+      if (r >= row && r < row + rowCount) {
+        continue;
+      }
+      sheet.setCellType(r, -1, rowCellType);
+    }
+  }
+  spread.resumePaint();
+};
+
 watch(
   () => props.content,
   (newVal) => {
-    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType));
+    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType), toRaw(newVal.dictData));
   }
 );
 

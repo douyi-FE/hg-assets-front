@@ -17,8 +17,8 @@ import { message } from 'ant-design-vue';
 import excelBook from '@/components/business/excel-book/index.vue';
 import templateBind from '@/components/business/template-bind/index.vue';
 import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
+import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
 import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDevice';
-import { getTemplateFieldDict } from '@/api/backend/api/templateFieldDict';
 import { useUserStore } from '@/store/modules/user';
 import { useRoute } from 'vue-router';
 // import { eventBus } from '@/utils/event-bus';
@@ -39,6 +39,7 @@ const content = ref({
   summaryDataByType: {
     table: [{}],
   },
+  dictData: [],
   fileName: APPLICATION_NAME + '.xlsx',
 });
 // const deptId = ref<number>(0);
@@ -57,6 +58,8 @@ const getTemplateId = async function () {
   return getApplicationByName(APPLICATION_NAME);
 };
 
+const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
+
 const fetchExcel = async function () {
   getTemplateId()
     .then((res) => {
@@ -68,8 +71,9 @@ const fetchExcel = async function () {
       Promise.all([
         getApplicationById(templateId),
         getProjectDevice({ userId: userStore.userInfo.id, type, project, device, engineer }),
+        getTemplateFieldDict({ templateId: templateFieldDictId, dictName: APPLICATION_NAME }),
       ])
-        .then(([template, projectData]) => {
+        .then(([template, projectData, templateFieldDict]) => {
           dataSource.value = template.initDataSource;
           dataSource.value.userId = userStore.userInfo.id;
           dataSource.value.type = type;
@@ -82,6 +86,7 @@ const fetchExcel = async function () {
             summaryData: projectData?.projectDeviceSummary?.projectData || dataSource,
             summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
             fileName: template.name,
+            dictData: templateFieldDict || [],
           };
         })
         .catch(() => {

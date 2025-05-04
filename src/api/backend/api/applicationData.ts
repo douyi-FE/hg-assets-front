@@ -27,3 +27,13 @@ export async function updateApplicationData(params: any, options?: RequestOption
     data: params,
   });
 }
+
+// 获取模板字段取值字典
+export async function getTemplateFieldDict(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/application/template-field-dict',
+    method: 'GET',
+    params,
+    ...(options || {}),
+  });
+}
