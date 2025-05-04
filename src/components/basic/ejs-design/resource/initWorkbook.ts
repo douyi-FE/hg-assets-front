@@ -4,13 +4,16 @@ import { TemplateCellType } from './templateCellType';
 
 // 初始化工作簿
 export function initWorkbook(spread) {
-  const sheet = spread.getActiveSheet();
-  const defaultStyle = sheet.getDefaultStyle();
-  // 设置模板单元格类型
-  defaultStyle.cellType = new TemplateCellType();
-  // 设置垂直居中
-  defaultStyle.vAlign = GC.Spread.Sheets.VerticalAlign.center;
-  sheet.setDefaultStyle(defaultStyle);
+  const sheetCount = spread.getSheetCount();
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = spread.getSheet(i);
+    const defaultStyle = sheet.getDefaultStyle();
+    // 设置模板单元格类型
+    defaultStyle.cellType = new TemplateCellType();
+    // 设置垂直居中
+    defaultStyle.vAlign = GC.Spread.Sheets.VerticalAlign.center;
+    sheet.setDefaultStyle(defaultStyle);
+  }
   // 设置行高自适应
   // const rowCount = sheet.getRowCount();
   // for (let i = 0; i < rowCount; i++) {

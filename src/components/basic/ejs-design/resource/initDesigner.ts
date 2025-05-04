@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash-es';
 import { store } from '../store';
-import { importFile, showAlert } from './commonFunctions';
+import { getInitData, getSheetBindingPaths, importFile, showAlert } from './commonFunctions';
 import { setHtmlCell } from './htmlCell';
 import { clearSelections, startSelectMode } from './initFormulaBar';
 import { addScript, runScript } from './scripts';
@@ -92,7 +92,8 @@ export function initDesigner(divId) {
       bigButton: 'false',
       commandName: 'selectFields',
       execute: async (context, propertyName) => {
-        setFieldsModel(store.bindingPaths);
+        const sheet = (store.spread as any).getActiveSheet();
+        setFieldsModel(getSheetBindingPaths(sheet));
       },
     },
     ResetAll: {
@@ -112,7 +113,7 @@ export function initDesigner(divId) {
       bigButton: 'false',
       commandName: 'showData',
       execute: async (context, propertyName) => {
-        console.log(store.initDataSource);
+        console.log(getInitData(store.spread));
         showAlert('在控制台查看初始化数据', 'success');
       },
     },

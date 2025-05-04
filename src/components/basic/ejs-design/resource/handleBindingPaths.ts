@@ -1,5 +1,5 @@
 import { store } from '../store';
-import { showAlert } from './commonFunctions';
+import { generateTableName, getInitDataSource, getSheetBindingPaths, showAlert } from './commonFunctions';
 import { setAttachColumn } from './fileUploadCellType';
 
 // 处理选中的区域
@@ -19,31 +19,17 @@ export function handleRangeValue(range, selectType, area) {
       break;
     default:
       // 默认情况下，selectType为字段名
-      if (store.bindingPaths[selectType]) {
-        const range = store.bindingPaths[selectType].range;
+      const bindingPaths = getSheetBindingPaths(sheet);
+      if (bindingPaths[selectType]) {
+        const range = bindingPaths[selectType].range;
         sheet.setBindingPath(range.row, range.col, null);
         // 删除绑定路径后，锁定单元格
         sheet.getCell(range.row, range.col).locked(true);
-        store.setBindingPaths({
-          ...store.bindingPaths,
-          [selectType]: undefined,
-        });
       }
       if (range) {
         sheet.setBindingPath(range.row, range.col, selectType);
         // 设置绑定路径后，解锁单元格
         sheet.getCell(range.row, range.col).locked(false);
-        store.setInitDataSource({
-          ...store.initDataSource,
-          [selectType]: undefined,
-        });
-        store.setBindingPaths({
-          ...store.bindingPaths,
-          [selectType]: {
-            range: JSON.parse(JSON.stringify(range)),
-            rangeText: area,
-          },
-        });
       }
       break;
   }
@@ -55,11 +41,12 @@ export function bindingTablePath(range) {
     showAlert('未选中有效表头区域，请重新选择', 'error');
     return;
   }
-  if (store.bindingPaths[store.tableName]) {
+  const sheet = (store.spread as any).getActiveSheet();
+  let table = sheet.tables.all()[0];
+  if (table && table.bindingPath()) {
     showAlert('已绑定表单，请重置后重新绑定', 'error');
     return;
   }
-  const sheet = (store.spread as any).getActiveSheet();
   let tables = sheet.tables.all();
   if (tables.length > 0) {
     showAlert('表单中已存在表格，将重置所有表格', 'warning');
@@ -71,15 +58,16 @@ export function bindingTablePath(range) {
       });
     });
   }
+  // 清除筛选
+  sheet.rowFilter(null);
   // 设置冻结行
   sheet.frozenRowCount(range.row + range.rowCount);
-  let table: any = null;
   const tableRange = getTableRange(range);
   // 先处理单行表头场景
   if (range.rowCount === 1) {
     // 获取表单字段
     table = sheet.tables.add(
-      store.tableName,
+      generateTableName(),
       tableRange.row,
       tableRange.col,
       tableRange.rowCount,
@@ -95,20 +83,16 @@ export function bindingTablePath(range) {
       tableColumn.dataField(field);
       tableColumns.push(tableColumn);
     });
-    table.bindingPath(store.tableName);
+    table.bindingPath(table.name());
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
-    initFillData();
-    store.setBindingPaths({
-      ...store.bindingPaths,
-      table: JSON.parse(JSON.stringify(range)),
-    });
+    getInitDataSource();
   } else if (range.rowCount > 1) {
     // 处理多行表头场景
     // 插入表头行
     sheet.addRows(tableRange.row, 1);
     table = sheet.tables.add(
-      store.tableName,
+      generateTableName(),
       tableRange.row,
       tableRange.col,
       tableRange.rowCount + 1,
@@ -160,20 +144,16 @@ export function bindingTablePath(range) {
         // i += colCount - 1;
       }
     }
-    table.bindingPath(store.tableName);
+    table.bindingPath(table.name());
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
-    initFillData();
+    getInitDataSource();
     // 添加多行表头筛选
     addMultiTitleTableFilter();
     // 设置表格数据区域可编辑
     sheet
       .getRange(tableRange.row, tableRange.col, tableRange.rowCount, tableRange.colCount)
       .locked(false);
-    store.setBindingPaths({
-      ...store.bindingPaths,
-      table: JSON.parse(JSON.stringify(table.range())),
-    });
   }
   const changedRange = table.range();
   // 添加汇总行
@@ -203,7 +183,7 @@ export function bindingTablePath(range) {
 // 处理多行表头的筛选
 function addMultiTitleTableFilter() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName(store.tableName);
+  const table = sheet.tables.all()[0];
   // 保存 table range
   const tableRange = table.range();
   // 隐藏表头
@@ -235,49 +215,6 @@ function addMultiTitleTableFilter() {
   sheet.setColumnCount(sheet.getColumnCount() / 2);
 }
 
-// 初始化表单数据
-function initFillData() {
-  const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName(store.tableName);
-  const dataSource = {};
-  const tableData: any[] = [];
-  let hasData = false;
-  if (table) {
-    const dataRange = table.dataRange();
-    const data = sheet.getArray(
-      dataRange.row,
-      dataRange.col,
-      dataRange.rowCount,
-      dataRange.colCount,
-    );
-    if (data.length > 0) {
-      for (let i = 0; i < data.length; i++) {
-        const item = {};
-        for (let j = 0; j < data[i].length; j++) {
-          if (data[i][j]) {
-            hasData = true;
-          }
-          item[table.getColumnDataField(j)] = data[i][j];
-        }
-        tableData.push(item);
-      }
-    }
-  }
-  if (hasData) {
-    showAlert(
-      '表单中已存在的数据将作为初始化数据加载到填报表中，如不需要，请删除数据',
-      'success',
-      3000,
-    );
-  }
-  dataSource[store.tableName] = tableData;
-  store.setInitDataSource({
-    ...store.initDataSource,
-    table: tableData,
-  });
-  sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(store.initDataSource));
-}
-
 // 根据表头区域获取表格区域
 function getTableRange(titleRange) {
   const sheet = (store.spread as any).getActiveSheet();
@@ -287,7 +224,11 @@ function getTableRange(titleRange) {
     for (let i = titleRange.row + 1; i < rowCount; i++) {
       const cell = sheet.getCell(i, titleRange.col);
       // 如果单元格有边框，算有效表格区域
-      if (!cell.borderLeft()) {
+      if (cell.borderLeft() || cell.borderRight()) {
+        bottomRow = i;
+      }
+      if (!cell.borderLeft() && !cell.borderRight()) {
+        sheet.addRows(i, 1);
         bottomRow = i;
         break;
       }
@@ -297,7 +238,7 @@ function getTableRange(titleRange) {
         titleRange.row,
         titleRange.col,
         bottomRow - titleRange.row,
-        titleRange.colCount,
+        titleRange.colCount
       );
     }
     return titleRange;
@@ -320,7 +261,7 @@ function getTableRange(titleRange) {
       titleRange.row + titleRange.rowCount,
       titleRange.col,
       bottomRow - titleRange.row - titleRange.rowCount,
-      titleRange.colCount,
+      titleRange.colCount
     );
   }
 }

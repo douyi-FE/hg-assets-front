@@ -61,7 +61,7 @@ import {
   base64ToArrayBuffer,
   base64ToBlob,
 } from '@/components/basic/ejs-design/resource/commonFunctions';
-import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
+// import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
 import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
 import { eventBus } from '@/utils/event-bus';
 import { attachListColumns } from '@/components/basic/ejs-design/config';
@@ -122,13 +122,13 @@ const props = withDefaults(
     content: () => ({
       ejs: '',
       dataSource: {
-        table: [],
+        // table: [],
       },
       summaryData: {
-        table: [],
+        // table: [],
       },
       summaryDataByType: {
-        table: [],
+        // table: [],
       },
       fileName: '导出数据文件.xlsx',
     }),
@@ -166,9 +166,10 @@ function addSheetRows(sheet: any, dataSource: any) {
   // debugger;
   const table = sheet.tables.all()[0];
   const rowCount = table.range().rowCount;
-  if (dataSource && dataSource.table && dataSource.table.length > 0) {
-    if (dataSource.table.length > rowCount) {
-      sheet.addRows(sheet.getRowCount(), dataSource.table.length - rowCount + 4);
+  const tableName = table.name();
+  if (dataSource && dataSource[tableName] && dataSource[tableName].length > 0) {
+    if (dataSource[tableName].length > rowCount) {
+      sheet.addRows(sheet.getRowCount(), dataSource[tableName].length - rowCount + 4);
     }
   }
 }
@@ -185,7 +186,7 @@ function setSummarySheet(spread: any, summaryData: any) {
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
 }
 
-const renderExcelBySjs = function (ejs: string, dataSource: any = { table: [] }, summaryData: any = { table: [] }, summaryDataByType: any = { table: [] }) {
+const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}) {
   return new Promise((resolve, reject) => {
     const arrayBuffer = base64ToArrayBuffer(ejs);
     const fileBlob = new Blob([arrayBuffer], {
@@ -201,16 +202,17 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = { table: [] },
         addSheetRows(sheet, dataSource);
         sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
         // 设置汇总数据
-        if (summaryData.table.length > 0) {
+        const tableBindingPath = getSummaryDataTable(summaryData);
+        if (tableBindingPath && summaryData[tableBindingPath] && summaryData[tableBindingPath].length > 0) {
           summarySheetData = summaryData;
           summarySheetDataByType = summaryDataByType;
           setSummarySheet(spread, summaryData);
+          // 设置汇总表样式
+          const summarySheet = spread.getSheetFromName('汇总表');
+          summarySheet.tables.all()[0].style('standard');
         }
         spread.setActiveSheet(sheet.name());
         spread.resumePaint();
-        // 设置汇总表样式
-        const summarySheet = spread.getSheetFromName('汇总表');
-        summarySheet.tables.all()[0].style('standard');
         initUploadFile(spread);
         resolve(true);
       },
@@ -234,6 +236,16 @@ const saveWorkBookEjs = function () {
       emits('saveWorkBook', pureBase64);
     };
   });
+};
+
+const getSummaryDataTable = function (summaryData: any) {
+  let tableBindingPath = '';
+  Object.keys(summaryData).forEach((key) => {
+    if (key.startsWith('table')) {
+      tableBindingPath = key;
+    }
+  });
+  return tableBindingPath;
 };
 
 const saveWorkBookData = function () {
@@ -272,7 +284,7 @@ const registerEvent = function () {
   const sheet = spread.getActiveSheet();
   sheet.bind(GC.Spread.Sheets.Events.CellClick, function (e, info) {
     const ds = info.sheet.getDataSource().getSource();
-    var table = info.sheet.tables.findByName('table');
+    const table = info.sheet.tables.all()[0];
     const tableRange = table.dataRange();
     const tableCol = info.col - tableRange.col;
     const dataField = table.getColumnDataField(tableCol);
@@ -280,7 +292,7 @@ const registerEvent = function () {
       row: info.row,
       col: info.col,
       dataField: dataField,
-      rowData: ds['table'][info.row - tableRange.row - 1],
+      rowData: ds[table.name()][info.row - tableRange.row - 1],
     });
   });
 };

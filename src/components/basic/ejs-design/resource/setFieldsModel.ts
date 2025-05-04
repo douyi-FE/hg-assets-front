@@ -71,11 +71,10 @@ export function setFieldsModel(bindingPaths: any) {
     willOpen: () => {
       const addRowBtn = document.getElementById('addRowBtn');
       const tableBody = document.getElementById('tableBody');
-
       // 根据 bindingPaths 创建初始化数据
       const initData: any[] = [];
       Object.keys(bindingPaths).forEach((key) => {
-        if (key === store.tableName) {
+        if (key === 'tableBindingPath') {
           return;
         }
         initData.push({
@@ -89,12 +88,15 @@ export function setFieldsModel(bindingPaths: any) {
         addTableRow(tableBody, { fieldName: '', refRange: '' });
       });
     },
+    willClose: () => {
+      settingFieldRows = [];
+    }
   }).then((result) => {
     if (result.isConfirmed) {
       // 回写到 bindingPaths
       if (result.value.length > 0) {
         result.value.forEach((data) => {
-          if (data.fieldName === store.tableName) {
+          if (data.fieldName.startsWith('table_')) {
             return;
           }
           const refRange = data.refRange;
@@ -105,7 +107,7 @@ export function setFieldsModel(bindingPaths: any) {
             0,
             0,
           );
-          const range = getRangeValue(ranges, fieldName);
+          const range = getRangeValue(ranges);
           handleRangeValue(range, fieldName, refRange);
         });
         settingFieldRows = [];
@@ -158,10 +160,6 @@ function addTableRow(tableBody, data) {
         formulaBar.destroy();
         settingFieldRows.splice(index, 1);
         handleRangeValue(null, fieldRow.fieldNameInput.value, fieldRow.formulaBar.text());
-        store.setBindingPaths({
-          ...store.bindingPaths,
-          [fieldRow.fieldNameInput.value]: undefined,
-        });
       }
     });
     row.remove();

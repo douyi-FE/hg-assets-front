@@ -40,7 +40,7 @@ function showAreaSelector(title, selectType) {
     if (result.isConfirmed) {
       let area = (store.fbx as any).text();
       const ranges = store.formulaToRanges((store.spread as any).getActiveSheet(), area, 0, 0);
-      const rangeValue = getRangeValue(ranges, selectType);
+      const rangeValue = getRangeValue(ranges);
       if (rangeValue) {
         // 按类型处理
         handleRangeValue(rangeValue, selectType, area);
@@ -52,8 +52,7 @@ function showAreaSelector(title, selectType) {
 // 清空选择
 export function clearSelections(isImport = false) {
   if (isImport) {
-    store.setInitDataSource({});
-    store.setBindingPaths({});
+    // do nothing
   } else {
     if (!store.originalFile) {
       showAlert('未导入模板，请先导入模板', 'error');
@@ -69,8 +68,6 @@ export function clearSelections(isImport = false) {
       confirmButtonColor: '#3085d6',
     }).then((result) => {
       if (result.isConfirmed) {
-        store.setInitDataSource({});
-        store.setBindingPaths({});
         importFile(store.originalFile);
       }
     });

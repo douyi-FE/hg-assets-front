@@ -33,7 +33,7 @@ export function importFile(file) {
 // 将设计器中的数据转换为 json 格式
 export function spreadToJson() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName(store.tableName);
+  const table = sheet.tables.all()[0];
   if (table) {
     table.expandBoundRows(true);
   }
@@ -103,23 +103,35 @@ export function fileToBase64(file) {
   });
 }
 
+// 返回初始化数据(支持多表填报)
+export function getInitData(spread) {
+  const sheetCount = spread.getSheetCount();
+  let initData = {};
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = spread.getSheet(i);
+    const ds = sheet.getDataSource();
+    if (ds) {
+      const dsSource = ds.getSource();
+      initData[sheet.name()] = dsSource;
+    }
+  }
+  return JSON.stringify(initData);
+}
+
 // 获取选中的区域
-export function getRangeValue(ranges, selectType) {
+export function getRangeValue(ranges) {
   if (!ranges || ranges.length === 0) {
     return '';
   }
   if (ranges.length > 1) {
-    store.selections[selectType] = '';
     showAlert('只允许选择单个Sheet页区域', 'error'); // 错误提示
     return '';
   }
   const selectRanges = ranges[0].ranges;
   if (selectRanges.length === 0) {
-    store.selections[selectType] = '';
     return '';
   }
   if (selectRanges.length > 1) {
-    store.selections[selectType] = '';
     showAlert('只允许选择单个区域', 'error'); // 错误提示
     return '';
   }
@@ -169,7 +181,7 @@ export function saveTemplate() {
           body: JSON.stringify({
             filename: store.originalFile ? (store.originalFile as File).name : '',
             base64: pureBase64,
-            initDataSource: JSON.stringify(store.initDataSource),
+            initDataSource: JSON.stringify(getInitData(store.spread)),
           }),
         })
           .then((response) => response.json())
@@ -207,7 +219,6 @@ export function openTemplateByBase64(base64: string, fileName: string) {
     const file = new window.File([fileBlob], fileName, {
       type: 'application/octet-stream',
     });
-    // store.setInitDataSource(JSON.parse(data.initDataSource));
     // 也可以写成 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 等
     (store.spread as any).open(
       fileBlob,
@@ -247,7 +258,6 @@ export function openTemplate() {
       const file = new window.File([fileBlob], data.filename, {
         type: 'application/octet-stream',
       });
-      store.setInitDataSource(JSON.parse(data.initDataSource));
       // 也可以写成 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 等
 
       // 调用 SpreadJS 的 open 方法
@@ -258,9 +268,19 @@ export function openTemplate() {
           clearSelections();
           initWorkbook(store.spread);
           (store.spread as any).resumePaint();
-          (store.spread as any)
-            .getActiveSheet()
-            .setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(store.initDataSource));
+          // (store.spread as any)
+          //   .getActiveSheet()
+          //   .setDataSource(
+          //     new GC.Spread.Sheets.Bindings.CellBindingSource(getInitData(store.spread)),
+          //   );
+          const sheetCount = (store.spread as any).getSheetCount();
+          const initData = getInitData(store.spread);
+          for (let i = 0; i < sheetCount; i++) {
+            const sheet = (store.spread as any).getSheet(i);
+            sheet.setDataSource(
+              new GC.Spread.Sheets.Bindings.CellBindingSource(JSON.parse(initData)[sheet.name()]),
+            );
+          }
           showAlert('文件加载成功!', 'success');
         },
         function (e) {
@@ -277,7 +297,7 @@ export function openTemplate() {
 // 初始化表单数据
 export function getInitDataSource() {
   const sheet = (store.spread as any).getActiveSheet();
-  const table = sheet.tables.findByName(store.tableName);
+  const table = sheet.tables.all()[0];
   const dataSource = {};
   const tableData: any[] = [];
   let hasData = false;
@@ -301,6 +321,8 @@ export function getInitDataSource() {
         tableData.push(item);
       }
     }
+    // 将表格数据添加到数据源中
+    dataSource[table.name()] = tableData;
   }
   if (hasData) {
     showAlert(
@@ -309,11 +331,55 @@ export function getInitDataSource() {
       3000,
     );
   }
-  dataSource[store.tableName] = tableData;
   return dataSource;
+}
+
+// 获取 sheet 的绑定信息(支持多表填报)
+export function getSheetBindingPaths(sheet) {
+  const rowCount = sheet.getRowCount();
+  const colCount = sheet.getColumnCount();
+  const result = {};
+  for (let r = 0; r < rowCount; r++) {
+    for (let c = 0; c < colCount; c++) {
+      const bp = sheet.getBindingPath(r, c);
+      if (bp) {
+        const range = new GC.Spread.Sheets.Range(r, c, 1, 1);
+        result[bp] = {
+          range: range,
+          rangeText:
+            "=" +
+            sheet.name() +
+            "!" +
+            GC.Spread.Sheets.CalcEngine.rangeToFormula(
+              range,
+              0,
+              0,
+              GC.Spread.Sheets.CalcEngine.RangeReferenceRelative.allRelative
+            ),
+        };
+      }
+    }
+  }
+  const tables = sheet.tables.all();
+  if (tables && tables.length > 0) {
+    const table = tables[0];
+    if (table.bindingPath()) {
+      result["tableBindingPath"] = {
+        tableName: table.name(),
+        range: table.range(),
+        bindingPath: table.bindingPath(),
+      };
+    }
+  }
+  return result;
 }
 
 // 生成 UUID 方法
 export function generateUUID() {
   return Math.random().toString(36).substring(2, 15);
+}
+
+// 生成表格名称
+export function generateTableName() {
+  return "table_" + generateUUID();
 }

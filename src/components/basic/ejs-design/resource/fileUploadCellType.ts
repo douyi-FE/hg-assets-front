@@ -2,7 +2,7 @@ import { nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { store } from '../store';
 import { downloadZipUrl } from '../config';
-import { fileToBase64, generateUUID, base64ToBlob } from './commonFunctions';
+import { fileToBase64, generateUUID, base64ToBlob, getSheetBindingPaths } from './commonFunctions';
 import { renderPic, renderWord, renderPdf, renderExcel, renderUnknown } from './fileRenders';
 import Api from '@/api/';
 import { eventBus } from '@/utils/event-bus';
@@ -68,13 +68,8 @@ window.FileUploadCellType = FileUploadCellType;
 export function setAttachColumn(spread, range, bindingPath = 'fileAttach') {
   const sheet = spread.getActiveSheet();
   // 未绑定的表格不允许设置附件
-  if (!store.bindingPaths[store.tableName]) {
-    message.error('请先设置绑定');
-    return;
-  }
-  // 绑定的表格
-  const table = sheet.tables.findByName(store.tableName);
-  if (!table || table.bindingPath() === null) {
+  const table = sheet.tables.all()[0];
+  if (!table || !table.bindingPath()) {
     message.error('请先设置绑定');
     return;
   }
@@ -116,10 +111,6 @@ export function setAttachColumn(spread, range, bindingPath = 'fileAttach') {
       .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
       .vAlign(GC.Spread.Sheets.VerticalAlign.center);
     sheet.resumePaint();
-    store.bindingPaths[bindingPath] = {
-      range: JSON.parse(JSON.stringify(range)),
-      rangeText: bindingPath,
-    };
   }
 }
 
