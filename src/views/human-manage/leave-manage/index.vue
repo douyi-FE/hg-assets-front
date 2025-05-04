@@ -93,6 +93,7 @@
       console.log('flowBindList', res);
       if (res.length === 0) {
         isShowFlowBind.value = true;
+        message.warn('请先绑定流程');
       } else {
         isShowFlowBind.value = false;
         bindFlowId.value = res[0].flowId;
