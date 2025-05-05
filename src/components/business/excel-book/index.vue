@@ -70,7 +70,7 @@ const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const attachListData = ref<any[]>([]);
 const summaryByType = ref(false);
-const summaryByTypeDisabled = ref(false);
+const summaryByTypeDisabled = ref<boolean>(true);
 const isFilling = ref(true);
 let summarySheetData: any = null;
 let summarySheetDataByType: any = null;
@@ -205,7 +205,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         addSheetRows(sheet, dataSource);
         sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
         // 设置汇总数据
-        const tableBindingPath = getSummaryDataTable(summaryData);
+        const tableBindingPath = getSummaryDataTable(summaryDataByType);
         if (tableBindingPath && summaryData[tableBindingPath] && summaryData[tableBindingPath].length > 0) {
           summarySheetData = summaryData;
           summarySheetDataByType = summaryDataByType;
@@ -218,6 +218,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         spread.resumePaint();
         initUploadFile(spread);
         setFieldDict(dictData);
+        canSwitchSummaryType();
         resolve(true);
       },
       function (e) {
@@ -244,6 +245,9 @@ const saveWorkBookEjs = function () {
 
 const getSummaryDataTable = function (summaryData: any) {
   let tableBindingPath = '';
+  if (!summaryData) {
+    return tableBindingPath;
+  }
   Object.keys(summaryData).forEach((key) => {
     if (key.startsWith('table')) {
       tableBindingPath = key;
@@ -316,9 +320,10 @@ const switchSummaryType = function () {
 const canSwitchSummaryType = function () {
   const summarySheet = spread.getSheetFromName('汇总表');
   if (summarySheet) {
+    summaryByTypeDisabled.value = false;
+  } else {
     summaryByTypeDisabled.value = true;
   }
-  summaryByTypeDisabled.value = false;
 };
 
 /*

@@ -37,10 +37,13 @@ TemplateCellType.prototype.paint = function (
   context: { sheet: any; row: any; col: any },
 ) {
   const sheet = context.sheet;
-  if (sheet) {
-    const bindingPath = sheet.getBindingPath(context.row, context.col);
-    if (bindingPath) {
-      value = '[' + bindingPath + ']';
+  // 判断value不为 null, undefined, ''
+  if (!value && value !== null && value !== undefined && value !== '') {
+    if (sheet) {
+      const bindingPath = sheet.getBindingPath(context.row, context.col);
+      if (bindingPath) {
+        value = '[' + bindingPath + ']';
+      }
     }
   }
   GC.Spread.Sheets.CellTypes.Text.prototype.paint.apply(this, [ctx, value, x, y, w, h, style, context]);

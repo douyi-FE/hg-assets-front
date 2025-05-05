@@ -17,13 +17,11 @@ import { message } from 'ant-design-vue';
 import excelBook from '@/components/business/excel-book/index.vue';
 import templateBind from '@/components/business/template-bind/index.vue';
 import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
-import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
-import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDevice';
+import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
 import { useUserStore } from '@/store/modules/user';
 import { useRoute } from 'vue-router';
-// import { eventBus } from '@/utils/event-bus';
-const APPLICATION_NAME = '通风管道-工程量计算书';
-const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
+const deptId = ref<number>(0);
+const APPLICATION_NAME = '列表字段取值字典';
 let templateId = '';
 let type = '', project = '', device = '', engineer = '';
 const excelBookRef = ref();
@@ -58,8 +56,6 @@ const getTemplateId = async function () {
   return getApplicationByName(APPLICATION_NAME);
 };
 
-const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
-
 const fetchExcel = async function () {
   getTemplateId()
     .then((res) => {
@@ -70,10 +66,9 @@ const fetchExcel = async function () {
       }
       Promise.all([
         getApplicationById(templateId),
-        getProjectDevice({ userId: userStore.userInfo.id, type, project, device, engineer }),
-        getTemplateFieldDict({ templateId: templateFieldDictId, dictName: APPLICATION_NAME }),
+        getApplicationData({ templateId: templateId, deptId: deptId.value }),
       ])
-        .then(([template, projectData, templateFieldDict]) => {
+        .then(([template, projectData]) => {
           dataSource.value = template.initDataSource;
           dataSource.value.userId = userStore.userInfo.id;
           dataSource.value.type = type;
@@ -83,10 +78,8 @@ const fetchExcel = async function () {
           content.value = {
             ejs: template.content,
             dataSource: projectData?.projectDeviceWithUserId?.projectData || dataSource,
-            summaryData: projectData?.projectDeviceSummary?.projectData || dataSource,
-            summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
             fileName: template.name,
-            dictData: templateFieldDict || [],
+            dictData: [],
           };
         })
         .catch(() => {
@@ -100,18 +93,14 @@ const fetchExcel = async function () {
 };
 
 const saveWorkBook = function (data: any) {
-  saveProjectDevice({
+  saveApplicationData({
+    templateId: templateId,
     userId: userStore.userInfo.id,
-    type,
-    project,
-    device,
-    engineer,
-    templateId,
-    projectData: data || dataSource.value,
+    deptId: deptId.value,
+    applicationData: data || dataSource.value,
   })
     .then((res) => {
       message.success('保存数据成功');
-      fetchExcel();
     })
     .catch((err) => {
       message.error('保存数据失败');

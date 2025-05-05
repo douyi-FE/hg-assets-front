@@ -16,13 +16,16 @@ import { onMounted, ref } from 'vue';
 import { message } from 'ant-design-vue';
 import excelBook from '@/components/business/excel-book/index.vue';
 import templateBind from '@/components/business/template-bind/index.vue';
-import { getApplicationById } from '@/api/backend/api/application';
-import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
+import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
+import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
+import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDevice';
 import { useUserStore } from '@/store/modules/user';
-import { eventBus } from '@/utils/event-bus';
+import { useRoute } from 'vue-router';
+// import { eventBus } from '@/utils/event-bus';
 const APPLICATION_NAME = '动设备-工程量计算书';
-const APPLICATION_ID = '67f9e82c572177c961d20604';
+const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
 let templateId = '';
+let type = '', project = '', device = '', engineer = '';
 const excelBookRef = ref();
 const excelBookKey = ref('');
 const content = ref({
@@ -36,17 +39,26 @@ const content = ref({
   summaryDataByType: {
     table: [{}],
   },
-  fileName: '导出数据文件.xlsx',
+  dictData: [],
+  fileName: APPLICATION_NAME + '.xlsx',
 });
-const deptId = ref<number>(0);
+// const deptId = ref<number>(0);
+const userStore = useUserStore();
 const dataSource = ref({
   table: [{}],
+  userId: userStore.userInfo.id,
+  type: '',
+  project: '',
+  device: '',
+  engineer: '',
 });
 const isShowTemplateSetting = ref(false);
-const userStore = useUserStore();
+const route = useRoute();
 const getTemplateId = async function () {
-  return getApplicationById(APPLICATION_ID);
+  return getApplicationByName(APPLICATION_NAME);
 };
+
+const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
 
 const fetchExcel = async function () {
   getTemplateId()
@@ -58,14 +70,23 @@ const fetchExcel = async function () {
       }
       Promise.all([
         getApplicationById(templateId),
-        getApplicationData({ templateId: templateId, deptId: deptId.value }),
+        getProjectDevice({ userId: userStore.userInfo.id, type, project, device, engineer }),
+        getTemplateFieldDict({ templateId: templateFieldDictId, dictName: APPLICATION_NAME }),
       ])
-        .then(([template, applicationData]) => {
+        .then(([template, projectData, templateFieldDict]) => {
           dataSource.value = template.initDataSource;
+          dataSource.value.userId = userStore.userInfo.id;
+          dataSource.value.type = type;
+          dataSource.value.project = project;
+          dataSource.value.device = device;
+          dataSource.value.engineer = engineer;
           content.value = {
             ejs: template.content,
-            dataSource: applicationData?.applicationData || dataSource,
+            dataSource: projectData?.projectDeviceWithUserId?.projectData || dataSource,
+            summaryData: projectData?.projectDeviceSummary?.projectData || dataSource,
+            summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
             fileName: template.name,
+            dictData: templateFieldDict || [],
           };
         })
         .catch(() => {
@@ -79,14 +100,18 @@ const fetchExcel = async function () {
 };
 
 const saveWorkBook = function (data: any) {
-  saveApplicationData({
-    templateId: APPLICATION_ID,
+  saveProjectDevice({
     userId: userStore.userInfo.id,
-    deptId: deptId.value,
-    applicationData: data || dataSource.value,
+    type,
+    project,
+    device,
+    engineer,
+    templateId,
+    projectData: data || dataSource.value,
   })
     .then((res) => {
       message.success('保存数据成功');
+      fetchExcel();
     })
     .catch((err) => {
       message.error('保存数据失败');
@@ -98,15 +123,14 @@ const cellClick = function (data: any) {
 };
 
 onMounted(() => {
+  // 从URL参数获取项目编号、装置编号以及工程编号
+  type = route.query.type as string;
+  project = route.query.project as string;
+  device = route.query.device as string;
+  engineer = route.query.engineer as string;
   fetchExcel();
-  deptId.value = userStore.userInfo.dept?.id;
-  eventBus.on('deptChange', handleDeptChange);
 });
 
-const handleDeptChange = function (_deptId: number) {
-  deptId.value = _deptId;
-  fetchExcel();
-};
 </script>
 
 <style lang="less" scoped>
