@@ -122,17 +122,21 @@ export const baseColumns: TableColumnItem[] = [
     actions: ({ record }) => [
       {
         label: '审批',
+        disabled: record.approverStatus === 'approved',
         onClick: () => {
           console.log(record);
+          eventBus.emit('approve-flow-execute', record);
         },
       },
       {
         label: '驳回',
+        disabled: record.approverStatus === 'reject',
         popConfirm: {
           title: '你确定要驳回吗？',
           placement: 'left',
           onConfirm: () => {
             console.log(record);
+            eventBus.emit('reject-flow-execute', record);
           },
         },
       },

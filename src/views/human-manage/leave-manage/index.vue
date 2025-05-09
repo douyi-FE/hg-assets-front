@@ -48,7 +48,13 @@
   import { useTable } from '@/components/core/dynamic-table';
   import { eventBus } from '@/utils/event-bus';
   import { getFlowBindList } from '@/api/backend/api/flowBind';
-  import { createLeave } from '@/api/backend/api/leave';
+  import { createLeave, rejectLeave, updateLeave } from '@/api/backend/api/leave';
+  import {
+    createFlowExecute,
+    rejectFlowExecute,
+    approveFlowExecute,
+  } from '@/api/backend/api/flowExecute';
+  import { useUserStore } from '@/store/modules/user';
 
   const [DynamicTable, dynamicTableInstance] = useTable();
   const columns = baseColumns;
@@ -56,6 +62,7 @@
   const isShowFlowBind = ref(false);
   const bindFlowId = ref('');
   const leaveFormRef = ref();
+  const userInfo = useUserStore();
   const openMenuModal = (record: any, type: string) => {
     console.log(record, type);
     visible.value = true;
@@ -67,6 +74,41 @@
   eventBus.on('leave-reload', () => {
     dynamicTableInstance.reload();
   });
+  eventBus.on('reject-flow-execute', (record: any) => {
+    Promise.all([
+      rejectLeave({
+        id: record._id,
+      }),
+      rejectFlowExecute({
+        businessId: record._id,
+        initiatorId: userInfo.userInfo.id,
+      }),
+    ])
+      .then((res) => {
+        message.success('驳回成功');
+        dynamicTableInstance.reload();
+      })
+      .catch((err) => {
+        message.error('驳回失败');
+      });
+  });
+  eventBus.on('approve-flow-execute', (record: any) => {
+    console.log('record', record);
+    approveFlowExecute({
+      businessId: record._id,
+      initiatorId: userInfo.userInfo.id,
+    }).then((res) => {
+      message.success('审批成功');
+      if (res.status === 'completed') {
+        updateLeave({
+          id: record._id,
+          approverStatus: 'approved',
+        }).then((res) => {
+          dynamicTableInstance.reload();
+        });
+      }
+    });
+  });
   const bindSuccess = () => {
     message.success('绑定成功');
     isShowFlowBind.value = false;
@@ -75,10 +117,19 @@
     leaveFormRef.value
       .getFormData()
       .then((res) => {
-        console.log('res', res);
         return createLeave({
           ...res,
           flowId: bindFlowId.value,
+        });
+      })
+      .then((res) => {
+        return createFlowExecute({
+          flowId: bindFlowId.value,
+          initiatorId: userInfo.userInfo.id,
+          businessId: res._id,
+          data: {
+            description: '请假申请',
+          },
         });
       })
       .then((res) => {

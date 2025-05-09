@@ -19,7 +19,7 @@ export const createLeave = async (data: any) => {
     method: 'POST',
     data,
   });
-  return res.data;
+  return res;
 };
 
 // 删除请假
@@ -29,7 +29,7 @@ export const deleteLeave = async (data: any) => {
     method: 'DELETE',
     data,
   });
-  return res.data;
+  return res;
 };
 
 // 获取请假详情
@@ -39,7 +39,7 @@ export const getLeaveDetail = async (data: any) => {
     method: 'GET',
     data,
   });
-  return res.data;
+  return res;
 };
 
 // 审批请假
@@ -49,7 +49,7 @@ export const approveLeave = async (data: any) => {
     method: 'POST',
     data,
   });
-  return res.data;
+  return res;
 };
 
 // 驳回请假
@@ -59,7 +59,7 @@ export const rejectLeave = async (data: any) => {
     method: 'POST',
     data,
   });
-  return res.data;
+  return res;
 };
 
 // 获取请假统计
@@ -68,5 +68,15 @@ export const getLeaveStatistics = async () => {
     url: '/api/leave/statistics',
     method: 'GET',
   });
-  return res.data;
+  return res;
+};
+
+// 更新请假
+export const updateLeave = async (data: any) => {
+  const res = await request<any>({
+    url: '/api/leave/update',
+    method: 'POST',
+    data,
+  });
+  return res;
 };
