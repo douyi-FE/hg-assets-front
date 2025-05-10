@@ -20,6 +20,8 @@ export async function accountMenu(options?: RequestOptions) {
   return request<API.AccountMenus[]>('/api/account/menus', {
     method: 'GET',
     ...(options || {}),
+  }).then((res) => {
+    return res;
   });
 }
 

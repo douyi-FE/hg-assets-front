@@ -122,7 +122,7 @@ export const baseColumns: TableColumnItem[] = [
     actions: ({ record }) => [
       {
         label: '审批',
-        disabled: record.approverStatus === 'approved',
+        disabled: record.approverStatus === 'approved' || record.approverStatus === 'reject',
         onClick: () => {
           console.log(record);
           eventBus.emit('approve-flow-execute', record);
@@ -130,7 +130,7 @@ export const baseColumns: TableColumnItem[] = [
       },
       {
         label: '驳回',
-        disabled: record.approverStatus === 'reject',
+        disabled: record.approverStatus === 'reject' || record.approverStatus === 'approved',
         popConfirm: {
           title: '你确定要驳回吗？',
           placement: 'left',
@@ -153,17 +153,6 @@ export const baseColumns: TableColumnItem[] = [
               message.success('删除成功');
               eventBus.emit('leave-reload');
             });
-          },
-        },
-      },
-      // 撤回
-      {
-        label: '撤回',
-        popConfirm: {
-          title: '你确定要撤回吗？',
-          placement: 'left',
-          onConfirm: () => {
-            console.log(record);
           },
         },
       },

@@ -4,7 +4,21 @@
       row-key="id"
       header-title="休假管理"
       title-tooltip="休假管理"
-      :data-request="Api.leave.getLeaveList"
+      :data-request="
+        async (params) => {
+          const flowExecuteList = await getFlowExecuteList(params);
+          console.log('flowExecuteList', flowExecuteList);
+          return getLeaveList(params).then((res) => {
+            return res.filter((item) => {
+              const flowExecute = flowExecuteList.find((flow) => flow.businessId === item._id);
+              if (flowExecute) {
+                return true;
+              }
+              return true;
+            });
+          });
+        }
+      "
       :columns="columns"
       bordered
       size="small"
@@ -44,15 +58,15 @@
   import { baseColumns } from './column';
   import LeaveForm from './leave-form.vue';
   import FlowBind from '@/components/business/flow-bind/index.vue';
-  import Api from '@/api';
   import { useTable } from '@/components/core/dynamic-table';
   import { eventBus } from '@/utils/event-bus';
   import { getFlowBindList } from '@/api/backend/api/flowBind';
-  import { createLeave, rejectLeave, updateLeave } from '@/api/backend/api/leave';
+  import { createLeave, rejectLeave, updateLeave, getLeaveList } from '@/api/backend/api/leave';
   import {
     createFlowExecute,
     rejectFlowExecute,
     approveFlowExecute,
+    getFlowExecuteList,
   } from '@/api/backend/api/flowExecute';
   import { useUserStore } from '@/store/modules/user';
 
