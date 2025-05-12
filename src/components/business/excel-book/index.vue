@@ -343,16 +343,17 @@ const setFieldDict = function (dictData: any) {
   }
   spread.suspendPaint();
   const sheetDictData = {};
-  dictData.forEach((item) => {
-    if (!sheetDictData[item['Sheet名称']]) {
-      sheetDictData[item['Sheet名称']] = {};
-    }
-    if (!sheetDictData[item['Sheet名称']][item['字段名称']]) {
-      sheetDictData[item['Sheet名称']][item['字段名称']] = [];
-    }
-    sheetDictData[item['Sheet名称']][item['字段名称']].push(item['可选值']);
-  });
-  console.log('sheetDictData', sheetDictData);
+  if (dictData && dictData.length > 0) {
+    dictData.forEach((item) => {
+      if (!sheetDictData[item['Sheet名称']]) {
+        sheetDictData[item['Sheet名称']] = {};
+      }
+      if (!sheetDictData[item['Sheet名称']][item['字段名称']]) {
+        sheetDictData[item['Sheet名称']][item['字段名称']] = [];
+      }
+      sheetDictData[item['Sheet名称']][item['字段名称']].push(item['可选值']);
+    });
+  }
   const sheetCount = spread.getSheetCount();
   for (let i = 0; i < sheetCount; i++) {
     const sheet = spread.getSheet(i);
