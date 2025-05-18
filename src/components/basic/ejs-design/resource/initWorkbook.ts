@@ -1,6 +1,7 @@
 import { store } from '../store';
 import { tableRowChanged } from './tableRowChanged';
 import { TemplateCellType } from './templateCellType';
+import { Evaluate } from './evaluateFunction';
 
 // 初始化工作簿
 export function initWorkbook(spread) {
@@ -44,6 +45,10 @@ export function initWorkbook(spread) {
   standardTheme.highlightFirstColumnStyle(styleInfo);
   standardTheme.highlightLastColumnStyle(styleInfo);
   spread.customTableThemes.add(standardTheme);
+  // 添加Evaluate函数
+  spread.addCustomFunction(new Evaluate());
+  // 开启数据验证高亮提醒
+  spread.options.highlightInvalidData = true;
   // 设置自动应用到整列
   store.setAutoSetTableColumn(true);
   // 监听表格行变化，自动带入列样式

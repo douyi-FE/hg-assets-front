@@ -1,3 +1,4 @@
+<!-- 工艺管道-工程量计算书 -->
 <template>
   <div class="excel-book-container">
     <excel-book ref="excelBookRef" :key="excelBookKey" class="excel-book" :content="content" :dataSource="dataSource"
@@ -22,10 +23,11 @@ import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDe
 import { useUserStore } from '@/store/modules/user';
 import { useRoute } from 'vue-router';
 // import { eventBus } from '@/utils/event-bus';
-const APPLICATION_NAME = '工业管道-工程量计算书';
+const APPLICATION_NAME = '工艺管道-工程量计算书';
 const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
 let templateId = '';
-let type = '', project = '', device = '', engineer = '';
+let type = '', project = '', device = '', engineer = '', isDone = '';
+const editable = ref(true);
 const excelBookRef = ref();
 const excelBookKey = ref('');
 const content = ref({
@@ -41,6 +43,7 @@ const content = ref({
   },
   dictData: [],
   fileName: APPLICATION_NAME + '.xlsx',
+  editable: editable,
 });
 // const deptId = ref<number>(0);
 const userStore = useUserStore();
@@ -87,6 +90,7 @@ const fetchExcel = async function () {
             summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
             fileName: template.name,
             dictData: templateFieldDict || [],
+            editable: editable,
           };
         })
         .catch(() => {
@@ -128,6 +132,9 @@ onMounted(() => {
   project = route.query.project as string;
   device = route.query.device as string;
   engineer = route.query.engineer as string;
+  isDone = route.query.isDone as string;
+  // 如果isDone为true，则不可编辑
+  editable.value = isDone === 'false';
   fetchExcel();
 });
 

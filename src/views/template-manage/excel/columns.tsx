@@ -129,16 +129,21 @@ export const baseColumns: TableColumnItem[] = [
 
 export const versionColumns: TableColumnItem[] = [
   {
-    title: '版本号',
+    title: '版本',
     dataIndex: 'version',
   },
   {
-    title: '版本描述',
+    title: '描述',
     dataIndex: 'note',
+    width: 50,
   },
   {
     title: '创建时间',
     dataIndex: 'createdAt',
+    // 格式化时间，并按时间倒序排列
+    customRender: ({ record }) => {
+      return formatToDateTime(record.createdAt);
+    },
   },
   {
     title: '状态',
@@ -147,6 +152,6 @@ export const versionColumns: TableColumnItem[] = [
   {
     title: '操作',
     dataIndex: 'action',
-    width: 250,
+    width: 100,
   },
 ];

@@ -1,3 +1,4 @@
+import { showAlert } from './commonFunctions';
 import { setTableRowChangedCellType } from './fileUploadCellType';
 
 // 监听表格行变化，自动带入列样式
@@ -20,6 +21,15 @@ export function tableRowChanged(spread: any) {
     // 监听，暂不处理
     console.log('tableResized', data);
   });
+
+  // 监听表格列变化，取消表格绑定，并提醒重新绑定表单
+  spread.bind(GC.Spread.Sheets.Events.TableColumnsChanged, function (e, param) {
+    const sheet = param.sheet;
+    const table = param.table;
+    sheet.getParent().commandManager().execute({ cmd: 'tableToRange', sheetName: sheet.name(), tableName: table.name() });
+    showAlert('监测到表格列变化，请重新绑定表单', 'warning');
+  });
+
 }
 
 export function setTableRows(spread, sheet, tableRange, fromRow, row, rowCount) {

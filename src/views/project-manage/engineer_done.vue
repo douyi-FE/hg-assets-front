@@ -2,9 +2,9 @@
   <div class="project-v2">
     <a-table :columns="projectColumns" :data-source="projectDataSource" row-key="合同编号">
       <template #expandedRowRender="{ record }">
-        <Device :project-code="record['项目编号']">
+        <Device :project-code="record['项目编号']" :is-done="true">
           <template #expandTable="{ row }">
-            <Engineer :key="record.code" :project-code="record['项目编号']" :device-code="row['code']" />
+            <Engineer :key="record.code" :project-code="record['项目编号']" :device-code="row['code']" :is-done="true" />
           </template>
         </Device>
       </template>
@@ -33,7 +33,7 @@ const fetchProjectData = async function () {
             return [];
           }
           const tableData = data[tableKey];
-          const hasEngineerData = tableData.filter((item: any) => item['是否含工程量计算书'] === '是' && item['工程量计算是否完成'] === '否');
+          const hasEngineerData = tableData.filter((item: any) => item['是否含工程量计算书'] === '是' && item['工程量计算是否完成'] === '是');
           if (hasEngineerData.length === 0) {
             return [];
           }
