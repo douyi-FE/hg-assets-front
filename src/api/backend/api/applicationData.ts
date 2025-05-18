@@ -28,6 +28,15 @@ export async function updateApplicationData(params: any, options?: RequestOption
   });
 }
 
+// 追加数据
+export async function appendApplicationData(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/application/data/append',
+    method: 'POST',
+    data: params,
+  });
+}
+
 // 获取模板字段取值字典
 export async function getTemplateFieldDict(params: any, options?: RequestOptions) {
   return request<any>({
