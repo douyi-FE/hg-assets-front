@@ -66,20 +66,18 @@ const fetchExcel = async function () {
       }
       Promise.all([
         getApplicationById(templateId),
-        getApplicationData({ templateId: templateId, deptId: deptId.value }),
+        getApplicationData({ templateId: templateId }),
       ])
-        .then(([template, projectData]) => {
-          dataSource.value = template.initDataSource;
-          dataSource.value.userId = userStore.userInfo.id;
-          dataSource.value.type = type;
-          dataSource.value.project = project;
-          dataSource.value.device = device;
-          dataSource.value.engineer = engineer;
+        .then(([template, dictData]) => {
+          let bindingData = template.initDataSource;
+          if (dictData && dictData.applicationData) {
+            bindingData = dictData.applicationData;
+          }
           content.value = {
             ejs: template.content,
-            dataSource: projectData?.projectDeviceWithUserId?.projectData || dataSource,
+            dataSource: bindingData,
             fileName: template.name,
-            dictData: [],
+            dictData: dictData,
           };
         })
         .catch(() => {

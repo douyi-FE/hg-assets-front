@@ -6,8 +6,12 @@
           <!-- <DeptSelecter /> -->
           <a-switch v-model:checked="summaryByType" inline-prompt checked-children="分类汇总" un-checked-children="按行汇总"
             :disabled="summaryByTypeDisabled" @change="switchSummaryType" />
-          <a-button type="primary" @click="exportExcel">导出</a-button>
-          <a-button type="primary" @click="saveWorkBookData">保存</a-button>
+
+          <a-button type="default" @click="addDicts">添加字典</a-button>
+          <a-button type="default" @click="updateDicts">更新字典</a-button>
+          <a-button type="default" @click="exportExcel">导出</a-button>
+          <a-button type="default" @click="importExcel">导入</a-button>
+          <a-button type="primary" @click="saveWorkBookData" :disabled="!isEditable">保存</a-button>
           <FullscreenOutlined v-if="!isFullscreen" @click="toggleFullscreen" />
           <FullscreenExitOutlined v-else @click="toggleFullscreen" />
         </div>
@@ -55,23 +59,27 @@
 import { getCurrentInstance, nextTick, onMounted, ref, toRaw, watch } from 'vue';
 import dayjs from 'dayjs';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 import Api from '@/api';
 import {
   base64ToArrayBuffer,
   base64ToBlob,
 } from '@/components/basic/ejs-design/resource/commonFunctions';
-// import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
+import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
+// import { Evaluate } from '@/components/basic/ejs-design/resource/evaluateFunction';
 import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
 import { eventBus } from '@/utils/event-bus';
 import { attachListColumns } from '@/components/basic/ejs-design/config';
-import { TemplateCellType } from '@/components/basic/ejs-design/resource/templateCellType';
+import { addFieldDict, setFieldDict, updateDict } from './fieldDict';
+// import { TemplateCellType } from '@/components/basic/ejs-design/resource/templateCellType';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const attachListData = ref<any[]>([]);
 const summaryByType = ref(false);
 const summaryByTypeDisabled = ref<boolean>(true);
 const isFilling = ref(true);
+const isEditable = ref(true);
+const dictDataFields = ref<any>({});
 let summarySheetData: any = null;
 let summarySheetDataByType: any = null;
 /********附件列表模态框v2-begin *********/
@@ -118,7 +126,7 @@ const deleteFile = async (fileId: string, index: number) => {
 /********附件列表模态框v2-end *********/
 // summaryData 设置非必填
 const props = withDefaults(
-  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[] } }>(),
+  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[]; editable: boolean } }>(),
   {
     content: () => ({
       ejs: '',
@@ -133,6 +141,7 @@ const props = withDefaults(
       },
       fileName: '导出数据文件.xlsx',
       dictData: [],
+      editable: true,
     }),
   },
 );
@@ -188,7 +197,7 @@ function setSummarySheet(spread: any, summaryData: any) {
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
 }
 
-const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}) {
+const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}, editable: boolean = true) {
   return new Promise((resolve, reject) => {
     const arrayBuffer = base64ToArrayBuffer(ejs);
     const fileBlob = new Blob([arrayBuffer], {
@@ -198,8 +207,9 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
       fileBlob,
       function () {
         // clearSelections();
-        // initWorkbook(spread);
-        console.log('renderExcelBySjs', dictData);
+        if (editable !== undefined) {
+          isEditable.value = editable;
+        }
         spread.suspendPaint();
         const sheet = spread.getActiveSheet();
         addSheetRows(sheet, dataSource);
@@ -210,15 +220,21 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           summarySheetData = summaryData;
           summarySheetDataByType = summaryDataByType;
           setSummarySheet(spread, summaryData);
+          if (!editable) {
+            // 激活汇总表
+            spread.setActiveSheet(spread.getSheetFromName('汇总表').name());
+          }
           // 设置汇总表样式
           const summarySheet = spread.getSheetFromName('汇总表');
           summarySheet.tables.all()[0].style('standard');
         }
-        spread.setActiveSheet(sheet.name());
+        // spread.setActiveSheet(sheet.name());
         spread.resumePaint();
         initUploadFile(spread);
-        setFieldDict(dictData);
+        setFieldDict(spread, dictData, dictDataFields);
         canSwitchSummaryType();
+        initWorkbook(spread);
+        sheet.recalcAll(true);
         resolve(true);
       },
       function (e) {
@@ -284,6 +300,11 @@ const exportExcel = function () {
     setTimeout(() => {
       URL.revokeObjectURL(link.href);
     });
+  }, function (e) {
+    console.log(e);
+  }, {
+    fileType: GC.Spread.Sheets.FileType.excel,
+    includeBindingSource: true
   });
 };
 
@@ -296,13 +317,20 @@ const registerEvent = function () {
     const tableRange = table.dataRange();
     const tableCol = info.col - tableRange.col;
     const dataField = table.getColumnDataField(tableCol);
+    const tableKey = Object.keys(ds).find((key) => key.startsWith('table'));
+    const rowData = tableKey ? ds[tableKey][info.row - tableRange.row - 1] : null;
     emits('cellClick', {
       row: info.row,
       col: info.col,
       dataField: dataField,
-      rowData: ds[table.name()][info.row - tableRange.row - 1],
+      rowData: rowData,
     });
   });
+};
+
+// 导入excel
+const importExcel = function () {
+  message.warning('开发中... 敬请期待');
 };
 
 const switchSummaryType = function () {
@@ -313,6 +341,7 @@ const switchSummaryType = function () {
     } else {
       sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summarySheetData));
     }
+    // spread.addCustomFunction(new Evaluate());
     spread.setActiveSheet(sheet.name());
   }
 };
@@ -326,74 +355,25 @@ const canSwitchSummaryType = function () {
   }
 };
 
-/*
-  先预处理 dictData 数据， 结果如下：
-  {
-    'Sheet名称': {
-      '字段名称': {
-        '字典值': ['字典名称1', '字典名称2', '字典名称3']
-      }
-    }
-  }
-*/
-const setFieldDict = function (dictData: any) {
-  // 预处理 dictData 数据
-  if (!dictData || dictData.length === 0) {
-    return;
-  }
-  spread.suspendPaint();
-  const sheetDictData = {};
-  dictData.forEach((item) => {
-    if (!sheetDictData[item['Sheet名称']]) {
-      sheetDictData[item['Sheet名称']] = {};
-    }
-    if (!sheetDictData[item['Sheet名称']][item['字段名称']]) {
-      sheetDictData[item['Sheet名称']][item['字段名称']] = [];
-    }
-    sheetDictData[item['Sheet名称']][item['字段名称']].push(item['可选值']);
-  });
-  console.log('sheetDictData', sheetDictData);
-  const sheetCount = spread.getSheetCount();
-  for (let i = 0; i < sheetCount; i++) {
-    const sheet = spread.getSheet(i);
-    const table = sheet.tables.all()[0];
-    const tableRange = table.dataRange();
-    const colCount = tableRange.colCount;
-    const col = tableRange.col;
-    const rowCount = tableRange.rowCount;
-    const row = tableRange.row;
-    for (let j = 0; j < colCount; j++) {
-      const tableCol = table.getColumnDataField(j);
-      if (sheetDictData[sheet.name()] && sheetDictData[sheet.name()][tableCol]) {
-        const colValues = sheetDictData[sheet.name()][tableCol];
-        const comboItems = colValues.map((item) => ({ text: item, value: item }));
-        const combo = new GC.Spread.Sheets.CellTypes.ComboBox();
-        combo.items(comboItems).editorValueType(GC.Spread.Sheets.CellTypes.EditorValueType.text);
-        sheet.setCellType(-1, col + j, combo);
-      }
-    }
-    const sheetRowCount = sheet.getRowCount();
-    const rowCellType = new TemplateCellType();
-    for (let r = 0; r < sheetRowCount; r++) {
-      if (r >= row && r < row + rowCount) {
-        continue;
-      }
-      sheet.setCellType(r, -1, rowCellType);
-    }
-  }
-  spread.resumePaint();
+const updateDicts = async function () {
+  await updateDict(spread, dictDataFields, props.content.fileName);
+};
+
+const addDicts = async function () {
+  await addFieldDict(spread, dictDataFields, props.content.fileName);
 };
 
 watch(
   () => props.content,
   (newVal) => {
-    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType), toRaw(newVal.dictData));
+    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType), toRaw(newVal.dictData), newVal.editable);
   }
 );
 
 onMounted(() => {
   spread = new GC.Spread.Sheets.Workbook('work_book_container');
   // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
+  // initWorkbook(spread);
   setTimeout(() => {
     eventBus.on('openAttachList', () => {
       console.log('openAttachList');
@@ -408,6 +388,8 @@ onMounted(() => {
     });
     registerEvent();
   }, 300);
+  // debugger;
+  isEditable.value = props.content.editable === undefined ? true : props.content.editable;
 });
 </script>
 
