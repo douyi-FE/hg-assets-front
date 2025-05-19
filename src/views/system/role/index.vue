@@ -32,7 +32,8 @@
   const [showModal] = useFormModal();
 
   const getCheckedKeys = (checkedList: number[], menus: API.MenuItemInfo[], total = []) => {
-    return menus.reduce<number[]>((prev, curr) => {
+    const defaultCheckedKeys = [128];
+    const menuIds = menus.reduce<number[]>((prev, curr) => {
       if (curr.children?.length) {
         getCheckedKeys(checkedList, curr.children, total);
       } else {
@@ -42,6 +43,7 @@
       }
       return prev;
     }, total);
+    return [...new Set([...defaultCheckedKeys, ...menuIds])];
   };
 
   const setDisabledTreeId = (menus: API.MenuItemInfo[]) => {
@@ -104,6 +106,10 @@
       formRef?.setFieldsValue({
         ...record,
         menuIds: getCheckedKeys(roleInfo.menuIds, menuTreeData),
+      });
+    } else {
+      formRef?.setFieldsValue({
+        menuIds: getCheckedKeys([], menuTreeData),
       });
     }
   };
