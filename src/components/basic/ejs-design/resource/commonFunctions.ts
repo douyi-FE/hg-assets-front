@@ -104,7 +104,11 @@ export function fileToBase64(file) {
 }
 
 // 返回初始化数据(支持多表填报)
-export function getInitData(spread) {
+export function getInitData() {
+  const spread = store.spread;
+  if (!spread) {
+    return {};
+  }
   const sheetCount = spread.getSheetCount();
   let initData = {};
   for (let i = 0; i < sheetCount; i++) {
@@ -181,7 +185,7 @@ export function saveTemplate() {
           body: JSON.stringify({
             filename: store.originalFile ? (store.originalFile as File).name : '',
             base64: pureBase64,
-            initDataSource: JSON.stringify(getInitData(store.spread)),
+            initDataSource: JSON.stringify(getInitData()),
           }),
         })
           .then((response) => response.json())
@@ -274,7 +278,7 @@ export function openTemplate() {
           //     new GC.Spread.Sheets.Bindings.CellBindingSource(getInitData(store.spread)),
           //   );
           const sheetCount = (store.spread as any).getSheetCount();
-          const initData = getInitData(store.spread);
+          const initData = getInitData();
           for (let i = 0; i < sheetCount; i++) {
             const sheet = (store.spread as any).getSheet(i);
             sheet.setDataSource(
@@ -297,6 +301,7 @@ export function openTemplate() {
 // 初始化表单数据
 export function getInitDataSource() {
   const sheet = (store.spread as any).getActiveSheet();
+  const bindingPaths = getSheetBindingPaths(sheet);
   const table = sheet.tables.all()[0];
   const dataSource = {};
   const tableData: any[] = [];
@@ -313,7 +318,7 @@ export function getInitDataSource() {
       for (let i = 0; i < data.length; i++) {
         const item: any = {};
         for (let j = 0; j < data[i].length; j++) {
-          if (data[i][j]) {
+          if (!hasData && data[i][j]) {
             hasData = true;
           }
           item[table.getColumnDataField(j)] = data[i][j];
@@ -331,6 +336,7 @@ export function getInitDataSource() {
       3000,
     );
   }
+  dataSource[bindingPaths['tableBindingPath'].tableName] = tableData;
   return dataSource;
 }
 

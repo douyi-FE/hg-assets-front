@@ -77,7 +77,13 @@ const fetchExcel = async function () {
         getTemplateFieldDict({ templateId: templateFieldDictId, dictName: APPLICATION_NAME }),
       ])
         .then(([template, projectData, templateFieldDict]) => {
-          dataSource.value = template.initDataSource;
+          let initDataSource = null;
+          try {
+            initDataSource = JSON.parse(template.initDataSource);
+          } catch (error) {
+            initDataSource = template.initDataSource;
+          }
+          dataSource.value = initDataSource;
           dataSource.value.userId = userStore.userInfo.id;
           dataSource.value.type = type;
           dataSource.value.project = project;

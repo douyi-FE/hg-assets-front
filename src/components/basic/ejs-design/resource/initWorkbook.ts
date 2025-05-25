@@ -4,7 +4,7 @@ import { TemplateCellType } from './templateCellType';
 import { Evaluate } from './evaluateFunction';
 
 // 初始化工作簿
-export function initWorkbook(spread) {
+export function initWorkbook(spread, callback?: (spread: any) => void) {
   const sheetCount = spread.getSheetCount();
   for (let i = 0; i < sheetCount; i++) {
     const sheet = spread.getSheet(i);
@@ -53,4 +53,7 @@ export function initWorkbook(spread) {
   store.setAutoSetTableColumn(true);
   // 监听表格行变化，自动带入列样式
   tableRowChanged(spread);
+  if (callback) {
+    callback(spread);
+  }
 }

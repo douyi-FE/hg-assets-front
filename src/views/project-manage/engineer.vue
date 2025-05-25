@@ -73,36 +73,43 @@ const engineerData = ref<any[]>([
     type: '静设备',
     code: 'static-equipment',
     view: 'static-equip',
+    app: '静设备-工程量计算书'
   },
   {
     type: '动设备',
     code: 'dynamic-equipment',
     view: 'moving-equip',
+    app: '动设备-工程量计算书'
   },
   {
     type: '工艺管道',
     code: 'industrial-pipe',
     view: 'industrial-piping',
+    app: '工艺管道-工程量计算书'
   },
   {
     type: '钢结构',
     code: 'steel-structure',
     view: 'steel-structure',
+    app: '钢结构-工程量计算书'
   },
   {
     type: '电气仪表',
     code: 'electrical-instrument',
     view: 'electrical-instru',
+    app: '电气仪表-工程量计算书'
   },
   {
     type: '民用水暖',
     code: 'civil-water-heating',
     view: 'water-heater',
+    app: '民用水暖-工程量计算书'
   },
   {
     type: '通风管道',
     code: 'ventilation-pipe',
     view: 'ventilation-duct',
+    app: '通风管道-工程量计算书'
   },
 ]);
 const currentEngineer = ref<any>({
@@ -125,7 +132,7 @@ const goEngineer = function (item: any) {
   const dynamicRoute = {
     path: `/engineer/${currentEngineer.value.code}/${item.code}`,
     name: `engineer-${currentEngineer.value.code}-${item.code}`,
-    component: () => import(`@/views/calc-eng/${item.view}/index.vue`),
+    component: () => import(`@/views/calc-eng/static-equip/index.vue`),
     meta: {
       title: `${currentEngineer.value.name} - ${item.type}`,
       icon: 'ant-design:home-filled',
@@ -142,6 +149,7 @@ const goEngineer = function (item: any) {
       device: props.deviceCode,
       engineer: currentEngineer.value.code,
       isDone: String(props.isDone),
+      app: item.app,
     },
   });
 };

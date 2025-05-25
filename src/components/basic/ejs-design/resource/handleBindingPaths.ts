@@ -86,7 +86,10 @@ export function bindingTablePath(range) {
     table.bindingPath(table.name());
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
-    getInitDataSource();
+    const initDataSource = getInitDataSource();
+    sheet.setDataSource(
+      new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource)
+    );
   } else if (range.rowCount > 1) {
     // 处理多行表头场景
     // 插入表头行
@@ -147,7 +150,10 @@ export function bindingTablePath(range) {
     table.bindingPath(table.name());
     table.bindColumns(tableColumns);
     // 创建初始化数据对象
-    getInitDataSource();
+    const initDataSource = getInitDataSource();
+    sheet.setDataSource(
+      new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource)
+    );
     // 添加多行表头筛选
     addMultiTitleTableFilter();
     // 设置表格数据区域可编辑

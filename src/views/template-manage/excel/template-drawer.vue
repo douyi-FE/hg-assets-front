@@ -64,7 +64,7 @@ import { versionColumns } from './columns';
 import ejsDesign from '@/components/basic/ejs-design/index.vue';
 import Api from '@/api';
 import {
-  getInitDataSource,
+  getInitData,
   showAlert,
 } from '@/components/basic/ejs-design/resource/commonFunctions';
 
@@ -143,7 +143,7 @@ const saveTemplate = async function () {
     .validate()
     .then(async () => {
       const sjs = await ejsDesignRef.value.getSpreadSJS();
-      const initDataSource = getInitDataSource();
+      const initDataSource = getInitData();
       emits(
         'save',
         {

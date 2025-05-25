@@ -23,7 +23,7 @@ import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDe
 import { useUserStore } from '@/store/modules/user';
 import { useRoute } from 'vue-router';
 // import { eventBus } from '@/utils/event-bus';
-const APPLICATION_NAME = '静设备-工程量计算书';
+let app = '';
 const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
 let templateId = '';
 let type = '', project = '', device = '', engineer = '', isDone = '';
@@ -42,7 +42,7 @@ const content = ref({
     table: [{}],
   },
   dictData: [],
-  fileName: APPLICATION_NAME + '.xlsx',
+  fileName: app + '.xlsx',
   editable: editable,
 });
 // const deptId = ref<number>(0);
@@ -58,7 +58,7 @@ const dataSource = ref({
 const isShowTemplateSetting = ref(false);
 const route = useRoute();
 const getTemplateId = async function () {
-  return getApplicationByName(APPLICATION_NAME);
+  return getApplicationByName(app);
 };
 
 const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
@@ -74,10 +74,16 @@ const fetchExcel = async function () {
       Promise.all([
         getApplicationById(templateId),
         getProjectDevice({ userId: userStore.userInfo.id, type, project, device, engineer }),
-        getTemplateFieldDict({ templateId: templateFieldDictId, dictName: APPLICATION_NAME }),
+        getTemplateFieldDict({ templateId: templateFieldDictId, dictName: app }),
       ])
         .then(([template, projectData, templateFieldDict]) => {
-          dataSource.value = template.initDataSource;
+          let initDataSource = null;
+          try {
+            initDataSource = JSON.parse(template.initDataSource);
+          } catch (error) {
+            initDataSource = template.initDataSource;
+          }
+          dataSource.value = initDataSource;
           dataSource.value.userId = userStore.userInfo.id;
           dataSource.value.type = type;
           dataSource.value.project = project;
@@ -133,6 +139,7 @@ onMounted(() => {
   device = route.query.device as string;
   engineer = route.query.engineer as string;
   isDone = route.query.isDone as string;
+  app = route.query.app as string;
   // 如果isDone为true，则不可编辑
   editable.value = isDone === 'false';
   fetchExcel();

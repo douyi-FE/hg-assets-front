@@ -56,22 +56,20 @@
 </template>
 
 <script setup lang="ts">
-import { getCurrentInstance, nextTick, onMounted, ref, toRaw, watch } from 'vue';
+import { onMounted, ref, toRaw, watch } from 'vue';
 import dayjs from 'dayjs';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
-import { message, Modal } from 'ant-design-vue';
-import Api from '@/api';
-import {
-  base64ToArrayBuffer,
-  base64ToBlob,
-} from '@/components/basic/ejs-design/resource/commonFunctions';
+import { message } from 'ant-design-vue';
+import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
 import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
-// import { Evaluate } from '@/components/basic/ejs-design/resource/evaluateFunction';
 import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
 import { eventBus } from '@/utils/event-bus';
 import { attachListColumns } from '@/components/basic/ejs-design/config';
-import { addFieldDict, setFieldDict, updateDict } from './fieldDict';
-// import { TemplateCellType } from '@/components/basic/ejs-design/resource/templateCellType';
+import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
+import { initCustomInsertRows } from './customInsertRows';
+import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
+import { exportToExcel, getSheetTableData, registerEvent, addSheetRows, updateAppContainerStyle } from './commonFuncs';
+import { uploadAttachFile, downloadAttachAll, previewFile, downloadFile, deleteFile } from './attachFile';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const attachListData = ref<any[]>([]);
@@ -82,48 +80,7 @@ const isEditable = ref(true);
 const dictDataFields = ref<any>({});
 let summarySheetData: any = null;
 let summarySheetDataByType: any = null;
-/********附件列表模态框v2-begin *********/
-const uploadAttachFile = () => {
-  eventBus.emit('addAttach');
-};
 
-const downloadAttachAll = () => {
-  eventBus.emit('downloadAll', attachListData.value);
-};
-const previewFile = (fileId: string) => {
-  eventBus.emit('previewFile', fileId);
-};
-const downloadFile = async (record: any) => {
-  // 下载文件
-  const response = await Api.templateAttach.download({
-    fileId: record.fileId,
-  });
-  if (response && response._doc) {
-    const file = await response._doc.fileContent;
-    const fileBlob = base64ToBlob(file);
-    const fileName = record.originalFileName;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(fileBlob);
-    a.download = fileName;
-    a.click();
-  } else {
-    message.error('下载失败');
-  }
-};
-const deleteFile = async (fileId: string, index: number) => {
-  try {
-    await Api.templateAttach.deleteFile({
-      fileId: fileId,
-    });
-    attachListData.value.splice(index, 1);
-    eventBus.emit('deleteFile', attachListData.value);
-    message.success('删除成功');
-  } catch (error) {
-    message.error('删除失败');
-  }
-};
-
-/********附件列表模态框v2-end *********/
 // summaryData 设置非必填
 const props = withDefaults(
   defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[]; editable: boolean } }>(),
@@ -148,54 +105,11 @@ const props = withDefaults(
 const emits = defineEmits(['saveWorkBook', 'cellClick']);
 let spread: any = null;
 const isFullscreen = ref(false);
-const currentInstance = getCurrentInstance();
-
-const updateAppContainerStyle = () => {
-  const appEl: HTMLDivElement =
-    currentInstance?.appContext.app._container || document.querySelector('#app');
-
-  appEl.style.setProperty('opacity', isFullscreen.value ? '0' : '1');
-  appEl.style.setProperty('visibility', isFullscreen.value ? 'hidden' : 'visible');
-  appEl.style.setProperty('position', isFullscreen.value ? 'absolute' : 'relative');
-  nextTick(() => {
-    spread.addSheet(1, new GC.Spread.Sheets.Worksheet('custom'));
-    spread.removeSheet(1);
-  });
-};
 
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value;
-  updateAppContainerStyle();
+  updateAppContainerStyle(spread, isFullscreen);
 };
-
-function getSheetTableData(spread: any) {
-  const sheet = spread.getActiveSheet();
-  return sheet.getDataSource().getSource();
-}
-
-function addSheetRows(sheet: any, dataSource: any) {
-  // debugger;
-  const table = sheet.tables.all()[0];
-  const rowCount = table.range().rowCount;
-  const tableName = table.name();
-  if (dataSource && dataSource[tableName] && dataSource[tableName].length > 0) {
-    if (dataSource[tableName].length > rowCount) {
-      sheet.addRows(sheet.getRowCount(), dataSource[tableName].length - rowCount + 4);
-    }
-  }
-}
-
-function setSummarySheet(spread: any, summaryData: any) {
-  const sheet = spread.getActiveSheet();
-  let summarySheet = new GC.Spread.Sheets.Worksheet();
-  summarySheet.fromJSON(sheet.toJSON());
-  summarySheet.name('汇总表');
-  summarySheet.isSelected(false);
-  spread.addSheet(spread.getSheetCount() + 1, summarySheet);
-  summarySheet = spread.getSheetFromName('汇总表');
-  addSheetRows(summarySheet, summaryData);
-  summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
-}
 
 const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}, editable: boolean = true) {
   return new Promise((resolve, reject) => {
@@ -213,13 +127,20 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         spread.suspendPaint();
         const sheet = spread.getActiveSheet();
         addSheetRows(sheet, dataSource);
-        sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
+        const ds = dataSource[sheet.name()];
+        if (!ds.project) {
+          ds.project = dataSource.project;
+          ds.device = dataSource.device;
+          ds.engineer = dataSource.engineer;
+        }
+        sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(ds));
         // 设置汇总数据
         const tableBindingPath = getSummaryDataTable(summaryDataByType);
-        if (tableBindingPath && summaryData[tableBindingPath] && summaryData[tableBindingPath].length > 0) {
-          summarySheetData = summaryData;
-          summarySheetDataByType = summaryDataByType;
-          setSummarySheet(spread, summaryData);
+        if (tableBindingPath && Object.keys(tableBindingPath).length > 0) {
+          //TODO 存在多表数据时，暂时只取一个
+          summarySheetData = summaryData[Object.keys(tableBindingPath)[0]];
+          summarySheetDataByType = summaryDataByType[Object.keys(tableBindingPath)[0]];
+          setSummarySheet(spread, summarySheetData);
           if (!editable) {
             // 激活汇总表
             spread.setActiveSheet(spread.getSheetFromName('汇总表').name());
@@ -232,8 +153,10 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         spread.resumePaint();
         initUploadFile(spread);
         setFieldDict(spread, dictData, dictDataFields);
-        canSwitchSummaryType();
-        initWorkbook(spread);
+        canSwitchSummaryType(spread, summaryByTypeDisabled);
+        initWorkbook(spread, (spread) => {
+          initCustomInsertRows(spread);
+        });
         sheet.recalcAll(true);
         resolve(true);
       },
@@ -244,88 +167,13 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
   });
 };
 
-const saveWorkBookEjs = function () {
-  spread.save((blob) => {
-    // 将 blob 转为 Base64
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = function () {
-      const base64data: string = (reader.result as string) || '';
-      // base64data 通常带有前缀，如 "data:application/octet-stream;base64,XXXXXXXX"
-      // 如果后端只想存储纯粹的 base64，去掉前缀即可：
-      const pureBase64 = base64data.split(',')[1];
-      emits('saveWorkBook', pureBase64);
-    };
-  });
-};
-
-const getSummaryDataTable = function (summaryData: any) {
-  let tableBindingPath = '';
-  if (!summaryData) {
-    return tableBindingPath;
-  }
-  Object.keys(summaryData).forEach((key) => {
-    if (key.startsWith('table')) {
-      tableBindingPath = key;
-    }
-  });
-  return tableBindingPath;
-};
-
 const saveWorkBookData = function () {
   const tableData = getSheetTableData(spread);
   emits('saveWorkBook', tableData);
 };
 
 const exportExcel = function () {
-  spread.export((blob) => {
-    // 使用 URL 或 webkitURL
-    const URL = window.URL || window.webkitURL;
-    const link = document.createElement('a');
-    const fileName = props.content.fileName || '导出数据文件.xlsx';
-
-    // 设置下载属性
-    link.download = fileName;
-    link.rel = 'noopener';
-    link.href = URL.createObjectURL(blob); // 直接使用原始 blob
-
-    // 如果在同源下，直接触发点击
-    if (link.origin === location.origin) {
-      setTimeout(() => {
-        link.click();
-      }, 0);
-    }
-
-    // 释放 URL 对象
-    setTimeout(() => {
-      URL.revokeObjectURL(link.href);
-    });
-  }, function (e) {
-    console.log(e);
-  }, {
-    fileType: GC.Spread.Sheets.FileType.excel,
-    includeBindingSource: true
-  });
-};
-
-const registerEvent = function () {
-  console.log('registerEvent');
-  const sheet = spread.getActiveSheet();
-  sheet.bind(GC.Spread.Sheets.Events.CellClick, function (e, info) {
-    const ds = info.sheet.getDataSource().getSource();
-    const table = info.sheet.tables.all()[0];
-    const tableRange = table.dataRange();
-    const tableCol = info.col - tableRange.col;
-    const dataField = table.getColumnDataField(tableCol);
-    const tableKey = Object.keys(ds).find((key) => key.startsWith('table'));
-    const rowData = tableKey ? ds[tableKey][info.row - tableRange.row - 1] : null;
-    emits('cellClick', {
-      row: info.row,
-      col: info.col,
-      dataField: dataField,
-      rowData: rowData,
-    });
-  });
+  exportToExcel(spread, props);
 };
 
 // 导入excel
@@ -343,15 +191,6 @@ const switchSummaryType = function () {
     }
     // spread.addCustomFunction(new Evaluate());
     spread.setActiveSheet(sheet.name());
-  }
-};
-
-const canSwitchSummaryType = function () {
-  const summarySheet = spread.getSheetFromName('汇总表');
-  if (summarySheet) {
-    summaryByTypeDisabled.value = false;
-  } else {
-    summaryByTypeDisabled.value = true;
   }
 };
 
@@ -386,7 +225,7 @@ onMounted(() => {
     eventBus.on('openPreviewFileModal', () => {
       openPreviewFile.value = true;
     });
-    registerEvent();
+    registerEvent(spread, emits);
   }, 300);
   // debugger;
   isEditable.value = props.content.editable === undefined ? true : props.content.editable;

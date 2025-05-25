@@ -113,7 +113,7 @@ export function initDesigner(divId) {
       bigButton: 'false',
       commandName: 'showData',
       execute: async (context, propertyName) => {
-        console.log(getInitData(store.spread));
+        console.log(getInitData());
         showAlert('在控制台查看初始化数据', 'success');
       },
     },
