@@ -119,9 +119,12 @@ export const baseColumns: TableColumnItem[] = [
     dataIndex: 'ACTION',
     hideInSearch: true,
     fixed: 'right',
-    actions: ({ record }) => [
+    actions: ({ record }: { record: any }) => [
       {
-        label: '审批',
+        label:
+          record.flowExecute && record.flowExecute.find((item) => item.name === '发起申请')
+            ? '发起'
+            : '审批',
         disabled: record.approverStatus === 'approved' || record.approverStatus === 'reject',
         onClick: () => {
           console.log(record);

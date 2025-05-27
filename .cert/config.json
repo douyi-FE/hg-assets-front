@@ -4,13 +4,14 @@
     "hosts": [
       "localhost",
       "198.18.0.1",
-      "192.168.1.6",
+      "10.0.4.100",
+      "192.168.1.4",
       "127.0.0.1",
       "0.0.0.0"
     ],
     "hash": {
-      "key": "14b6a092caa8047fb0cee88791c88535e9118bae7fe6066b82dc3cd9fc03ffce",
-      "cert": "e5c74c3f3d288c358fe7bb1ac5fc15e365fd8f219fe10de2ba53378dc7209c16"
+      "key": "784a8502eb604a9e27b216ae51fbe43f2f20348d5118bebf0a64ec5f8da59ad6",
+      "cert": "97fead54507cc0fd528caafc15aca1c59408023a3a9229b36a6321c2e97d249a"
     }
   },
   "configFilePath": "D:\\codes\\hg-assets-front\\.cert\\config.json"

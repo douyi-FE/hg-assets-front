@@ -6,16 +6,8 @@
       title-tooltip="休假管理"
       :data-request="
         async (params) => {
-          const flowExecuteList = await getFlowExecuteList(params);
-          console.log('flowExecuteList', flowExecuteList);
           return getLeaveList(params).then((res) => {
-            return res.filter((item) => {
-              const flowExecute = flowExecuteList.find((flow) => flow.businessId === item._id);
-              if (flowExecute) {
-                return true;
-              }
-              return true;
-            });
+            return res.filter((item) => item.flowExecute);
           });
         }
       "
@@ -66,7 +58,6 @@
     createFlowExecute,
     rejectFlowExecute,
     approveFlowExecute,
-    getFlowExecuteList,
   } from '@/api/backend/api/flowExecute';
   import { useUserStore } from '@/store/modules/user';
 
