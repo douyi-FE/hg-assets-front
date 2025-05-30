@@ -118,6 +118,10 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     server: {
       host: '0.0.0.0',
       port: 8088,
+      // https: {
+      //   key: resolve(CWD, './.cert/my-key.pem'),
+      //   cert: resolve(CWD, './.cert/my-cert.pem'),
+      // },
       open: true,
       hmr: {
         overlay: false,

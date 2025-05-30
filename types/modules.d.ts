@@ -14,3 +14,13 @@ declare module 'virtual:*' {
   const result: any;
   export default result;
 }
+
+declare module 'mxcad' {
+  export const createMxCad: any;
+  export const McObjectId: any;
+  export const MxCADResbuf: any;
+  export const MxCADSelectionSet: any;
+  export const McDbLine: any;
+  export const McCmColor: any;
+  export const McGePoint3d: any;
+}
