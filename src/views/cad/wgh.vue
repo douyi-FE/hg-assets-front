@@ -125,7 +125,7 @@
         return `/2d-st/${fileName}`;
       },
       fileUrl: props.mxFileUrl,
-      fontspath: '/2d-st/fonts',
+      fontspath: '/fonts',
       onOpenFileComplete: () => {
         console.log('onOpenFileComplete');
         registerEvent(mxCad.value);
