@@ -105,6 +105,7 @@ export function fileToBase64(file) {
 
 // 返回初始化数据(支持多表填报)
 export function getInitData() {
+  debugger;
   const spread = store.spread;
   if (!spread) {
     return {};
@@ -119,7 +120,7 @@ export function getInitData() {
       initData[sheet.name()] = dsSource;
     }
   }
-  return JSON.stringify(initData);
+  return initData;
 }
 
 // 获取选中的区域

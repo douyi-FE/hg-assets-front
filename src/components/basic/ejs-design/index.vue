@@ -66,8 +66,24 @@ const uploadAttachFile = () => {
   eventBus.emit('addAttach');
 };
 
-const downloadAttachAll = () => {
-  eventBus.emit('downloadAll', attachListData.value);
+const downloadAttachAll = async () => {
+  const list = attachListData.value
+  const fileName = '文件包.zip'
+  const fileIds = list.map((item: any) => item.fileId);
+  const response = await Api.templateAttach.downloadZip({
+    fileIds: fileIds,
+    fileName: fileName,
+  });
+  if (response && response.data) {
+    const fileBlob = new Blob([new Uint8Array(response.data)], { type: 'application/zip' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(fileBlob);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } else {
+    message.error('下载失败');
+  }
 };
 const previewFile = (fileId: string) => {
   eventBus.emit('previewFile', fileId);
@@ -132,8 +148,15 @@ defineExpose({
   setSJS: (base64: string, fileName: string, initDataSource: any = {}) => {
     openTemplateByBase64(base64, fileName).then(() => {
       if (Object.keys(initDataSource).length > 0) {
-        const sheet = (store.spread as any).getActiveSheet();
-        sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource));
+        const spread = (store.spread as any);
+        const sheetCount = spread.getSheetCount();
+        for (let i = 0; i < sheetCount; i++) {
+          const sheet = spread.getSheet(i);
+          if (initDataSource[sheet.name()]) {
+            sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(initDataSource[sheet.name()]));
+            sheet.recalcAll(true);
+          }
+        }
       }
     });
   },

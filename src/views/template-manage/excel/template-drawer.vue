@@ -90,7 +90,6 @@ const getRowClassName = function (record: any, index: number) {
 const handleApplyVersion = function (record: any) {
   selectedVersion.value = record;
   Api.templateVersion.getExcelTemplateVersion(record._id).then((res) => {
-    debugger;
     ejsDesignRef.value.setSJS(res.file, record.name + '.xlsx', res.initDataSource);
   });
 };

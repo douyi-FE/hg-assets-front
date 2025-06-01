@@ -7,8 +7,8 @@
           <a-switch v-model:checked="summaryByType" inline-prompt checked-children="分类汇总" un-checked-children="按行汇总"
             :disabled="summaryByTypeDisabled" @change="switchSummaryType" />
 
-          <a-button type="default" @click="addDicts">添加字典</a-button>
-          <a-button type="default" @click="updateDicts">更新字典</a-button>
+          <a-button type="default" @click="addDicts" v-if="hasDict">添加字典</a-button>
+          <a-button type="default" @click="updateDicts" v-if="hasDict">更新字典</a-button>
           <a-button type="default" @click="exportExcel">导出</a-button>
           <a-button type="default" @click="importExcel">导入</a-button>
           <a-button type="primary" @click="saveWorkBookData" :disabled="!isEditable">保存</a-button>
@@ -68,13 +68,15 @@ import { attachListColumns } from '@/components/basic/ejs-design/config';
 import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
-import { exportToExcel, getSheetTableData, registerEvent, addSheetRows, updateAppContainerStyle } from './commonFuncs';
-import { uploadAttachFile, downloadAttachAll, previewFile, downloadFile, deleteFile } from './attachFile';
+import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle } from './commonFuncs';
+import { uploadAttachFile, previewFile, downloadFile, deleteFile } from './attachFile';
+import Api from '@/api';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const attachListData = ref<any[]>([]);
 const summaryByType = ref(false);
 const summaryByTypeDisabled = ref<boolean>(true);
+const hasDict = ref(false);
 const isFilling = ref(true);
 const isEditable = ref(true);
 const dictDataFields = ref<any>({});
@@ -83,7 +85,7 @@ let summarySheetDataByType: any = null;
 
 // summaryData 设置非必填
 const props = withDefaults(
-  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[]; editable: boolean } }>(),
+  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[]; editable: boolean; hasDict: boolean } }>(),
   {
     content: () => ({
       ejs: '',
@@ -99,6 +101,7 @@ const props = withDefaults(
       fileName: '导出数据文件.xlsx',
       dictData: [],
       editable: true,
+      hasDict: false,
     }),
   },
 );
@@ -111,7 +114,7 @@ const toggleFullscreen = () => {
   updateAppContainerStyle(spread, isFullscreen);
 };
 
-const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}, editable: boolean = true) {
+const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}, editable: boolean = true, hasDict: boolean = false) {
   return new Promise((resolve, reject) => {
     const arrayBuffer = base64ToArrayBuffer(ejs);
     const fileBlob = new Blob([arrayBuffer], {
@@ -126,9 +129,23 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         }
         spread.suspendPaint();
         const sheet = spread.getActiveSheet();
+        if (dataSource && typeof dataSource === 'string') {
+          try {
+            dataSource = JSON.parse(dataSource);
+          } catch (error) {
+            dataSource = {};
+          }
+        }
         addSheetRows(sheet, dataSource);
-        const ds = dataSource[sheet.name()];
-        if (!ds.project) {
+        let ds = dataSource[sheet.name()];
+        if (ds && typeof ds === 'string') {
+          try {
+            ds = JSON.parse(ds);
+          } catch (error) {
+            ds = {};
+          }
+        }
+        if (ds && !ds.project) {
           ds.project = dataSource.project;
           ds.device = dataSource.device;
           ds.engineer = dataSource.engineer;
@@ -165,6 +182,26 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
       },
     );
   });
+};
+
+const downloadAttachAll = async () => {
+  const list = attachListData.value
+  const fileName = '文件包.zip'
+  const fileIds = list.map((item: any) => item.fileId);
+  const response = await Api.templateAttach.downloadZip({
+    fileIds: fileIds,
+    fileName: fileName,
+  });
+  if (response && response.data) {
+    const fileBlob = new Blob([new Uint8Array(response.data)], { type: 'application/zip' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(fileBlob);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } else {
+    message.error('下载失败');
+  }
 };
 
 const saveWorkBookData = function () {
@@ -225,10 +262,11 @@ onMounted(() => {
     eventBus.on('openPreviewFileModal', () => {
       openPreviewFile.value = true;
     });
-    registerEvent(spread, emits);
+    // registerEvent(spread, emits);
   }, 300);
   // debugger;
   isEditable.value = props.content.editable === undefined ? true : props.content.editable;
+  hasDict.value = props.content.hasDict === undefined ? false : props.content.hasDict;
 });
 </script>
 

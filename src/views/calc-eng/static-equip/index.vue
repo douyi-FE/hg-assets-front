@@ -44,6 +44,7 @@ const content = ref({
   dictData: [],
   fileName: app + '.xlsx',
   editable: editable,
+  hasDict: true,
 });
 // const deptId = ref<number>(0);
 const userStore = useUserStore();
@@ -97,6 +98,7 @@ const fetchExcel = async function () {
             fileName: template.name,
             dictData: templateFieldDict || [],
             editable: editable,
+            hasDict: true,
           };
         })
         .catch(() => {

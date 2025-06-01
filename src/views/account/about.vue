@@ -1,28 +1,5 @@
 <template>
   <div>
-    <Card>
-      <Card.Meta title="关于">
-        <template #description>
-          <BlankLink :url="pkg.author.url" :text="pkg.name" />{{ description }}
-        </template>
-      </Card.Meta>
-    </Card>
-    <Card class="mt-3">
-      <Descriptions title="项目信息" :column="2" bordered>
-        <Descriptions.Item label="版本">
-          <Tag color="processing">{{ pkg.version }}</Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="最后编译时间">
-          <Tag color="processing">{{ lastBuildTime }}</Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="GitHub">
-          <BlankLink :url="pkg.repository.url" text="GitHub" />
-        </Descriptions.Item>
-        <Descriptions.Item label="预览地址">
-          <BlankLink :url="pkg.homepage" text="预览地址" />
-        </Descriptions.Item>
-      </Descriptions>
-    </Card>
     <Card class="mt-3">
       <Descriptions title="生产环境依赖" bordered>
         <template v-for="(value, key) in pkg.dependencies" :key="key">

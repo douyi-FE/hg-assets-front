@@ -51,6 +51,7 @@ export const deleteFile = async (fileId, index) => {
     });
     attachListData.value.splice(index, 1);
     eventBus.emit('deleteFile', attachListData.value);
+    eventBus.emit('setAttachListData', [...attachListData.value]);
     message.success('删除成功');
   } catch (error) {
     message.error('删除失败');

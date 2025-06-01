@@ -114,6 +114,7 @@ export const insertTableColumns = function (sheet, dataSource) {
   });
   cols.unshift(new GC.Spread.Sheets.Tables.TableColumn(0, '创建人'));
   table.bind(cols, table.name(), dataSource[table.name()]);
+  addSheetRows(sheet, { [sheet.name()]: dataSource });
   sheet.setDataSource(
     new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource)
   );

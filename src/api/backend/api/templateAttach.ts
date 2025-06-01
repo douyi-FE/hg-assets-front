@@ -22,6 +22,15 @@ export async function download(params: any) {
   });
 }
 
+// 模板附件下载包
+export async function downloadZip(params: any) {
+  return request<any>({
+    url: '/api/template/attach/downloadZip',
+    method: 'GET',
+    params,
+  });
+}
+
 // 模板附件删除
 export async function deleteFile(params: any) {
   return request<any>({
@@ -35,15 +44,6 @@ export async function deleteFile(params: any) {
 export async function findByFileId(params: any) {
   return request<any>({
     url: '/api/template/attach/findByFileId',
-    method: 'GET',
-    params,
-  });
-}
-
-// 下载文件包
-export async function downloadZip(params: any) {
-  return request<any>({
-    url: '/api/template/attach/downloadZip',
     method: 'GET',
     params,
   });
