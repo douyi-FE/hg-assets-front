@@ -7,10 +7,10 @@
           <a-switch v-model:checked="summaryByType" inline-prompt checked-children="分类汇总" un-checked-children="按行汇总"
             :disabled="summaryByTypeDisabled" @change="switchSummaryType" />
 
-          <a-button type="default" @click="addDicts" v-if="hasDict">添加字典</a-button>
-          <a-button type="default" @click="updateDicts" v-if="hasDict">更新字典</a-button>
+          <a-button type="default" @click="addDicts" v-if="hasDict && isEditable">添加字典</a-button>
+          <a-button type="default" @click="updateDicts" v-if="hasDict && isEditable">更新字典</a-button>
           <a-button type="default" @click="exportExcel">导出</a-button>
-          <a-button type="default" @click="importExcel">导入</a-button>
+          <a-button type="default" @click="openImportDialog">导入</a-button>
           <a-button type="primary" @click="saveWorkBookData" :disabled="!isEditable">保存</a-button>
           <FullscreenOutlined v-if="!isFullscreen" @click="toggleFullscreen" />
           <FullscreenExitOutlined v-else @click="toggleFullscreen" />
@@ -52,11 +52,27 @@
       wrapClassName="viewContainer">
       <div id="viewContainer" style="height: calc(100vh - 600px)" />
     </a-modal>
+
+    <!-- 导入模态窗, 宽度为视窗的宽度80%，打开完成后回调, 关闭后销毁 -->
+    <a-modal v-model:open="openImportModal" title="导入数据" width="80%" :destroyOnClose="true" :footer="false">
+      <div style="display: flex; gap: 10px; padding-bottom: 10px">
+        <!-- 打开文件按钮，点击后打开文件选择窗口，选中 Excel 后直接用SpreadJS打开 -->
+        <a-button @click="openExcelFile">打开文件</a-button>
+        <a-popconfirm :title="`将当前选中sheet数据导入到表【${activeSheet.name()}】，是否继续？`" ok-text="是" cancel-text="否"
+          @confirm="importExcel" @cancel="() => { }">
+          <a-button type="primary">导入</a-button>
+        </a-popconfirm>
+        <a-button @click="downloadTemplate">下载模板</a-button>
+      </div>
+      <div>
+        <div id="importSpread" class="import-spread"></div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, toRaw, watch } from 'vue';
+import { onMounted, ref, toRaw, watch, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
@@ -68,11 +84,12 @@ import { attachListColumns } from '@/components/basic/ejs-design/config';
 import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
-import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle } from './commonFuncs';
+import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
 import { uploadAttachFile, previewFile, downloadFile, deleteFile } from './attachFile';
 import Api from '@/api';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
+const openImportModal = ref(false);
 const attachListData = ref<any[]>([]);
 const summaryByType = ref(false);
 const summaryByTypeDisabled = ref<boolean>(true);
@@ -82,6 +99,7 @@ const isEditable = ref(true);
 const dictDataFields = ref<any>({});
 let summarySheetData: any = null;
 let summarySheetDataByType: any = null;
+let activeSheet: any = null;
 
 // summaryData 设置非必填
 const props = withDefaults(
@@ -161,6 +179,8 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           if (!editable) {
             // 激活汇总表
             spread.setActiveSheet(spread.getSheetFromName('汇总表').name());
+            // 保护所有表
+            protectSheet(spread, true);
           }
           // 设置汇总表样式
           const summarySheet = spread.getSheetFromName('汇总表');
@@ -209,13 +229,111 @@ const saveWorkBookData = function () {
   emits('saveWorkBook', tableData);
 };
 
-const exportExcel = function () {
-  exportToExcel(spread, props);
+const exportExcel = function (withData: boolean = true) {
+  exportToExcel(spread, props, withData);
+};
+
+// 打开导入模态窗
+const openImportDialog = function () {
+  openImportModal.value = true;
+  activeSheet = spread.getActiveSheet();
+};
+
+// 监听模态窗口的打开状态
+watch(openImportModal, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      new GC.Spread.Sheets.Workbook('importSpread');
+    });
+  }
+});
+
+// 打开Excel文件
+const openExcelFile = function () {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = false;
+  input.accept = '.xlsx';
+  input.onchange = function (e: any) {
+    const file = e.target.files[0];
+    const wb = GC.Spread.Sheets.findControl('importSpread');
+    wb.import(file, () => {
+      // 
+    });
+  };
+  input.click();
 };
 
 // 导入excel
 const importExcel = function () {
-  message.warning('开发中... 敬请期待');
+  const wb = GC.Spread.Sheets.findControl('importSpread');
+  if (wb) {
+    const sheet = wb.getActiveSheet();
+    if (sheet && activeSheet) {
+      // 先获取模板的数据起点和列范围
+      const table = activeSheet.tables.all()[0];
+      const tableDataRange = table.dataRange();
+      const startRow = tableDataRange.row;
+      const startColumn = tableDataRange.col;
+      const endColumn = tableDataRange.col + tableDataRange.colCount;
+      // 再获取导入数据的有效数据范围
+      const usedRange = sheet.getUsedRange(GC.Spread.Sheets.UsedRangeType.data);
+      if (!usedRange) {
+        message.warning('未找到有效数据区域，请检查');
+        return;
+      }
+      const row = usedRange.row;
+      const column = usedRange.col;
+      const rowCount = usedRange.rowCount;
+      const columnCount = usedRange.colCount;
+      // 校验数据区域有效性
+      if (row + rowCount < startRow || column + columnCount < endColumn) {
+        message.warning('导入数据区域与模板数据区域不匹配，请检查');
+      } else {
+        const importData = sheet.getArray(startRow, startColumn, rowCount, endColumn);
+        const importDataSource: any[] = [];
+        if (importData.length > 0) {
+          const tableFields: string[] = [];
+          for (let i = 0; i < tableDataRange.colCount; i++) {
+            tableFields.push(table.getColumnDataField(i));
+          }
+          importData.forEach((item: any) => {
+            const importItem: any = {};
+            item.forEach((field: any, index: number) => {
+              if (tableFields[index]) {
+                importItem[tableFields[index]] = field;
+              }
+            });
+            importDataSource.push(importItem);
+          });
+        }
+        // 追加到表格数据源中
+        const sheetData = activeSheet.getDataSource().getSource();
+        Object.keys(sheetData).forEach((key: string) => {
+          if (key.startsWith('table')) {
+            sheetData[key].push(...importDataSource);
+          }
+        });
+        activeSheet.suspendPaint();
+        table.showFooter(false);
+        activeSheet.addRows(activeSheet.getRowCount(), rowCount);
+        activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
+        table.showFooter(true);
+        activeSheet.resumePaint();
+        // 关闭模态窗口
+        openImportModal.value = false;
+      }
+    } else {
+      message.warning('未找到有效表单，请检查');
+    }
+  } else {
+    message.warning('请先打开导入模态窗');
+  }
+};
+
+// 下载模板
+const downloadTemplate = function () {
+  exportExcel(false);
 };
 
 const switchSummaryType = function () {
@@ -252,21 +370,24 @@ onMounted(() => {
   // initWorkbook(spread);
   setTimeout(() => {
     eventBus.on('openAttachList', () => {
-      console.log('openAttachList');
       openAttachList.value = true;
     });
     eventBus.on('setAttachListData', (data: any[]) => {
-      console.log('setAttachListData', data);
       attachListData.value = [...data];
     });
     eventBus.on('openPreviewFileModal', () => {
       openPreviewFile.value = true;
     });
+    eventBus.on('openImportModal', () => {
+      openImportModal.value = true;
+    });
     // registerEvent(spread, emits);
   }, 300);
-  // debugger;
   isEditable.value = props.content.editable === undefined ? true : props.content.editable;
   hasDict.value = props.content.hasDict === undefined ? false : props.content.hasDict;
+  if (!isEditable.value) {
+    hasDict.value = false;
+  }
 });
 </script>
 
@@ -295,5 +416,12 @@ onMounted(() => {
     flex-grow: 1;
     border: 1px solid;
   }
+}
+</style>
+
+<style lang="less" scoped>
+.import-spread {
+  width: 100%;
+  height: calc(100vh - 300px);
 }
 </style>

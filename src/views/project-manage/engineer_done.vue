@@ -28,11 +28,12 @@ const fetchProjectData = async function () {
       return await getApplicationData({ templateId: res.templateId }).then(
         (res) => {
           const data = res.applicationData;
-          const tableKey = Object.keys(data).find((key) => key.startsWith('table'));
+          const sheetData = data['咨询合同台帐'];
+          const tableKey = Object.keys(sheetData).find((key) => key.startsWith('table'));
           if (!tableKey) {
             return [];
           }
-          const tableData = data[tableKey];
+          const tableData = sheetData[tableKey];
           const hasEngineerData = tableData.filter((item: any) => item['是否含工程量计算书'] === '是' && item['工程量计算是否完成'] === '是');
           if (hasEngineerData.length === 0) {
             return [];

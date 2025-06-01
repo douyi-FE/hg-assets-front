@@ -2,7 +2,7 @@ import { nextTick } from 'vue';
 import { message } from 'ant-design-vue';
 import { store } from '../store';
 import { downloadZipUrl } from '../config';
-import { fileToBase64, generateUUID, base64ToBlob, getSheetBindingPaths } from './commonFunctions';
+import { fileToBase64, generateUUID, base64ToBlob } from './commonFunctions';
 import { renderPic, renderWord, renderPdf, renderExcel, renderUnknown } from './fileRenders';
 import Api from '@/api/';
 import { eventBus } from '@/utils/event-bus';

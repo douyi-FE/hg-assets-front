@@ -1,6 +1,24 @@
 import { getCurrentInstance, nextTick } from 'vue';
 
-export const exportToExcel = function (spread, props) {
+const sheetProtectionOptions = {
+  allowSelectLockedCells: true,
+  allowSelectUnlockedCells: true,
+  allowFilter: true,
+  allowSort: true,
+  allowResizeRows: true,
+  allowResizeColumns: true,
+  allowEditObjects: false,
+  allowDragInsertRows: false,
+  allowDragInsertColumns: false,
+  allowInsertRows: false,
+  allowInsertColumns: false,
+  allowDeleteRows: false,
+  allowDeleteColumns: false,
+  allowOutlineColumns: false,
+  allowOutlineRows: false,
+};
+
+export const exportToExcel = function (spread, props, withData = true) {
   spread.export((blob) => {
     // 使用 URL 或 webkitURL
     const URL = window.URL || window.webkitURL;
@@ -27,7 +45,7 @@ export const exportToExcel = function (spread, props) {
     console.log(e);
   }, {
     fileType: GC.Spread.Sheets.FileType.excel,
-    includeBindingSource: true
+    includeBindingSource: withData
   });
 };
 
@@ -106,4 +124,13 @@ export const updateAppContainerStyle = (spread, isFullscreen) => {
     spread.addSheet(1, new GC.Spread.Sheets.Worksheet('custom'));
     spread.removeSheet(1);
   });
+};
+
+export const protectSheet = function (spread, isProtected) {
+  const sheetCount = spread.getSheetCount();
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = spread.getSheet(i);
+    sheet.options.protectionOptions = sheetProtectionOptions;
+    sheet.options.isProtected = isProtected;
+  }
 };

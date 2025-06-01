@@ -44,8 +44,8 @@ export function bindingTablePath(range) {
   const sheet = (store.spread as any).getActiveSheet();
   let table = sheet.tables.all()[0];
   if (table && table.bindingPath()) {
-    showAlert('已绑定表单，请重置后重新绑定', 'error');
-    return;
+    // 先处理已绑定表格的footer
+    table.showFooter(false);
   }
   let tables = sheet.tables.all();
   if (tables.length > 0) {
