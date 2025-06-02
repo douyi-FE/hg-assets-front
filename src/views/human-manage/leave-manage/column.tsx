@@ -80,6 +80,15 @@ export const baseColumns: TableColumnItem[] = [
     hideInSearch: true,
   },
   {
+    title: '当前节点',
+    width: 200,
+    dataIndex: 'flowExecute',
+    hideInSearch: true,
+    customRender: ({ value }) => {
+      return value.map((item) => item.name).join(';') || '--';
+    },
+  },
+  {
     title: '审批状态',
     width: 80,
     dataIndex: 'approverStatus',
@@ -87,7 +96,7 @@ export const baseColumns: TableColumnItem[] = [
       return record.approverStatus === 'pending'
         ? '审批中'
         : record.approverStatus === 'approved'
-          ? '已审批'
+          ? '已完成'
           : '已驳回';
     },
     formItemProps: {
@@ -99,7 +108,7 @@ export const baseColumns: TableColumnItem[] = [
             value: 'pending',
           },
           {
-            label: '已审批',
+            label: '已完成',
             value: 'approved',
           },
           {
@@ -125,9 +134,8 @@ export const baseColumns: TableColumnItem[] = [
           record.flowExecute && record.flowExecute.find((item) => item.name === '发起申请')
             ? '发起'
             : '审批',
-        disabled: record.approverStatus === 'approved' || record.approverStatus === 'reject',
+        disabled: !record.hasPermission,
         onClick: () => {
-          console.log(record);
           eventBus.emit('approve-flow-execute', record);
         },
       },

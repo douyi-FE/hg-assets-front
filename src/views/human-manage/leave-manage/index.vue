@@ -97,23 +97,31 @@
         message.error('驳回失败');
       });
   });
-  eventBus.on('approve-flow-execute', (record: any) => {
-    console.log('record', record);
-    approveFlowExecute({
+
+  const approveFlowExecuteEvent = (record: any) => {
+    eventBus.off('approve-flow-execute');
+    return approveFlowExecute({
       businessId: record._id,
       initiatorId: userInfo.userInfo.id,
-    }).then((res) => {
-      message.success('审批成功');
-      if (res.status === 'completed') {
-        updateLeave({
-          id: record._id,
-          approverStatus: 'approved',
-        }).then((res) => {
-          dynamicTableInstance.reload();
-        });
-      }
-    });
-  });
+    })
+      .then((res) => {
+        message.success('审批成功');
+        if (res.status === 'completed') {
+          updateLeave({
+            id: record._id,
+            approverStatus: 'approved',
+          }).then((res) => {
+            dynamicTableInstance.reload();
+          });
+        }
+      })
+      .catch((err) => {
+        eventBus.on('approve-flow-execute', approveFlowExecuteEvent);
+        message.error('审批失败');
+      });
+  };
+  eventBus.on('approve-flow-execute', approveFlowExecuteEvent);
+
   const bindSuccess = () => {
     message.success('绑定成功');
     isShowFlowBind.value = false;
@@ -146,7 +154,6 @@
 
   onMounted(() => {
     getFlowBindList({ module: 'leave' }).then((res) => {
-      console.log('flowBindList', res);
       if (res.length === 0) {
         isShowFlowBind.value = true;
         message.warn('请先绑定流程');
