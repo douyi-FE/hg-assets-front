@@ -367,7 +367,6 @@ watch(
 onMounted(() => {
   spread = new GC.Spread.Sheets.Workbook('work_book_container');
   // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
-  // initWorkbook(spread);
   setTimeout(() => {
     eventBus.on('openAttachList', () => {
       openAttachList.value = true;
