@@ -143,6 +143,10 @@ const saveTemplate = async function () {
     .then(async () => {
       const sjs = await ejsDesignRef.value.getSpreadSJS();
       const initDataSource = getInitData();
+      if (Object.keys(initDataSource).length === 0) {
+        message.error('未发现有效绑定数据，请检查是否完成了表格绑定');
+        return;
+      }
       emits(
         'save',
         {

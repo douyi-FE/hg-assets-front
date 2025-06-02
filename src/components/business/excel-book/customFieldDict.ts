@@ -53,7 +53,6 @@ export const setFieldDict = function (spread: any, dictData: any, dictDataFields
         // combo.items(comboItems).editorValueType(GC.Spread.Sheets.CellTypes.EditorValueType.text);
         // sheet.setCellType(-1, col + j, combo);
         // 更换为list validator
-        // debugger;
         const dictValidator = new GC.Spread.Sheets.DataValidation.createListValidator(colValues.join(','));
         // dictValidator.inputTitle("请选择");
         // dictValidator.inputMessage(colValues.join(','));
@@ -79,6 +78,7 @@ export const setFieldDict = function (spread: any, dictData: any, dictDataFields
 };
 
 export const updateDict = async function (spread: any, dictDataFields: any, fileName: string) {
+  debugger;
   const dictData: any[] = [];
   // 先校验出几个字段中不在字典的值
   const sheetCount = spread.getSheetCount();
@@ -127,7 +127,7 @@ export const updateDict = async function (spread: any, dictDataFields: any, file
         const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
         const res = await Api.applicationData.appendApplicationData({
           templateId: templateFieldDictId,
-          applicationData: dictData
+          applicationData: { '列表字段取值字典': dictData }
         });
         if (res.code === 200) {
           message.success('更新字典成功');
@@ -147,6 +147,7 @@ export const updateDict = async function (spread: any, dictDataFields: any, file
 
 // 把选中单元格数据添加到字典
 export const addFieldDict = async function (spread: any, dictDataFields: any, fileName: string) {
+  debugger;
   const dictData: any[] = [];
   const sheet = spread.getActiveSheet();
   const table = sheet.tables.all()[0];
@@ -175,13 +176,13 @@ export const addFieldDict = async function (spread: any, dictDataFields: any, fi
     const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
     const res = await Api.applicationData.appendApplicationData({
       templateId: templateFieldDictId,
-      applicationData: dictData
+      applicationData: { '列表字段取值字典': dictData }
     });
     if (res.code === 200) {
       message.success('添加字典成功');
       // 重新加载当前表格，只需要刷新字典即可，其他数据不变
-      const dictData = await getTemplateFieldDict({ templateId: templateFieldDictId, dictName: fileName });
-      setFieldDict(spread, dictData, dictDataFields);
+      const dictDatas = await getTemplateFieldDict({ templateId: templateFieldDictId, dictName: fileName });
+      setFieldDict(spread, dictDatas, dictDataFields);
     } else {
       message.error('添加字典失败');
     }

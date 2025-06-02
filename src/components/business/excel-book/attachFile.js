@@ -44,6 +44,7 @@ export const downloadFile = async (record) => {
     message.error('下载失败');
   }
 };
+
 export const deleteFile = async (fileId, index) => {
   try {
     await Api.templateAttach.deleteFile({
@@ -51,7 +52,6 @@ export const deleteFile = async (fileId, index) => {
     });
     attachListData.value.splice(index, 1);
     eventBus.emit('deleteFile', attachListData.value);
-    eventBus.emit('setAttachListData', [...attachListData.value]);
     message.success('删除成功');
   } catch (error) {
     message.error('删除失败');

@@ -76,7 +76,7 @@ import { onMounted, ref, toRaw, watch, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
-import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
+import { base64ToArrayBuffer, base64ToBlob } from '@/components/basic/ejs-design/resource/commonFunctions';
 import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
 import { initUploadFile } from '@/components/basic/ejs-design/resource/fileUploadCellType';
 import { eventBus } from '@/utils/event-bus';
@@ -85,7 +85,6 @@ import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
-import { uploadAttachFile, previewFile, downloadFile, deleteFile } from './attachFile';
 import Api from '@/api';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
@@ -388,6 +387,46 @@ onMounted(() => {
     hasDict.value = false;
   }
 });
+
+
+const uploadAttachFile = () => {
+  eventBus.emit('addAttach');
+};
+
+const previewFile = (fileId) => {
+  eventBus.emit('previewFile', fileId);
+};
+const downloadFile = async (record) => {
+  // 下载文件
+  const response = await Api.templateAttach.download({
+    fileId: record.fileId,
+  });
+  if (response && response._doc) {
+    const file = await response._doc.fileContent;
+    const fileBlob = base64ToBlob(file);
+    const fileName = record.originalFileName;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(fileBlob);
+    a.download = fileName;
+    a.click();
+  } else {
+    message.error('下载失败');
+  }
+};
+
+const deleteFile = async (fileId, index) => {
+  try {
+    await Api.templateAttach.deleteFile({
+      fileId: fileId,
+    });
+    attachListData.value.splice(index, 1);
+    eventBus.emit('deleteFile', attachListData.value);
+    message.success('删除成功');
+  } catch (error) {
+    message.error('删除失败');
+  }
+};
+
 </script>
 
 <style lang="less" scoped>

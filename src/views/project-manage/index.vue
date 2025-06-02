@@ -27,7 +27,6 @@ const fetchProjectData = async function () {
     async (res) => {
       return await getApplicationData({ templateId: res.templateId }).then(
         (res) => {
-          debugger;
           const data = res.applicationData;
           const sheetData = data['咨询合同台帐'];
           const tableKey = Object.keys(sheetData).find((key) => key.startsWith('table'));

@@ -97,7 +97,6 @@ export const registerEvent = function (spread, emits) {
 };
 
 export const addSheetRows = function (sheet, dataSource) {
-  // debugger;
   const ds = dataSource[sheet.name()];
   if (!ds) {
     return;

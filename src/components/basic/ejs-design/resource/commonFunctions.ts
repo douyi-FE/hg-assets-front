@@ -105,13 +105,13 @@ export function fileToBase64(file) {
 
 // 返回初始化数据(支持多表填报)
 export function getInitData() {
-  debugger;
   const spread = store.spread;
   if (!spread) {
     return {};
   }
   const sheetCount = spread.getSheetCount();
   let initData = {};
+  let hasData = false;
   for (let i = 0; i < sheetCount; i++) {
     const sheet = spread.getSheet(i);
     const ds = sheet.getDataSource();
@@ -119,8 +119,13 @@ export function getInitData() {
       const dsSource = ds.getSource();
       initData[sheet.name()] = dsSource;
     }
+    // 同时判断是否有有效表格存在
+    const table = sheet.tables.all()[0];
+    if (table && table.bindingPath()) {
+      hasData = true;
+    }
   }
-  return initData;
+  return hasData ? initData : false;
 }
 
 // 获取选中的区域
