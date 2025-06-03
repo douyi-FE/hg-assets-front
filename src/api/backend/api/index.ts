@@ -37,6 +37,7 @@ import * as invoice from './invoice';
 import * as leave from './leave';
 import * as project from './project';
 import * as device from './device';
+import * as cad from './cad';
 export default {
   auth,
   account,
@@ -73,4 +74,5 @@ export default {
   leave,
   project,
   device,
+  cad,
 };

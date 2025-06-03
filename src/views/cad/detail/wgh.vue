@@ -1,5 +1,32 @@
+<template>
+  <div class="wgh-container">
+    <div class="wgh-header" v-if="detialId !== ''">
+      <a-tooltip>
+        <template #title>点击框选开始框选，右键结束框选</template>
+        <a-button type="primary" @click="handleSelectModeChange" :icon="h(InfoCircleFilled)">
+          框选
+        </a-button>
+      </a-tooltip>
+      <a-tooltip>
+        <template #title>点击关联可与左侧单元格关联</template>
+        <a-button type="primary" @click="handleLinkChange" :icon="h(InfoCircleFilled)">
+          关联
+        </a-button>
+      </a-tooltip>
+      <a-tooltip>
+        <template #title>点击上传可上传图纸</template>
+        <a-button type="primary" @click="handleUploadChange" :icon="h(CloudUploadOutlined)">
+          上传
+        </a-button>
+      </a-tooltip>
+    </div>
+    <canvas id="myCanvas" />
+  </div>
+</template>
+
 <script setup lang="ts">
-  import { onMounted, ref, watch } from 'vue';
+  import { ref, watch, h } from 'vue';
+  import { InfoCircleFilled, CloudUploadOutlined } from '@ant-design/icons-vue';
   import {
     createMxCad,
     MxCADResbuf,
@@ -12,9 +39,11 @@
   const props = withDefaults(
     defineProps<{
       mxFileUrl: string;
+      detialId: string;
     }>(),
     {
       mxFileUrl: '',
+      detialId: '',
     },
   );
 
@@ -22,10 +51,11 @@
   const entityColorList: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
-  const emit = defineEmits(['getAllEntity', 'getAllEntityV2', 'selectEntityChange']);
+  const emit = defineEmits(['getAllEntityV2', 'selectEntityChange']);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
+      console.log('ids', ids);
       if (ids.length > 0) {
         const firstEntity: any = ids[0].getMcDbEntity();
         emit('selectEntityChange', firstEntity);
@@ -34,35 +64,7 @@
     });
   };
 
-  // const getAllEntity = (mxCad: any) => {
-  //   // 获取当前控件和数据库
-  //   const mxcad = mxCad.getMxCpp().App.getCurrentMxCAD();
-  //   const database = mxcad.getDatabase();
-  //   // 获取块表
-  //   const blockTable = database.getBlockTable();
-  //   const blockIds = blockTable.getAllRecordId();
-  //   const entityList: any[] = [];
-  //   // 遍历块定义
-  //   blockIds.forEach((blockId: any) => {
-  //     const blockRecord = blockId.getMcDbBlockTableRecord();
-  //     if (!blockRecord) return;
-
-  //     // 遍历块内实体
-  //     const entityIds = blockRecord.getAllEntityId();
-  //     entityIds.forEach((entityId: any) => {
-  //       const entity = entityId.getMcDbEntity();
-  //       if (entity) {
-  //         entityList.push(entity);
-  //         entityAllList.push(entity);
-  //         entityColorList[`${entity.alignmentPoint.x}-${entity.alignmentPoint.y}`] =
-  //           entity.trueColor.clone();
-  //       }
-  //     });
-  //   });
-  //   emit('getAllEntity', entityList);
-  // };
-
-  const getAllEntityV2 = (mxCad: any) => {
+  const getAllEntityV2 = () => {
     const entityList: any[] = [];
     // 创建选择集实例
     const selectionSet = new MxCADSelectionSet();
@@ -148,7 +150,7 @@
     const currentMxCAD = mxCad.value.getMxCpp().App.getCurrentMxCAD();
     currentMxCAD.zoomAll();
     currentMxCAD.zoomCenter(aliginPoint.x, aliginPoint.y);
-    currentMxCAD.zoomScale(9);
+    currentMxCAD.zoomScale(20);
 
     // 重置所有实体颜色
     resetAllEntityColor();
@@ -158,10 +160,8 @@
     const color = entry.trueColor.clone();
     color.setRGB(255, 0, 0);
     entry.trueColor = color;
-
     // 设置边框
     createRedBorder(entry, currentMxCAD);
-
     currentMxCAD.updateDisplay();
   };
 
@@ -183,21 +183,46 @@
       fontspath: '/fonts',
       onOpenFileComplete: () => {
         registerEvent(mxCad.value);
-        getAllEntityV2(mxCad.value);
+        getAllEntityV2();
       },
     }).then((mxCad: any) => {
       return mxCad;
     });
   };
 
-  onMounted(async () => {
-    mxCad.value = await renderCad();
-  });
+  // 切换选择模式
+  const handleSelectModeChange = async () => {
+    const ss = new MxCADSelectionSet();
+    ss.isWhileSelect = true;
+    ss.isSelectHighlight = true;
+    ss.userSelect('框选需要的对象').then((is) => {
+      if (is) {
+        ss.getIds();
+        ss.forEach((id) => {
+          let ent = id.getMcDbEntity();
+          if (!ent) return;
+          console.log(ent);
+        });
+      }
+    });
+  };
+
+  const handleLinkChange = () => {
+    console.log('关联');
+  };
+
+  const handleUploadChange = () => {
+    console.log('上传');
+  };
 
   watch(
     () => props.mxFileUrl,
     async () => {
+      console.log('props.mxFileUrl', props.mxFileUrl);
       mxCad.value = await renderCad();
+    },
+    {
+      immediate: true,
     },
   );
 
@@ -206,15 +231,22 @@
   });
 </script>
 
-<template>
-  <div class="wgh-container">
-    <canvas id="myCanvas" />
-  </div>
-</template>
-
 <style scoped lang="less">
   .wgh-container {
-    width: 100vw;
-    height: 1000px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    .wgh-header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 5px;
+      background-color: #fff;
+      z-index: 1000;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
   }
 </style>

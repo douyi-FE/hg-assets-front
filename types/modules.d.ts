@@ -23,4 +23,7 @@ declare module 'mxcad' {
   export const McDbLine: any;
   export const McCmColor: any;
   export const McGePoint3d: any;
+  export const MxCpp: any;
 }
+
+declare module 'nanoid';
