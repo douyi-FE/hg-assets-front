@@ -13,8 +13,11 @@ export async function getCadList() {
 // 获取cad详情
 export async function getCadDetail(id: string) {
   return request<any>({
-    url: `/api/cad/detail/${id}`,
+    url: `/api/cad/detail`,
     method: 'get',
+    params: {
+      id,
+    },
   });
 }
 

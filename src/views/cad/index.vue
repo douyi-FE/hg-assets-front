@@ -108,7 +108,8 @@
         {
           label: '查看',
           onClick: () => {
-            console.log('查看', record);
+            detialId.value = record._id;
+            isShowCadDrawer.value = true;
           },
         },
         {

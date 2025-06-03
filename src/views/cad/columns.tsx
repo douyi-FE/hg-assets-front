@@ -15,13 +15,13 @@ export const baseColumns: TableColumnItem[] = [
   },
   {
     title: '创建时间',
-    dataIndex: 'createTime',
+    dataIndex: 'createdAt',
     width: 250,
     hideInSearch: true,
   },
   {
     title: '更新时间',
-    dataIndex: 'updateTime',
+    dataIndex: 'updatedAt',
     width: 250,
     hideInSearch: true,
   },

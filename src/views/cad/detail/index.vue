@@ -46,6 +46,8 @@
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
   import { useUserStore } from '@/store/modules/user';
+  import { getCadDetail } from '@/api/backend/api/cad';
+  import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
 
   const userStore = useUserStore();
   const token = userStore.token;
@@ -66,6 +68,7 @@
   });
   const emits = defineEmits(['update:mxFileUrl']);
 
+  let spread: any = null;
   const wghRef = ref<any>(null);
   const entityList = ref<any[]>([]);
   const selectedEntity = ref<any>(null);
@@ -156,10 +159,26 @@
     input.click();
   };
 
-  const renderExcel = () => {
-    new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
-      sheetCount: 1,
-    });
+  const renderExcel = (ejs: string = '') => {
+    if (!spread) {
+      spread = new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
+        sheetCount: 1,
+      });
+    }
+    if (ejs) {
+      const arrayBuffer = base64ToArrayBuffer(ejs);
+      const fileBlob = new Blob([arrayBuffer], {
+        type: 'application/octet-stream',
+      });
+      spread.open(fileBlob, function () {});
+    }
+  };
+
+  const renderDetail = (detail: any) => {
+    const { ejs, cadPath } = detail;
+    console.log('ejs', ejs, cadPath);
+    renderExcel(ejs);
+    emits('update:mxFileUrl', cadPath);
   };
 
   watch(
@@ -170,6 +189,18 @@
           renderExcel();
         });
       }
+    },
+    {
+      immediate: true,
+    },
+  );
+
+  watch(
+    () => props.detialId,
+    (newVal) => {
+      getCadDetail(newVal).then((res) => {
+        renderDetail(res);
+      });
     },
     {
       immediate: true,
