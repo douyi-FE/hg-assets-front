@@ -124,6 +124,7 @@
 <style lang="less" scoped>
   .login-container {
     display: flex;
+    gap: 20px;
     position: relative;
     width: 100vw;
     height: 100vh;

@@ -138,6 +138,7 @@
   const getData = async function () {
     const excelEjs = await getExcelEjs();
     return {
+      detailId: props.detialId,
       excelEjs,
       cadFileUrl: props.mxFileUrl,
     };
@@ -171,12 +172,16 @@
         type: 'application/octet-stream',
       });
       spread.open(fileBlob, function () {});
+    } else {
+      spread.destroy();
+      spread = new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
+        sheetCount: 1,
+      });
     }
   };
 
-  const renderDetail = (detail: any) => {
-    const { ejs, cadPath } = detail;
-    console.log('ejs', ejs, cadPath);
+  const renderDetail = (detail: any = {}) => {
+    const { ejs = '', cadPath = '' } = detail;
     renderExcel(ejs);
     emits('update:mxFileUrl', cadPath);
   };
@@ -186,21 +191,16 @@
     (newVal) => {
       if (newVal) {
         nextTick(() => {
-          renderExcel();
+          if (props.detialId) {
+            getCadDetail(props.detialId).then((res) => {
+              renderDetail(res);
+            });
+          } else {
+            emits('update:mxFileUrl', '');
+            renderExcel();
+          }
         });
       }
-    },
-    {
-      immediate: true,
-    },
-  );
-
-  watch(
-    () => props.detialId,
-    (newVal) => {
-      getCadDetail(newVal).then((res) => {
-        renderDetail(res);
-      });
     },
     {
       immediate: true,

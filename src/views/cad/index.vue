@@ -18,7 +18,11 @@
         <a-button
           type="primary"
           :disabled="!$auth('system:role:create')"
-          @click="isShowCadDrawer = true"
+          @click="
+            detialId = '';
+            projectName = '';
+            isShowCadDrawer = true;
+          "
         >
           新增
         </a-button>
@@ -58,7 +62,7 @@
   import cadDetail from './detail/index.vue';
   import { useTable } from '@/components/core/dynamic-table';
   import Api from '@/api/';
-  import { createCad, deleteCad } from '@/api/backend/api/cad';
+  import { createCad, deleteCad, updateCad } from '@/api/backend/api/cad';
 
   const isShowCadDrawer = ref(false);
   const projectName = ref('');
@@ -74,19 +78,27 @@
       return;
     }
     const data = await cadDetailRef.value.getData();
-    console.log('data', {
-      ...data,
-      projectName: projectName.value,
-    });
-    createCad({
-      ...data,
-      projectName: projectName.value,
-    }).then((res) => {
-      console.log('res', res);
-      message.success('新增成功');
-      isShowCadDrawer.value = false;
-      dynamicTableInstance.reload();
-    });
+    if (data.detailId) {
+      updateCad({
+        ...data,
+        projectName: projectName.value,
+      }).then((res) => {
+        console.log('res', res);
+        message.success('新增成功');
+        isShowCadDrawer.value = false;
+        dynamicTableInstance.reload();
+      });
+    } else {
+      createCad({
+        ...data,
+        projectName: projectName.value,
+      }).then((res) => {
+        console.log('res', res);
+        message.success('新增成功');
+        isShowCadDrawer.value = false;
+        dynamicTableInstance.reload();
+      });
+    }
   };
 
   const columns: TableColumnItem[] = [
@@ -102,14 +114,15 @@
           label: '编辑',
           // disabled: record.status === 2,
           onClick: () => {
-            console.log('编辑', record);
+            detialId.value = record._id;
+            projectName.value = record.name;
+            isShowCadDrawer.value = true;
           },
         },
         {
           label: '查看',
           onClick: () => {
-            detialId.value = record._id;
-            isShowCadDrawer.value = true;
+            console.log('查看', record);
           },
         },
         {

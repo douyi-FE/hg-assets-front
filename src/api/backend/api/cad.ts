@@ -3,10 +3,11 @@
 import { request } from '@/utils/request';
 
 // 获取cad列表
-export async function getCadList() {
+export async function getCadList(params: any) {
   return request<any>({
     url: '/api/cad/list',
     method: 'GET',
+    params,
   });
 }
 
@@ -38,5 +39,14 @@ export async function deleteCad(id: string) {
     data: {
       id,
     },
+  });
+}
+
+// 更新cad
+export async function updateCad(data: any) {
+  return request<any>({
+    url: '/api/cad/update',
+    method: 'post',
+    data,
   });
 }

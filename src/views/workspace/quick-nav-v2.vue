@@ -3,7 +3,7 @@
     title="便捷导航"
     :bordered="false"
     style="height: 300px"
-    :bodyStyle="{ display: 'flex', gap: '10px' }"
+    :bodyStyle="{ display: 'flex', gap: '10px', overflow: 'auto' }"
   >
     <template #extra>
       <a-button

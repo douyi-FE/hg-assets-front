@@ -12,6 +12,7 @@ export const baseColumns: TableColumnItem[] = [
   {
     title: '名称',
     dataIndex: 'name',
+    width: 200,
   },
   {
     title: '创建时间',
