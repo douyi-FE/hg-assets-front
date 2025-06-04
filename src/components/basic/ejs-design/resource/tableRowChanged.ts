@@ -1,5 +1,5 @@
-import { showAlert } from './commonFunctions';
-import { setTableRowChangedCellType } from './fileUploadCellType';
+import { message } from 'ant-design-vue';
+import { fillFileUploadCellType, setTableRowChangedCellType } from './fileUploadCellType';
 
 // 监听表格行变化，自动带入列样式
 export function tableRowChanged(spread: any) {
@@ -8,13 +8,14 @@ export function tableRowChanged(spread: any) {
     if (propertyName === 'tableInsertRows') {
       const sheet = data.sheet;
       const table = data.table;
-      const row = data.row;
+      const range = table.dataRange();
+      const row = data.row + range.row - 1;
       const count = data.count;
       const fromRow = row + count;
       // 默认从前插入行，没有开放从后边插入行
       // const isAfter = data.isAfter;
       // 插入行后，自动带入列设置
-      setTableRows(spread, sheet, table.dataRange(), fromRow, row, count);
+      fillTableRows(spread, sheet, table.dataRange(), fromRow, count);
     }
   });
   spread.bind(GC.Spread.Sheets.Events.TableResized, function (e, data) {
@@ -24,14 +25,35 @@ export function tableRowChanged(spread: any) {
 
   // 监听表格列变化，取消表格绑定，并提醒重新绑定表单
   spread.bind(GC.Spread.Sheets.Events.TableColumnsChanged, function (e, param) {
-    const sheet = param.sheet;
-    const table = param.table;
-    sheet.getParent().commandManager().execute({ cmd: 'tableToRange', sheetName: sheet.name(), tableName: table.name() });
-    showAlert('监测到表格列变化，请重新绑定表单', 'warning');
+    // 不要自动转成区域，重新设置表单需要沿用原来的tableName
+    // const sheet = param.sheet;
+    // const table = param.table;
+    // sheet.getParent().commandManager().execute({ cmd: 'tableToRange', sheetName: sheet.name(), tableName: table.name() });
+    message.warning('监测到表格列变化，请重新绑定表单');
   });
-
 }
 
+export function fillTableRows(spread, sheet, tableRange, fromRow, rowCount, needClear = true) {
+  const startRow = tableRange.row < fromRow ? fromRow : tableRange.row;
+  const startRange = new GC.Spread.Sheets.Range(startRow - 1, tableRange.col, 1, tableRange.colCount);
+  const fillRange = new GC.Spread.Sheets.Range(startRow, tableRange.col, rowCount, tableRange.colCount - 1);
+  spread.suspendPaint();
+  spread.commandManager().execute({
+    cmd: "fill",
+    sheetName: sheet.name(),
+    startRange: startRange,
+    fillRange: fillRange,
+    autoFillType: GC.Spread.Sheets.Fill.AutoFillType.copyCells,
+    fillDirection: GC.Spread.Sheets.Fill.FillDirection.down
+  });
+  if (needClear) {
+    sheet.getRange(fillRange.row, fillRange.col, fillRange.rowCount, fillRange.colCount).value(null);
+  }
+  fillFileUploadCellType(sheet, startRange, fillRange);
+  spread.resumePaint();
+}
+
+// 弃用
 export function setTableRows(spread, sheet, tableRange, fromRow, row, rowCount) {
   sheet.suspendPaint();
   const tableStartRow = tableRange.row;

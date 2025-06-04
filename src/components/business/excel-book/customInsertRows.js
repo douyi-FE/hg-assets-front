@@ -1,4 +1,6 @@
 import { message } from 'ant-design-vue';
+import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
+
 export const initCustomInsertRows = function (spread) {
   const commandManager = spread.commandManager();
   const insertRowsBefore = {
@@ -65,10 +67,14 @@ function executeInsertRows(spread, options, before = false) {
     }
     const sheet = spread.getSheetFromName(options.sheetName)
     sheet.suspendPaint()
+    const table = sheet.tables.all()[0];
+    const tableRange = table.dataRange();
     if (before) {
       sheet.addRows(options.activeRow, parseInt(options.commandOptions))
+      fillTableRows(spread, sheet, tableRange, options.activeRow, parseInt(options.commandOptions))
     } else {
       sheet.addRows(options.activeRow + 1, parseInt(options.commandOptions))
+      fillTableRows(spread, sheet, tableRange, options.activeRow + 1, parseInt(options.commandOptions))
     }
     sheet.resumePaint()
   }
