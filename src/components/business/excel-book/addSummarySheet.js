@@ -5,6 +5,7 @@ const protectionOptions = {
   allowSelectUnlockedCells: true,
   allowSort: true,
   allowFilter: true,
+  allowEditObjects: true,
   allowResizeRows: true,
   allowResizeColumns: true,
   allowDragInsertRows: true,

@@ -87,6 +87,7 @@ import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './ad
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
 import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
+import { initCustomCommentsEvents, renderCommentsByData } from './customComments';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const openImportModal = ref(false);
@@ -193,6 +194,8 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         canSwitchSummaryType(spread, summaryByTypeDisabled);
         initWorkbook(spread, (spread) => {
           initCustomInsertRows(spread);
+          initCustomCommentsEvents(spread);
+          renderCommentsByData(spread, dataSource);
         });
         sheet.recalcAll(true);
         resolve(true);

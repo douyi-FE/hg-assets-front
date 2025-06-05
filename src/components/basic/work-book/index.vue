@@ -42,7 +42,7 @@
     allowSort: true,
     allowResizeRows: true,
     allowResizeColumns: true,
-    allowEditObjects: false,
+    allowEditObjects: true,
     allowDragInsertRows: false,
     allowDragInsertColumns: false,
     allowInsertRows: false,
