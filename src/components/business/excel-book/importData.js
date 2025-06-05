@@ -1,5 +1,6 @@
 import { message } from 'ant-design-vue';
 import { exportExcel } from './commonFuncs';
+import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 
 // 打开Excel文件
 export const openExcelFile = function () {
@@ -20,6 +21,7 @@ export const openExcelFile = function () {
 // 导入excel
 export const importExcel = function (openImportModal, activeSheet) {
   const wb = GC.Spread.Sheets.findControl('importSpread');
+  debugger;
   if (wb) {
     const sheet = wb.getActiveSheet();
     if (sheet && activeSheet) {
@@ -69,10 +71,12 @@ export const importExcel = function (openImportModal, activeSheet) {
         });
         activeSheet.suspendPaint();
         table.showFooter(false);
-        activeSheet.addRows(activeSheet.getRowCount(), rowCount);
+        const startRow = activeSheet.getRowCount();
+        activeSheet.addRows(startRow, rowCount);
         activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
         table.showFooter(true);
         activeSheet.resumePaint();
+        fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), startRow, rowCount);
         // 关闭模态窗口
         openImportModal.value = false;
       }

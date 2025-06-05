@@ -1,5 +1,6 @@
+import { message } from 'ant-design-vue';
 import { store } from '../store';
-import { generateTableName, getInitDataSource, getSheetBindingPaths, showAlert } from './commonFunctions';
+import { generateTableName, getInitDataSource, getSheetBindingPaths } from './commonFunctions';
 import { setAttachColumn } from './fileUploadCellType';
 
 // 处理选中的区域
@@ -38,18 +39,22 @@ export function handleRangeValue(range, selectType, area) {
 // 绑定表单路径
 export function bindingTablePath(range) {
   if (!range || range.rowCount === 0) {
-    showAlert('未选中有效表头区域，请重新选择', 'error');
+    message.error('未选中有效表头区域，请重新选择');
     return;
   }
   const sheet = (store.spread as any).getActiveSheet();
+  debugger;
   let table = sheet.tables.all()[0];
+  let tableName = null;
   if (table && table.bindingPath()) {
+    // 如果已经绑定了表格，则沿用原来的表格名称
+    tableName = table.name();
     // 先处理已绑定表格的footer
     table.showFooter(false);
   }
   let tables = sheet.tables.all();
   if (tables.length > 0) {
-    showAlert('表单中已存在表格，将重置所有表格', 'warning');
+    // message.warning('表单中已存在表格，将重置所有表格');
     tables.forEach((table) => {
       (store.spread as any).commandManager().execute({
         cmd: 'tableToRange',
@@ -67,7 +72,7 @@ export function bindingTablePath(range) {
   if (range.rowCount === 1) {
     // 获取表单字段
     table = sheet.tables.add(
-      generateTableName(),
+      tableName || generateTableName(),
       tableRange.row,
       tableRange.col,
       tableRange.rowCount,
@@ -95,7 +100,7 @@ export function bindingTablePath(range) {
     // 插入表头行
     sheet.addRows(tableRange.row, 1);
     table = sheet.tables.add(
-      generateTableName(),
+      tableName || generateTableName(),
       tableRange.row,
       tableRange.col,
       tableRange.rowCount + 1,

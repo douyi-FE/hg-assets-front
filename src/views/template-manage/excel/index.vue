@@ -113,11 +113,14 @@ const publishTemplate = async (record: TableListItem) => {
           description: record.note,
           initDataSource: (record as any).initDataSource,
         }),
-        Api.applicationData.saveApplicationData({
-          templateId: record._id,
-          userId: userStore.userInfo.id,
-          applicationData: (record as any).initDataSource,
-        }),
+        // 应该不需要在发布时单独保存一份数据
+        // 如果是创建新的应用，有初始化数据字段
+        // 如果是编辑应用，则需要依赖原来的数据
+        // Api.applicationData.saveApplicationData({
+        //   templateId: record._id,
+        //   userId: userStore.userInfo.id,
+        //   applicationData: (record as any).initDataSource,
+        // }),
       ]);
     })
     .then(() => {

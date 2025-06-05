@@ -85,6 +85,7 @@ import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
+import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
@@ -306,16 +307,20 @@ const importExcel = function () {
             importDataSource.push(importItem);
           });
         }
+        debugger;
+        activeSheet.suspendPaint();
+        table.showFooter(false);
+        const fromRow = tableDataRange.row + tableDataRange.rowCount;
+        activeSheet.addRows(fromRow, rowCount);
+        fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), fromRow, rowCount);
         // 追加到表格数据源中
         const sheetData = activeSheet.getDataSource().getSource();
         Object.keys(sheetData).forEach((key: string) => {
           if (key.startsWith('table')) {
-            sheetData[key].push(...importDataSource);
+            // 从 fromRow 开始替换数据
+            sheetData[key].splice(fromRow, rowCount, ...importDataSource);
           }
         });
-        activeSheet.suspendPaint();
-        table.showFooter(false);
-        activeSheet.addRows(activeSheet.getRowCount(), rowCount);
         activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
         table.showFooter(true);
         activeSheet.resumePaint();

@@ -34,6 +34,20 @@ FileUploadCellType.prototype.paint = function (ctx, val, x, y, w, h, style, cont
       context,
     ]);
   } else {
+    // 为了处理修改模板后，原来不是附件的数据中有值的情况
+    if (!val.map) {
+      GC.Spread.Sheets.CellTypes.HyperLink.prototype.paint.apply(this, [
+        ctx,
+        store.emptyText,
+        x,
+        y,
+        w,
+        h,
+        style,
+        context,
+      ]);
+      return;
+    }
     // 把val转为文件名称
     const fileNames = val.map((item) => item.originalFileName);
     // 显示文件名称
@@ -343,7 +357,7 @@ async function getFileById(fileId) {
 }
 
 // 重置上传文件单元格类型
-function resetFileUploadCellType(spread, row, col) {
+export function resetFileUploadCellType(spread, row, col) {
   const sheet = spread.getActiveSheet();
   // 如果 row 和 col 为数字，则转换为行和列
   if (typeof row !== 'number' && typeof col !== 'number') {
@@ -366,6 +380,24 @@ function resetFileUploadCellType(spread, row, col) {
     } else {
       fileUploadCellType.text(store.emptyText);
       fileUploadCellType.linkToolTip(store.emptyToolTip);
+    }
+  }
+}
+
+export function fillFileUploadCellType(sheet, fromRange, targetRange) {
+  const fromRow = fromRange.row;
+  const fromCol = fromRange.col;
+  const fromColCount = fromRange.colCount;
+  const targetRow = targetRange.row;
+  const targetCol = targetRange.col;
+  const targetRowCount = targetRange.rowCount;
+  for (let i = 0; i < fromColCount; i++) {
+    const fromCellType = sheet.getCellType(fromRow, fromCol + i);
+    if (fromCellType && fromCellType.typeName === 'FileUploadCellType') {
+      for (let j = 0; j < targetRowCount; j++) {
+        const uploadCellType = new FileUploadCellType();
+        sheet.setCellType(targetRow + j, targetCol + i, uploadCellType);
+      }
     }
   }
 }

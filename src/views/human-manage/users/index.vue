@@ -53,7 +53,7 @@ const fetchExcel = async function () {
         .then(([template, applicationData]) => {
           content.value = {
             ejs: template.content,
-            dataSource: applicationData.applicationData,
+            dataSource: applicationData?.applicationData || template.initDataSource,
             fileName: template.name,
           };
         })
