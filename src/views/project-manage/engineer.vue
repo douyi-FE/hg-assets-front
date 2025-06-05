@@ -164,7 +164,7 @@
     };
     // 2. 添加为 Layout 的子路由
     router.addRoute('Layout', dynamicRoute);
-    // 3. 跳转到新路由
+    // 3. 跳转到新路 由
     router.push({
       name: `engineer-${currentEngineer.value.code}-${item.code}`,
       query: {
