@@ -5,13 +5,13 @@ import { request, type RequestOptions } from '@/utils/request';
 // 获取工程列表
 export async function getEngineerList(
   projectCode: string,
-  deviceCode: string,
+  deviceId: string,
   options?: RequestOptions,
 ) {
   return request<any>({
     url: '/api/engineer/list',
     method: 'GET',
-    params: { projectCode, deviceCode },
+    params: { projectCode, deviceId },
   });
 }
 
