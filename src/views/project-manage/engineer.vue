@@ -156,7 +156,7 @@
     const dynamicRoute = {
       path: `/engineer/${currentEngineer.value.code}/${item.code}`,
       name: `engineer-${currentEngineer.value.code}-${item.code}`,
-      component: () => import(`@/views/calc-eng/static-equip/index.vue`),
+      component: () => import(`@/views/calc-eng/index.vue`),
       meta: {
         title: `${currentEngineer.value.name} - ${item.type}`,
         icon: 'ant-design:home-filled',

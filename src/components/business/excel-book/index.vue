@@ -87,7 +87,7 @@ import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './ad
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
 import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
-import { initCustomCommentsEvents, renderCommentsByData } from './customComments';
+import { initCustomCommentsEvents, renderCommentsByData, renderCommentsBySheet } from './customComments';
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const openImportModal = ref(false);
@@ -196,6 +196,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           initCustomInsertRows(spread);
           initCustomCommentsEvents(spread);
           renderCommentsByData(spread, dataSource);
+          renderCommentsBySheet(spread, '汇总表');
         });
         sheet.recalcAll(true);
         resolve(true);
@@ -228,8 +229,8 @@ const downloadAttachAll = async () => {
 };
 
 const saveWorkBookData = function () {
-  const tableData = getSheetTableData(spread);
-  emits('saveWorkBook', tableData);
+  const sheetData = getSheetTableData(spread);
+  emits('saveWorkBook', sheetData);
 };
 
 const exportExcel = function (withData: boolean = true) {

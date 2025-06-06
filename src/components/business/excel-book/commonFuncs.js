@@ -54,9 +54,7 @@ export const getSheetTableData = function (spread) {
   const sheetData = {};
   for (let i = 0; i < sheetCount; i++) {
     const sheet = spread.getSheet(i);
-    if (sheet.name() !== '汇总表') {
-      sheetData[sheet.name()] = sheet.getDataSource().getSource();
-    }
+    sheetData[sheet.name()] = sheet.getDataSource().getSource();
   }
   return sheetData;
 }

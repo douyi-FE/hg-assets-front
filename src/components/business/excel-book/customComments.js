@@ -158,3 +158,55 @@ export function renderCommentsByData(spread, dataSource) {
   });
   spread.resumePaint();
 }
+
+export function renderCommentsBySheet(spread, sheetName) {
+  spread.suspendPaint();
+  const sheet = spread.getSheetFromName(sheetName);
+  if (!sheet) {
+    return;
+  }
+  const dataSource = sheet.getDataSource();
+  if (!dataSource) {
+    return;
+  }
+  const sheetData = dataSource.getSource();
+  if (!sheetData) {
+    return;
+  }
+  const tableName = Object.keys(sheetData).find(key => key.startsWith('table'));
+  if (!tableName) {
+    return;
+  }
+  const table = sheet.tables.all()[0];
+  if (!table) {
+    return;
+  }
+  const tableData = sheetData[tableName];
+  if (!tableData || tableData.length === 0) {
+    return;
+  }
+  const dataRange = table.dataRange();
+  tableData.forEach((item, index) => {
+    const comments = item._comments || [];
+    comments.forEach(comment => {
+      const fieldName = comment.field;
+      const commentText = comment.commentText;
+      const commentWidth = comment.width;
+      const commentHeight = comment.height;
+      const row = dataRange.row + index;
+      let col = -1;
+      for (let c = 0; c < dataRange.colCount; c++) {
+        if (table.getColumnDataField(c) === fieldName) {
+          col = c;
+          break;
+        }
+      }
+      const commentObj = new GC.Spread.Sheets.Comments.Comment();
+      commentObj.text(commentText);
+      commentObj.width(commentWidth);
+      commentObj.height(commentHeight);
+      sheet.getCell(row, col).comment(commentObj);
+    });
+  });
+  spread.resumePaint();
+}
