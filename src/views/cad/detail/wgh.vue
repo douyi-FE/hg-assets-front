@@ -35,15 +35,20 @@
     McCmColor,
     McGePoint3d,
   } from 'mxcad';
+  import { message } from 'ant-design-vue';
 
   const props = withDefaults(
     defineProps<{
       mxFileUrl: string;
       detialId: string;
+      getClickCell?: Function;
     }>(),
     {
       mxFileUrl: '',
       detialId: '',
+      getClickCell() {
+        return null;
+      },
     },
   );
 
@@ -51,15 +56,16 @@
   const entityColorList: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
+  let selectEntity = null;
   const emit = defineEmits(['getAllEntityV2', 'selectEntityChange']);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
-      console.log('ids', ids);
       if (ids.length > 0) {
         const firstEntity: any = ids[0].getMcDbEntity();
         emit('selectEntityChange', firstEntity);
         showEntryByPosition(firstEntity);
+        selectEntity = firstEntity;
       }
     });
   };
@@ -209,6 +215,12 @@
 
   const handleLinkChange = () => {
     console.log('关联');
+    const clickCell = props.getClickCell();
+    if (clickCell !== null && selectEntity !== null) {
+      console.log('click', clickCell, selectEntity);
+    } else {
+      message.error('请先选择单元格或者cad图元素');
+    }
   };
 
   const handleUploadChange = () => {

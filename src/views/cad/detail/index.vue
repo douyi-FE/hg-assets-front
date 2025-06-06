@@ -12,6 +12,7 @@
       ref="wghRef"
       :mx-file-url="mxFileUrl"
       :detial-id="detialId"
+      :get-click-cell="() => clickCell"
       @getAllEntityV2="getAllEntityV2"
       @selectEntityChange="selectEntityChange"
     />
@@ -73,6 +74,7 @@
   const entityList = ref<any[]>([]);
   const selectedEntity = ref<any>(null);
   const fileList = ref<any[]>([]);
+  let clickCell: object | null = null;
 
   const handleChange = (info: UploadChangeParam) => {
     const messageKey = nanoid();
@@ -160,6 +162,18 @@
     input.click();
   };
 
+  const bindSpreadEvent = function () {
+    console.log('event bind');
+    if (spread !== null) {
+      var spreadNS = GC.Spread.Sheets;
+      var sheet = spread.getActiveSheet();
+      spread.bind(spreadNS.Events.CellClick, function (e, args) {
+        const { col, row, sheetName } = args;
+        clickCell = { col, row, sheetName };
+      });
+    }
+  };
+
   const renderExcel = (ejs: string = '') => {
     if (!spread) {
       spread = new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
@@ -183,6 +197,7 @@
   const renderDetail = (detail: any = {}) => {
     const { ejs = '', cadPath = '' } = detail;
     renderExcel(ejs);
+    bindSpreadEvent();
     emits('update:mxFileUrl', cadPath);
   };
 
