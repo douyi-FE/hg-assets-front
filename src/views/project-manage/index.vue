@@ -1,11 +1,8 @@
 <template>
   <div class="project-v2">
-    <a-table :columns="projectColumns" :data-source="projectDataSource" row-key="合同编号">
+    <a-table :columns="projectColumns" :data-source="projectDataSource" row-key="_id">
       <template #expandedRowRender="{ record }">
-        <Device
-          :project-code="record['项目编号']"
-          :project-id="`${record['项目编号']}${record['合同编号']}`"
-        >
+        <Device :project-code="record['项目编号']" :project-id="record._id">
           <template #expandTable="{ row }">
             <Engineer
               :key="record.code"
