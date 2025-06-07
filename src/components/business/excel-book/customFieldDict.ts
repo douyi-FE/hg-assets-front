@@ -78,7 +78,6 @@ export const setFieldDict = function (spread: any, dictData: any, dictDataFields
 };
 
 export const updateDict = async function (spread: any, dictDataFields: any, fileName: string) {
-  debugger;
   const dictData: any[] = [];
   // 先校验出几个字段中不在字典的值
   const sheetCount = spread.getSheetCount();
@@ -147,7 +146,6 @@ export const updateDict = async function (spread: any, dictDataFields: any, file
 
 // 把选中单元格数据添加到字典
 export const addFieldDict = async function (spread: any, dictDataFields: any, fileName: string) {
-  debugger;
   const dictData: any[] = [];
   const sheet = spread.getActiveSheet();
   const table = sheet.tables.all()[0];

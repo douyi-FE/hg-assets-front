@@ -160,7 +160,6 @@ export function renderCommentsByData(spread, dataSource) {
 }
 
 export function renderCommentsBySheet(spread, sheetName) {
-  spread.suspendPaint();
   const sheet = spread.getSheetFromName(sheetName);
   if (!sheet) {
     return;
@@ -185,6 +184,7 @@ export function renderCommentsBySheet(spread, sheetName) {
   if (!tableData || tableData.length === 0) {
     return;
   }
+  spread.suspendPaint();
   const dataRange = table.dataRange();
   tableData.forEach((item, index) => {
     const comments = item._comments || [];
@@ -208,5 +208,61 @@ export function renderCommentsBySheet(spread, sheetName) {
       sheet.getCell(row, col).comment(commentObj);
     });
   });
+  spread.resumePaint();
+}
+
+export function renderSummarySheetComments(spread, summaryComments) {
+  if (!summaryComments || Object.keys(summaryComments).length === 0) {
+    return;
+  }
+  // 应该给所有的表都加注释
+  spread.suspendPaint();
+  const sheetCount = spread.getSheetCount();
+  for (let i = 0; i < sheetCount; i++) {
+    const sheet = spread.getSheet(i);
+    const dataSource = sheet.getDataSource();
+    if (!dataSource) {
+      continue;
+    }
+    const sheetData = dataSource.getSource();
+    if (!sheetData) {
+      continue;
+    }
+    const tableName = Object.keys(sheetData).find(key => key.startsWith('table'));
+    if (!tableName) {
+      continue;
+    }
+    const tableData = sheetData[tableName];
+    if (!tableData || tableData.length === 0) {
+      continue;
+    }
+    const table = sheet.tables.all()[0];
+    if (!table) {
+      continue;
+    }
+    const dataRange = table.dataRange();
+    tableData.forEach((item, index) => {
+      const comments = summaryComments[item._id] || [];
+      comments.forEach(comment => {
+        const fieldName = comment.field;
+        const commentText = comment.commentText;
+        const commentWidth = comment.width;
+        const commentHeight = comment.height;
+        const row = dataRange.row + index;
+        let col = -1;
+        for (let c = 0; c < dataRange.colCount; c++) {
+          if (table.getColumnDataField(c) === fieldName) {
+            col = c;
+            break;
+          }
+        }
+        const commentObj = new GC.Spread.Sheets.Comments.Comment();
+        commentObj.text(commentText);
+        commentObj.width(commentWidth);
+        commentObj.height(commentHeight);
+        sheet.getCell(row, col).comment(commentObj);
+      });
+    });
+  }
   spread.resumePaint();
 }

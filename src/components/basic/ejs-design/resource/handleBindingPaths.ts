@@ -43,7 +43,6 @@ export function bindingTablePath(range) {
     return;
   }
   const sheet = (store.spread as any).getActiveSheet();
-  debugger;
   let table = sheet.tables.all()[0];
   let tableName = null;
   if (table && table.bindingPath()) {

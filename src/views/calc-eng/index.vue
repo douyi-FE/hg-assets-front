@@ -56,6 +56,7 @@
     summaryDataByType: {
       table: [{}],
     },
+    summarySheetComments: {},
     dictData: [],
     fileName: app + '.xlsx',
     editable: editable,
@@ -91,7 +92,6 @@
         Promise.all([
           getApplicationById(templateId),
           getProjectDevice({
-            userId: userStore.userInfo.id,
             type,
             project,
             device,
@@ -102,23 +102,25 @@
         ])
           .then(([template, projectData, templateFieldDict]) => {
             let initDataSource = null;
+            const userName = userStore.userInfo.username;
             try {
               initDataSource = JSON.parse(template.initDataSource);
             } catch (error) {
               initDataSource = template.initDataSource;
             }
             dataSource.value = initDataSource!;
-            dataSource.value.userId = userStore.userInfo.id;
             dataSource.value.type = type;
             dataSource.value.project = project;
             dataSource.value.device = device;
             dataSource.value.engineerId = engineerId;
             dataSource.value.engineer = engineer;
+            console.log(projectData?.projectDevice?.summarySheetComments);
             content.value = {
               ejs: template.content,
-              dataSource: projectData?.projectDeviceWithUserId?.projectData || dataSource,
-              summaryData: projectData?.projectDeviceSummary?.projectData || dataSource,
-              summaryDataByType: projectData?.projectDeviceSummaryByType?.projectData || dataSource,
+              dataSource: projectData?.projectDevice?.projectData[userName] || dataSource,
+              summaryData: projectData?.projectDeviceSummary || dataSource,
+              summaryDataByType: projectData?.projectDeviceSummaryByType || dataSource,
+              summarySheetComments: projectData?.projectDevice?.summarySheetComments || {},
               fileName: template.name,
               dictData: templateFieldDict || [],
               editable: editable,
@@ -136,15 +138,20 @@
   };
 
   const saveWorkBook = function (data: any) {
+    const userName = userStore.userInfo.username;
+    const summaryComments = data['summarySheetComments'];
+    delete data['summarySheetComments'];
     saveProjectDevice({
-      userId: userStore.userInfo.id,
       type,
       project,
       device,
       engineer,
       engineerId,
       templateId,
-      projectData: data || dataSource.value,
+      projectData: {
+        [userName]: data || dataSource.value,
+      },
+      summarySheetComments: summaryComments,
     })
       .then((res) => {
         message.success('保存数据成功');

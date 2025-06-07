@@ -87,7 +87,9 @@ import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './ad
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
 import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
-import { initCustomCommentsEvents, renderCommentsByData, renderCommentsBySheet } from './customComments';
+import { initCustomCommentsEvents, renderCommentsByData, renderCommentsBySheet, renderSummarySheetComments } from './customComments';
+import { useUserStore } from '@/store/modules/user';
+const userStore = useUserStore();
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
 const openImportModal = ref(false);
@@ -104,7 +106,7 @@ let activeSheet: any = null;
 
 // summaryData 设置非必填
 const props = withDefaults(
-  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; fileName: string; dictData: any[]; editable: boolean; hasDict: boolean } }>(),
+  defineProps<{ content: { ejs: string; dataSource: any; summaryData: any; summaryDataByType: any; summarySheetComments: any; fileName: string; dictData: any[]; editable: boolean; hasDict: boolean } }>(),
   {
     content: () => ({
       ejs: '',
@@ -117,6 +119,7 @@ const props = withDefaults(
       summaryDataByType: {
         // table: [],
       },
+      summarySheetComments: {},
       fileName: '导出数据文件.xlsx',
       dictData: [],
       editable: true,
@@ -133,7 +136,7 @@ const toggleFullscreen = () => {
   updateAppContainerStyle(spread, isFullscreen);
 };
 
-const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, dictData: any = {}, editable: boolean = true, hasDict: boolean = false) {
+const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryData: any = {}, summaryDataByType: any = {}, summarySheetComments: any = {}, dictData: any = {}, editable: boolean = true, hasDict: boolean = false) {
   return new Promise((resolve, reject) => {
     const arrayBuffer = base64ToArrayBuffer(ejs);
     const fileBlob = new Blob([arrayBuffer], {
@@ -155,6 +158,8 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
             dataSource = {};
           }
         }
+        // 获取当前用户名
+        const userName = userStore.userInfo.username;
         addSheetRows(sheet, dataSource);
         let ds = dataSource[sheet.name()];
         if (ds && typeof ds === 'string') {
@@ -196,7 +201,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           initCustomInsertRows(spread);
           initCustomCommentsEvents(spread);
           renderCommentsByData(spread, dataSource);
-          renderCommentsBySheet(spread, '汇总表');
+          renderSummarySheetComments(spread, summarySheetComments);
         });
         sheet.recalcAll(true);
         resolve(true);
@@ -311,7 +316,6 @@ const importExcel = function () {
             importDataSource.push(importItem);
           });
         }
-        debugger;
         activeSheet.suspendPaint();
         table.showFooter(false);
         const fromRow = tableDataRange.row + tableDataRange.rowCount;
@@ -368,7 +372,7 @@ const addDicts = async function () {
 watch(
   () => props.content,
   (newVal) => {
-    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType), toRaw(newVal.dictData), newVal.editable);
+    renderExcelBySjs(toRaw(newVal.ejs), toRaw(newVal.dataSource), toRaw(newVal.summaryData), toRaw(newVal.summaryDataByType), toRaw(newVal.summarySheetComments), toRaw(newVal.dictData), newVal.editable);
   }
 );
 

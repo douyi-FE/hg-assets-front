@@ -54,9 +54,67 @@ export const getSheetTableData = function (spread) {
   const sheetData = {};
   for (let i = 0; i < sheetCount; i++) {
     const sheet = spread.getSheet(i);
-    sheetData[sheet.name()] = sheet.getDataSource().getSource();
+    if (sheet.name() !== '汇总表') {
+      sheetData[sheet.name()] = sheet.getDataSource().getSource();
+    }
   }
+  const comments = getSummarySheetComments(spread);
+  sheetData['summarySheetComments'] = comments;
   return sheetData;
+}
+
+const getSummarySheetComments = function (spread) {
+  const sheet = spread.getSheetFromName('汇总表');
+  if (!sheet) {
+    return null;
+  }
+  const sheetData = sheet.getDataSource().getSource();
+  if (!sheetData) {
+    return null;
+  }
+  const tableName = Object.keys(sheetData).find(key => key.startsWith('table'));
+  if (!tableName) {
+    return null;
+  }
+  const tableData = sheetData[tableName];
+  if (!tableData || tableData.length === 0) {
+    return null;
+  }
+  const table = sheet.tables.all()[0];
+  if (!table) {
+    return null;
+  }
+  const tableRange = table.dataRange();
+  const comments = sheet.comments.all();
+  const summaryComments = {};
+  for (let i = 0; i < comments.length; i++) {
+    const comment = comments[i];
+    const row = comment.bZ;
+    const col = comment.yZ;
+    if (!row || !col) {
+      continue;
+    }
+    if (!tableRange.contains(row, col, 1, 1)) {
+      continue;
+    }
+    const dataIndex = row - tableRange.row;
+    const dataCol = col - tableRange.col;
+    const data = tableData[dataIndex];
+    if (!data) {
+      continue;
+    }
+    const fieldName = table.getColumnDataField(dataCol);
+    const _comment = {
+      field: fieldName,
+      commentText: comment.text(),
+      width: comment.width(),
+      height: comment.height(),
+    }
+    const _comments = summaryComments[data._id] || [];
+    _comments.push(_comment);
+    summaryComments[data._id] = _comments;
+  }
+  return summaryComments;
 }
 
 export const saveWorkBookEjs = function (spread, emits) {

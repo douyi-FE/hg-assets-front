@@ -21,7 +21,6 @@ export const openExcelFile = function () {
 // 导入excel
 export const importExcel = function (openImportModal, activeSheet) {
   const wb = GC.Spread.Sheets.findControl('importSpread');
-  debugger;
   if (wb) {
     const sheet = wb.getActiveSheet();
     if (sheet && activeSheet) {
