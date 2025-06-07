@@ -67,7 +67,6 @@
   const isShowCadDrawer = ref(false);
   const projectName = ref('');
   const [DynamicTable, dynamicTableInstance] = useTable();
-  const defaultMxFileUrl = `${import.meta.env.VITE_BASE_SERVSER_HOST}/cad/changfang.mxweb`;
   const mxFileUrl = ref<string>('');
   const cadDetailRef = ref<any>(null);
   const detialId = ref<string>('');

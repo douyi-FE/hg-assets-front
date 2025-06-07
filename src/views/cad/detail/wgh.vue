@@ -15,9 +15,22 @@
       </a-tooltip>
       <a-tooltip>
         <template #title>点击上传可上传图纸</template>
-        <a-button type="primary" @click="handleUploadChange" :icon="h(CloudUploadOutlined)">
-          上传
-        </a-button>
+        <a-upload
+          v-model:file-list="fileList"
+          name="file"
+          :headers="{
+            Authorization: `Bearer ${token}`,
+            'X-Transfer-Mode': 'cad',
+          }"
+          action="/api/api/filestorage/upload"
+          :showUploadList="false"
+          @change="handleUploadChange"
+        >
+          <a-button>
+            <upload-outlined />
+            上传
+          </a-button>
+        </a-upload>
       </a-tooltip>
     </div>
     <canvas id="myCanvas" />
@@ -26,7 +39,8 @@
 
 <script setup lang="ts">
   import { ref, watch, h } from 'vue';
-  import { InfoCircleFilled, CloudUploadOutlined } from '@ant-design/icons-vue';
+  import { nanoid } from 'nanoid';
+  import { InfoCircleFilled, UploadOutlined } from '@ant-design/icons-vue';
   import {
     createMxCad,
     MxCADResbuf,
@@ -35,7 +49,8 @@
     McCmColor,
     McGePoint3d,
   } from 'mxcad';
-  import { message } from 'ant-design-vue';
+  import { message, type UploadChangeParam } from 'ant-design-vue';
+  import { useUserStore } from '@/store/modules/user';
 
   const props = withDefaults(
     defineProps<{
@@ -52,12 +67,15 @@
     },
   );
 
+  const userStore = useUserStore();
+  const token = userStore.token;
+  const fileList = ref<any[]>([]);
   const mxCad = ref<any>(null);
   const entityColorList: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
   let selectEntity = null;
-  const emit = defineEmits(['getAllEntityV2', 'selectEntityChange']);
+  const emit = defineEmits(['getAllEntityV2', 'selectEntityChange', 'update:mxFileUrl']);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
@@ -223,8 +241,34 @@
     }
   };
 
-  const handleUploadChange = () => {
-    console.log('上传');
+  const handleUploadChange = (info: UploadChangeParam) => {
+    const messageKey = nanoid();
+    if (info.file.status !== 'uploading') {
+      message.loading({
+        content: `${info.file.name} 上传中...`,
+        key: messageKey,
+      });
+    }
+    if (info.file.status === 'done') {
+      const { response } = info.file;
+      if (response.code === 200) {
+        emit('update:mxFileUrl', response.data.filename);
+        message.success({
+          content: `${info.file.name} 上传成功.`,
+          key: messageKey,
+        });
+      } else {
+        message.error({
+          content: `${info.file.name} 上传失败.`,
+          key: messageKey,
+        });
+      }
+    } else if (info.file.status === 'error') {
+      message.error({
+        content: `${info.file.name} 上传失败.`,
+        key: messageKey,
+      });
+    }
   };
 
   watch(

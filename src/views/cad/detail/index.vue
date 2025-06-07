@@ -13,6 +13,7 @@
       :mx-file-url="mxFileUrl"
       :detial-id="detialId"
       :get-click-cell="() => clickCell"
+      @update:mx-file-url="updateMxFileUrl"
       @getAllEntityV2="getAllEntityV2"
       @selectEntityChange="selectEntityChange"
     />
@@ -75,6 +76,10 @@
   const selectedEntity = ref<any>(null);
   const fileList = ref<any[]>([]);
   let clickCell: object | null = null;
+
+  const updateMxFileUrl = (url: string) => {
+    emits('update:mxFileUrl', url);
+  };
 
   const handleChange = (info: UploadChangeParam) => {
     const messageKey = nanoid();
@@ -166,7 +171,6 @@
     console.log('event bind');
     if (spread !== null) {
       var spreadNS = GC.Spread.Sheets;
-      var sheet = spread.getActiveSheet();
       spread.bind(spreadNS.Events.CellClick, function (e, args) {
         const { col, row, sheetName } = args;
         clickCell = { col, row, sheetName };
@@ -235,7 +239,7 @@
     gap: 20px;
 
     .excel-book__list {
-      flex-basis: 40%;
+      width: 40%;
       border-right: 1px solid #bcbcbc;
 
       .excel-book__list-header {

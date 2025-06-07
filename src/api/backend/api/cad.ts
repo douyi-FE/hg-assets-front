@@ -22,6 +22,14 @@ export async function getCadDetail(id: string) {
   });
 }
 
+// 上传cad
+export async function uploadCad(data: any) {
+  return request<any>({
+    url: 'api/filestorage/upload',
+    method: 'post',
+    data,
+  });
+}
 // 创建cad
 export async function createCad(data: any) {
   return request<any>({
