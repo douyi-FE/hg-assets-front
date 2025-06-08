@@ -31,7 +31,8 @@
     <a-drawer
       title="新增项目图纸"
       placement="right"
-      :closable="false"
+      :closable="true"
+      :destroyOnClose="true"
       :open="isShowCadDrawer"
       :get-container="false"
       :style="{ position: 'absolute' }"

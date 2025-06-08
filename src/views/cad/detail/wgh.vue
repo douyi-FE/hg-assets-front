@@ -1,18 +1,12 @@
 <template>
   <div class="wgh-container">
     <div class="wgh-header" v-if="detialId !== ''">
-      <a-tooltip>
+      <!-- <a-tooltip>
         <template #title>点击框选开始框选，右键结束框选</template>
         <a-button type="primary" @click="handleSelectModeChange" :icon="h(InfoCircleFilled)">
           框选
         </a-button>
-      </a-tooltip>
-      <a-tooltip>
-        <template #title>点击关联可与左侧单元格关联</template>
-        <a-button type="primary" @click="handleLinkChange" :icon="h(InfoCircleFilled)">
-          关联
-        </a-button>
-      </a-tooltip>
+      </a-tooltip> -->
       <a-tooltip>
         <template #title>点击上传可上传图纸</template>
         <a-upload
@@ -38,9 +32,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, h } from 'vue';
+  import { ref, watch } from 'vue';
   import { nanoid } from 'nanoid';
-  import { InfoCircleFilled, UploadOutlined } from '@ant-design/icons-vue';
+  import { UploadOutlined } from '@ant-design/icons-vue';
   import {
     createMxCad,
     MxCADResbuf,
@@ -48,6 +42,7 @@
     McDbLine,
     McCmColor,
     McGePoint3d,
+    McObjectId,
   } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
@@ -57,11 +52,15 @@
       mxFileUrl: string;
       detialId: string;
       getClickCell?: Function;
+      bindCellTag?: Function;
     }>(),
     {
       mxFileUrl: '',
       detialId: '',
       getClickCell() {
+        return null;
+      },
+      bindCellTag() {
         return null;
       },
     },
@@ -74,21 +73,24 @@
   const entityColorList: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
-  let selectEntity = null;
-  const emit = defineEmits(['getAllEntityV2', 'selectEntityChange', 'update:mxFileUrl']);
+  let selectEntityId: any = null;
+  const emit = defineEmits(['selectEntityChange', 'update:mxFileUrl']);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
       if (ids.length > 0) {
+        console.log('selectChange', ids[0].id);
         const firstEntity: any = ids[0].getMcDbEntity();
-        emit('selectEntityChange', firstEntity);
+        emit('selectEntityChange', {
+          id: ids[0].id,
+        });
         showEntryByPosition(firstEntity);
-        selectEntity = firstEntity;
+        selectEntityId = ids[0].id;
       }
     });
   };
 
-  const getAllEntityV2 = () => {
+  const getAllEntity = () => {
     const entityList: any[] = [];
     // 创建选择集实例
     const selectionSet = new MxCADSelectionSet();
@@ -96,7 +98,7 @@
     // 设置过滤器：仅选择文字和直线
     filter.AddMcDbEntityTypes('TEXT');
     // 选择所有图形元素
-    selectionSet.allSelect(filter);
+    selectionSet.allSelect();
     // 遍历并获取所有实体
     selectionSet.forEach((objId: any) => {
       const entity = objId.getMcDbEntity();
@@ -107,7 +109,24 @@
           entity.trueColor.clone();
       }
     });
-    emit('getAllEntityV2', entityList);
+  };
+
+  const getEntryById = (id: any, mxCad: any) => {
+    // 创建选择集实例
+    const selectionSet = new MxCADSelectionSet();
+    // 选择所有图形元素
+    selectionSet.allSelect();
+    // 遍历并获取所有实体
+    selectionSet.forEach((objId: any) => {
+      if (objId.id === id) {
+        return objId.getMcDbEntity();
+      }
+      // const entity = objId.getMcDbEntity();
+      // if (entity && entity.textString === '预 留 用 地') {
+      //   console.log('entity', entity, id);
+      //   return entity;
+      // }
+    });
   };
 
   const resetAllEntityColor = () => {
@@ -130,7 +149,6 @@
 
   const clearAllLine = (mxCAD: any) => {
     entityAllLineList.forEach((line: any) => {
-      console.log('line', line);
       line.erase();
     });
     entityAllLineList.length = 0;
@@ -166,9 +184,53 @@
     entityAllLineList.push(mcObjectId, mcObjectId2, mcObjectId3, mcObjectId4);
   };
 
-  const showEntryByPosition = (entry: any) => {
-    const aliginPoint = entry.alignmentPoint;
-    if (aliginPoint === undefined) {
+  const showEntryByPosition = (entity: any) => {
+    const objectName = entity.objectName;
+
+    const document = mxCad.value.getMxCpp().App.getCurrentMxCAD().getDocument();
+    const model = document.getModel();
+
+    // 获取图纸范围
+    const extents = model.getExtents();
+    console.log('objectName', objectName, entity, extents);
+    let aliginPoint: any = null;
+    switch (objectName) {
+      case 'McDbText':
+        aliginPoint = entity.alignmentPoint;
+        break;
+      case 'McDbLine':
+        const endPoint = entity.endPoint;
+        const startPoint = entity.startPoint;
+        aliginPoint = new McGePoint3d(
+          (endPoint.x + startPoint.x) / 2,
+          (endPoint.y + startPoint.y) / 2,
+          0,
+        );
+        break;
+      case 'McDbProxyEntity':
+      case 'McDbBlockReference':
+        const bbox = entity.getBoundingBox();
+        const minPoint = bbox.minPt;
+        const maxPoint = bbox.maxPt;
+        aliginPoint = new McGePoint3d(
+          (minPoint.x + maxPoint.x) / 2,
+          (minPoint.y + maxPoint.y) / 2,
+          0,
+        );
+        break;
+      case 'McDbPolyline':
+        const startPt = entity.getStartPoint();
+        const endPt = entity.getEndPoint();
+        aliginPoint = new McGePoint3d((startPt.x + endPt.x) / 2, (startPt.y + endPt.y) / 2, 0);
+        break;
+      case 'McDbArc':
+        aliginPoint = entity.center;
+        break;
+      default:
+        message.error('不支持的实体类型');
+        break;
+    }
+    if (aliginPoint === null) {
       return;
     }
     const currentMxCAD = mxCad.value.getMxCpp().App.getCurrentMxCAD();
@@ -176,17 +238,35 @@
     currentMxCAD.zoomCenter(aliginPoint.x, aliginPoint.y);
     currentMxCAD.zoomScale(20);
 
+    // 清除当前选择
+    currentMxCAD.mxdraw.clearMxCurrentSelect();
     // 重置所有实体颜色
     resetAllEntityColor();
     // 清除所有线
     clearAllLine(currentMxCAD);
     // 设置文字颜色
-    const color = entry.trueColor.clone();
+    const color = entity.trueColor.clone();
     color.setRGB(255, 0, 0);
-    entry.trueColor = color;
+    entity.trueColor = color;
     // 设置边框
-    createRedBorder(entry, currentMxCAD);
+    createRedBorder(entity, currentMxCAD);
     currentMxCAD.updateDisplay();
+  };
+
+  const showEntityById = (id: any) => {
+    const aaa = getEntryById(id, mxCad.value);
+    console.log('aaa', aaa);
+    // 1. 创建 McObjectId 对象
+    const objectId = new McObjectId(id);
+    // 2. 验证ID有效性
+    const isValid = objectId.isValid();
+    if (!isValid) {
+      console.error('无效的实体ID:', id);
+      return null;
+    }
+    // 3. 获取实体
+    const entity = objectId.getMcDbEntity();
+    showEntryByPosition(entity);
   };
 
   const renderCad = () => {
@@ -207,7 +287,7 @@
       fontspath: '/fonts',
       onOpenFileComplete: () => {
         registerEvent(mxCad.value);
-        getAllEntityV2();
+        // getAllEntityV2();
       },
     }).then((mxCad: any) => {
       return mxCad;
@@ -231,14 +311,8 @@
     });
   };
 
-  const handleLinkChange = () => {
-    console.log('关联');
-    const clickCell = props.getClickCell();
-    if (clickCell !== null && selectEntity !== null) {
-      console.log('click', clickCell, selectEntity);
-    } else {
-      message.error('请先选择单元格或者cad图元素');
-    }
+  const getSelectEntityId = () => {
+    return selectEntityId;
   };
 
   const handleUploadChange = (info: UploadChangeParam) => {
@@ -284,6 +358,8 @@
 
   defineExpose({
     showEntryByPosition,
+    showEntityById,
+    getSelectEntityId,
   });
 </script>
 

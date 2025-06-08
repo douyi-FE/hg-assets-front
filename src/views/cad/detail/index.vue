@@ -2,7 +2,11 @@
   <div class="cad-container">
     <div class="excel-book__list">
       <div class="excel-book__list-header">
-        <a-button @click="openExcelFile">打开文件</a-button>
+        <a-space>
+          <a-button @click="openExcelFile" type="primary">打开文件</a-button>
+          <a-button @click="linkCad">关联cad</a-button>
+          <a-button @click="unlinkCad">解除关联</a-button>
+        </a-space>
       </div>
       <div id="excel_book_content" class="excel-book__content" />
     </div>
@@ -12,9 +16,8 @@
       ref="wghRef"
       :mx-file-url="mxFileUrl"
       :detial-id="detialId"
-      :get-click-cell="() => clickCell"
+      :get-click-cell="getClickCell"
       @update:mx-file-url="updateMxFileUrl"
-      @getAllEntityV2="getAllEntityV2"
       @selectEntityChange="selectEntityChange"
     />
     <a-empty v-else class="wgh-empty">
@@ -44,7 +47,6 @@
 <script setup lang="ts">
   import { nextTick, ref, watch } from 'vue';
   import { UploadOutlined } from '@ant-design/icons-vue';
-  import { nanoid } from 'nanoid';
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
   import { useUserStore } from '@/store/modules/user';
@@ -53,6 +55,9 @@
 
   const userStore = useUserStore();
   const token = userStore.token;
+  message.config({
+    maxCount: 1,
+  });
 
   const props = defineProps({
     detialId: {
@@ -72,21 +77,17 @@
 
   let spread: any = null;
   const wghRef = ref<any>(null);
-  const entityList = ref<any[]>([]);
   const selectedEntity = ref<any>(null);
   const fileList = ref<any[]>([]);
-  let clickCell: object | null = null;
 
   const updateMxFileUrl = (url: string) => {
     emits('update:mxFileUrl', url);
   };
 
   const handleChange = (info: UploadChangeParam) => {
-    const messageKey = nanoid();
     if (info.file.status !== 'uploading') {
       message.loading({
         content: `${info.file.name} 上传中...`,
-        key: messageKey,
       });
     }
     if (info.file.status === 'done') {
@@ -95,31 +96,23 @@
         emits('update:mxFileUrl', response.data.filename);
         message.success({
           content: `${info.file.name} 上传成功.`,
-          key: messageKey,
         });
       } else {
         message.error({
           content: `${info.file.name} 上传失败.`,
-          key: messageKey,
         });
       }
     } else if (info.file.status === 'error') {
       message.error({
         content: `${info.file.name} 上传失败.`,
-        key: messageKey,
       });
     }
   };
 
-  const getAllEntityV2 = (entryList: any[]) => {
-    entityList.value = entryList;
-  };
-
   const selectEntityChange = (entity: any) => {
-    if (entity.objectName !== 'McDbText') {
+    if (!entity.id) {
       return;
     }
-
     selectedEntity.value = entity;
     console.log('selectedEntity', selectedEntity.value);
   };
@@ -167,13 +160,76 @@
     input.click();
   };
 
+  const linkCad = () => {
+    if (!spread) {
+      return;
+    }
+    const sheet = spread.getActiveSheet();
+    const { col, row } = getClickCell() || {};
+    if (!col || !row) {
+      message.error('请先选择单元格');
+      return;
+    }
+    const selectEntityId = wghRef.value.getSelectEntityId();
+    if (!selectEntityId) {
+      message.error('请先选择cad图元素');
+      return;
+    }
+    const tag = {
+      id: selectEntityId,
+    };
+    sheet.setTag(col, row, tag);
+    const style = new GC.Spread.Sheets.Style();
+    style.decoration = {
+      cornerFold: {
+        size: 10,
+        position: GC.Spread.Sheets.CornerPosition.rightTop,
+        color: 'red',
+      },
+    };
+    sheet.setStyle(row, col, style);
+    message.info(`关联成功`);
+  };
+
+  const unlinkCad = () => {
+    const { col, row } = getClickCell() || {};
+    if (!col || !row) {
+      message.error('请先选择单元格');
+      return;
+    }
+    const sheet = spread.getActiveSheet();
+    sheet.setTag(col, row, null);
+    sheet.setStyle(row, col, null);
+    message.info('解除关联成功');
+  };
+
+  const getClickCell = () => {
+    if (!spread) {
+      return null;
+    }
+    const sheet = spread.getActiveSheet();
+    const col = sheet.getActiveColumnIndex();
+    const row = sheet.getActiveRowIndex();
+    return { col, row };
+  };
+
   const bindSpreadEvent = function () {
-    console.log('event bind');
     if (spread !== null) {
       var spreadNS = GC.Spread.Sheets;
       spread.bind(spreadNS.Events.CellClick, function (e, args) {
-        const { col, row, sheetName } = args;
-        clickCell = { col, row, sheetName };
+        try {
+          const { col, row } = args;
+          const sheet = spread.getActiveSheet();
+          const tag = sheet.getTag(col, row);
+          if (tag) {
+            wghRef.value.showEntityById(tag.id);
+          } else {
+            message.error(`未关联cad图纸`);
+          }
+        } catch (error) {
+          message.error(`联动定位失败`);
+          console.log('联动定位失败:', error);
+        }
       });
     }
   };
@@ -189,7 +245,9 @@
       const fileBlob = new Blob([arrayBuffer], {
         type: 'application/octet-stream',
       });
-      spread.open(fileBlob, function () {});
+      spread.open(fileBlob, function () {
+        message.success(`导入成功`);
+      });
     } else {
       spread.destroy();
       spread = new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
@@ -211,6 +269,9 @@
       if (newVal) {
         nextTick(() => {
           if (props.detialId) {
+            message.loading({
+              content: `加载中...`,
+            });
             getCadDetail(props.detialId).then((res) => {
               renderDetail(res);
             });
