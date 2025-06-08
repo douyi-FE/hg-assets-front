@@ -42,7 +42,6 @@
     McDbLine,
     McCmColor,
     McGePoint3d,
-    McObjectId,
   } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
@@ -73,19 +72,23 @@
   const entityColorList: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
-  let selectEntityId: any = null;
+  let selectEntity: any = null;
   const emit = defineEmits(['selectEntityChange', 'update:mxFileUrl']);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
       if (ids.length > 0) {
-        console.log('selectChange', ids[0].id);
         const firstEntity: any = ids[0].getMcDbEntity();
+        const entityHandle = firstEntity.getHandle();
         emit('selectEntityChange', {
           id: ids[0].id,
+          handle: entityHandle,
         });
         showEntryByPosition(firstEntity);
-        selectEntityId = ids[0].id;
+        selectEntity = {
+          id: ids[0].id,
+          handle: entityHandle,
+        };
       }
     });
   };
@@ -111,22 +114,17 @@
     });
   };
 
-  const getEntryById = (id: any, mxCad: any) => {
+  const getEntryByHandle = (handle: any) => {
     // 创建选择集实例
     const selectionSet = new MxCADSelectionSet();
     // 选择所有图形元素
     selectionSet.allSelect();
-    // 遍历并获取所有实体
-    selectionSet.forEach((objId: any) => {
-      if (objId.id === id) {
-        return objId.getMcDbEntity();
-      }
-      // const entity = objId.getMcDbEntity();
-      // if (entity && entity.textString === '预 留 用 地') {
-      //   console.log('entity', entity, id);
-      //   return entity;
-      // }
-    });
+    const ids = selectionSet.getIds();
+    const id = ids.find((id: any) => id.getMcDbEntity().getHandle() === handle);
+    if (id) {
+      return id.getMcDbEntity();
+    }
+    return null;
   };
 
   const resetAllEntityColor = () => {
@@ -186,13 +184,7 @@
 
   const showEntryByPosition = (entity: any) => {
     const objectName = entity.objectName;
-
-    const document = mxCad.value.getMxCpp().App.getCurrentMxCAD().getDocument();
-    const model = document.getModel();
-
-    // 获取图纸范围
-    const extents = model.getExtents();
-    console.log('objectName', objectName, entity, extents);
+    // console.log('objectName', objectName, entity);
     let aliginPoint: any = null;
     switch (objectName) {
       case 'McDbText':
@@ -224,6 +216,7 @@
         aliginPoint = new McGePoint3d((startPt.x + endPt.x) / 2, (startPt.y + endPt.y) / 2, 0);
         break;
       case 'McDbArc':
+      case 'McDbCircle':
         aliginPoint = entity.center;
         break;
       default:
@@ -253,45 +246,9 @@
     currentMxCAD.updateDisplay();
   };
 
-  const showEntityById = (id: any) => {
-    const aaa = getEntryById(id, mxCad.value);
-    console.log('aaa', aaa);
-    // 1. 创建 McObjectId 对象
-    const objectId = new McObjectId(id);
-    // 2. 验证ID有效性
-    const isValid = objectId.isValid();
-    if (!isValid) {
-      console.error('无效的实体ID:', id);
-      return null;
-    }
-    // 3. 获取实体
-    const entity = objectId.getMcDbEntity();
+  const showEntityById = (tag: any) => {
+    const entity = getEntryByHandle(tag.handle);
     showEntryByPosition(entity);
-  };
-
-  const renderCad = () => {
-    if (!props.mxFileUrl) {
-      return;
-    }
-    return createMxCad({
-      canvas: '#myCanvas',
-      browse: 2,
-      middlePan: 0,
-      enableUndo: true,
-      enableIntelliSelect: true,
-      multipleSelect: false,
-      locateFile: (fileName: string) => {
-        return `/2d-st/${fileName}`;
-      },
-      fileUrl: props.mxFileUrl,
-      fontspath: '/fonts',
-      onOpenFileComplete: () => {
-        registerEvent(mxCad.value);
-        // getAllEntityV2();
-      },
-    }).then((mxCad: any) => {
-      return mxCad;
-    });
   };
 
   // 切换选择模式
@@ -311,8 +268,8 @@
     });
   };
 
-  const getSelectEntityId = () => {
-    return selectEntityId;
+  const getSelectEntity = () => {
+    return selectEntity;
   };
 
   const handleUploadChange = (info: UploadChangeParam) => {
@@ -345,6 +302,31 @@
     }
   };
 
+  const renderCad = () => {
+    if (!props.mxFileUrl) {
+      return;
+    }
+    return createMxCad({
+      canvas: '#myCanvas',
+      browse: 2,
+      middlePan: 0,
+      enableUndo: true,
+      enableIntelliSelect: true,
+      multipleSelect: false,
+      locateFile: (fileName: string) => {
+        return `/2d-st/${fileName}`;
+      },
+      fileUrl: props.mxFileUrl,
+      fontspath: '/fonts',
+      onOpenFileComplete: () => {
+        registerEvent(mxCad.value);
+        // getAllEntityV2();
+      },
+    }).then((mxCad: any) => {
+      return mxCad;
+    });
+  };
+
   watch(
     () => props.mxFileUrl,
     async () => {
@@ -359,7 +341,7 @@
   defineExpose({
     showEntryByPosition,
     showEntityById,
-    getSelectEntityId,
+    getSelectEntity,
   });
 </script>
 

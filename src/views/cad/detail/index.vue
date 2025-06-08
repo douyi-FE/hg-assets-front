@@ -114,7 +114,6 @@
       return;
     }
     selectedEntity.value = entity;
-    console.log('selectedEntity', selectedEntity.value);
   };
 
   const getExcelEjs = function () {
@@ -170,13 +169,14 @@
       message.error('请先选择单元格');
       return;
     }
-    const selectEntityId = wghRef.value.getSelectEntityId();
-    if (!selectEntityId) {
+    const selectEntity = wghRef.value.getSelectEntity();
+    if (!selectEntity) {
       message.error('请先选择cad图元素');
       return;
     }
     const tag = {
-      id: selectEntityId,
+      id: selectEntity.id,
+      handle: selectEntity.handle,
     };
     sheet.setTag(col, row, tag);
     const style = new GC.Spread.Sheets.Style();
@@ -222,7 +222,7 @@
           const sheet = spread.getActiveSheet();
           const tag = sheet.getTag(col, row);
           if (tag) {
-            wghRef.value.showEntityById(tag.id);
+            wghRef.value.showEntityById(tag);
           } else {
             message.error(`未关联cad图纸`);
           }
