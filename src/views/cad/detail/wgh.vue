@@ -16,6 +16,7 @@
             Authorization: `Bearer ${token}`,
             'X-Transfer-Mode': 'cad',
           }"
+          accept=".dwg,.mxweb"
           action="/api/api/filestorage/upload"
           :showUploadList="false"
           @change="handleUploadChange"
@@ -33,7 +34,6 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { nanoid } from 'nanoid';
   import { UploadOutlined } from '@ant-design/icons-vue';
   import {
     createMxCad,
@@ -45,6 +45,9 @@
   } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
+  message.config({
+    maxCount: 1,
+  });
 
   const props = withDefaults(
     defineProps<{
@@ -273,32 +276,20 @@
   };
 
   const handleUploadChange = (info: UploadChangeParam) => {
-    const messageKey = nanoid();
     if (info.file.status !== 'uploading') {
-      message.loading({
-        content: `${info.file.name} 上传中...`,
-        key: messageKey,
-      });
+      message.loading(`${info.file.name} 上传中...`);
     }
     if (info.file.status === 'done') {
       const { response } = info.file;
       if (response.code === 200) {
+        console.log('response', response);
         emit('update:mxFileUrl', response.data.filename);
-        message.success({
-          content: `${info.file.name} 上传成功.`,
-          key: messageKey,
-        });
+        message.success(`${info.file.name} 上传成功.`);
       } else {
-        message.error({
-          content: `${info.file.name} 上传失败.`,
-          key: messageKey,
-        });
+        message.error(`${info.file.name} 上传失败.`);
       }
     } else if (info.file.status === 'error') {
-      message.error({
-        content: `${info.file.name} 上传失败.`,
-        key: messageKey,
-      });
+      message.error(`${info.file.name} 上传失败.`);
     }
   };
 

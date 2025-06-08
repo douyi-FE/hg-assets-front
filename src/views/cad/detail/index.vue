@@ -31,6 +31,7 @@
           Authorization: `Bearer ${token}`,
           'X-Transfer-Mode': 'cad',
         }"
+        accept=".dwg,.mxweb"
         action="/api/api/filestorage/upload"
         :showUploadList="false"
         @change="handleChange"
