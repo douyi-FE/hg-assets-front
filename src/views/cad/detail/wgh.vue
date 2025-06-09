@@ -72,7 +72,7 @@
   const token = userStore.token;
   const fileList = ref<any[]>([]);
   const mxCad = ref<any>(null);
-  const entityColorList: any = {};
+  let entityColorMap: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
   let selectEntity: any = null;
@@ -111,8 +111,6 @@
       if (entity) {
         entityList.push(entity);
         entityAllList.push(entity);
-        entityColorList[`${entity.alignmentPoint.x}-${entity.alignmentPoint.y}`] =
-          entity.trueColor.clone();
       }
     });
   };
@@ -130,19 +128,13 @@
     return null;
   };
 
-  const resetAllEntityColor = () => {
-    Object.keys(entityColorList).forEach((key: any) => {
-      const matchEntity = entityAllList.find(
-        (entity: any) => `${entity.alignmentPoint.x}-${entity.alignmentPoint.y}` === key,
-      );
-      if (matchEntity) {
-        const color = matchEntity.trueColor.clone();
-        color.setRGB(
-          entityColorList[key].red,
-          entityColorList[key].green,
-          entityColorList[key].blue,
-        );
-        matchEntity.trueColor = color;
+  const resetPrevEntityColor = () => {
+    Object.keys(entityColorMap).forEach((key: any) => {
+      const color = entityColorMap[key].clone();
+      entityColorMap[key] = color;
+      const entity = getEntryByHandle(key);
+      if (entity) {
+        entity.trueColor = color;
         mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
       }
     });
@@ -234,10 +226,13 @@
     currentMxCAD.zoomCenter(aliginPoint.x, aliginPoint.y);
     currentMxCAD.zoomScale(20);
 
+    // 记录实体颜色
+    const handle = entity.getHandle();
+    entityColorMap[handle] = entity.trueColor.clone();
     // 清除当前选择
     currentMxCAD.mxdraw.clearMxCurrentSelect();
-    // 重置所有实体颜色
-    resetAllEntityColor();
+    // 重置上个实体颜色
+    resetPrevEntityColor();
     // 清除所有线
     clearAllLine(currentMxCAD);
     // 设置文字颜色
