@@ -178,53 +178,23 @@
   };
 
   const showEntryByPosition = (entity: any) => {
-    const objectName = entity.objectName;
-    // console.log('objectName', objectName, entity);
-    let aliginPoint: any = null;
-    switch (objectName) {
-      case 'McDbText':
-        aliginPoint = entity.alignmentPoint;
-        break;
-      case 'McDbLine':
-        const endPoint = entity.endPoint;
-        const startPoint = entity.startPoint;
-        aliginPoint = new McGePoint3d(
-          (endPoint.x + startPoint.x) / 2,
-          (endPoint.y + startPoint.y) / 2,
-          0,
-        );
-        break;
-      case 'McDbProxyEntity':
-      case 'McDbBlockReference':
-        const bbox = entity.getBoundingBox();
-        const minPoint = bbox.minPt;
-        const maxPoint = bbox.maxPt;
-        aliginPoint = new McGePoint3d(
-          (minPoint.x + maxPoint.x) / 2,
-          (minPoint.y + maxPoint.y) / 2,
-          0,
-        );
-        break;
-      case 'McDbPolyline':
-        const startPt = entity.getStartPoint();
-        const endPt = entity.getEndPoint();
-        aliginPoint = new McGePoint3d((startPt.x + endPt.x) / 2, (startPt.y + endPt.y) / 2, 0);
-        break;
-      case 'McDbArc':
-      case 'McDbCircle':
-        aliginPoint = entity.center;
-        break;
-      default:
-        message.error('不支持的实体类型');
-        break;
-    }
-    if (aliginPoint === null) {
-      return;
-    }
+    const bbox = entity.getBoundingBox();
+    if (!bbox) return;
+    const aliginPoint = new McGePoint3d(
+      (bbox.minPt.x + bbox.maxPt.x) / 2,
+      (bbox.minPt.y + bbox.maxPt.y) / 2,
+      0,
+    );
     const currentMxCAD = mxCad.value.getMxCpp().App.getCurrentMxCAD();
     currentMxCAD.zoomAll();
     currentMxCAD.zoomCenter(aliginPoint.x, aliginPoint.y);
-    currentMxCAD.zoomScale(20);
+
+    // 设置缩放比例
+    const viewCoord = currentMxCAD.getViewCADCoord();
+    const viewWidth = viewCoord.pt1.distanceTo(viewCoord.pt2);
+    const entityWidth = bbox.maxPt.x - bbox.minPt.x;
+    const targetScale = (viewWidth * 0.2) / entityWidth;
+    currentMxCAD.zoomScale(targetScale);
 
     // 记录实体颜色
     const handle = entity.getHandle();
