@@ -32,7 +32,7 @@
           'X-Transfer-Mode': 'cad',
         }"
         accept=".dwg,.mxweb"
-        action="/api/api/filestorage/upload"
+        action="/api/api/tools/upload/dwg"
         :showUploadList="false"
         @change="handleChange"
       >
@@ -53,6 +53,7 @@
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
+  import { HighlightTagCellType } from './highlightTagCellType';
 
   const userStore = useUserStore();
   const token = userStore.token;
@@ -180,15 +181,16 @@
       handle: selectEntity.handle,
     };
     sheet.setTag(col, row, tag);
-    const style = new GC.Spread.Sheets.Style();
-    style.decoration = {
-      cornerFold: {
-        size: 10,
-        position: GC.Spread.Sheets.CornerPosition.rightTop,
-        color: 'red',
-      },
-    };
-    sheet.setStyle(row, col, style);
+    // const style = new GC.Spread.Sheets.Style();
+    // style.decoration = {
+    //   cornerFold: {
+    //     size: 10,
+    //     position: GC.Spread.Sheets.CornerPosition.rightTop,
+    //     color: 'red',
+    //   },
+    // };
+    // sheet.setStyle(row, col, style);
+    sheet.repaint();
     message.info(`关联成功`);
   };
 
@@ -247,6 +249,13 @@
         type: 'application/octet-stream',
       });
       spread.open(fileBlob, function () {
+        const sheetCount = spread.getSheetCount();
+        for (let i = 0; i < sheetCount; i++) {
+          const sheet = spread.getSheet(i);
+          const defaultStyle = sheet.getDefaultStyle();
+          defaultStyle.cellType = new HighlightTagCellType();
+          sheet.setDefaultStyle(defaultStyle);
+        }
         message.success(`导入成功`);
       });
     } else {

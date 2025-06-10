@@ -17,7 +17,7 @@
             'X-Transfer-Mode': 'cad',
           }"
           accept=".dwg,.mxweb"
-          action="/api/api/filestorage/upload"
+          action="/api/api/tools/upload/dwg"
           :showUploadList="false"
           @change="handleUploadChange"
         >
@@ -286,6 +286,7 @@
     if (!props.mxFileUrl) {
       return;
     }
+    // debugger;
     return createMxCad({
       canvas: '#myCanvas',
       browse: 2,
@@ -297,6 +298,7 @@
         return `/2d-st/${fileName}`;
       },
       fileUrl: props.mxFileUrl,
+      // fileUrl: '/cad/2025-06-10/珠海预可研总图01.13-202506102049729.mxweb',
       fontspath: '/fonts',
       onOpenFileComplete: () => {
         registerEvent(mxCad.value);
