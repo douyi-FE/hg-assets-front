@@ -29,6 +29,7 @@
       </a-tooltip>
     </div>
     <canvas id="myCanvas" />
+    <entity-info ref="entityInfoRef" class="entity-info" />
   </div>
 </template>
 
@@ -44,7 +45,9 @@
     McGePoint3d,
   } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
+  import EntityInfo from './entity-info.vue';
   import { useUserStore } from '@/store/modules/user';
+
   message.config({
     maxCount: 1,
   });
@@ -75,7 +78,8 @@
   let entityColorMap: any = {};
   const entityAllList: any[] = [];
   const entityAllLineList: any[] = [];
-  let selectEntity: any = null;
+  const selectEntity = ref<any>(null);
+  const entityInfoRef = ref<any>(null);
   const emit = defineEmits(['selectEntityChange', 'update:mxFileUrl']);
 
   const registerEvent = (mxCad: any) => {
@@ -88,10 +92,16 @@
           handle: entityHandle,
         });
         showEntryByPosition(firstEntity);
-        selectEntity = {
+        selectEntity.value = {
           id: ids[0].id,
           handle: entityHandle,
+          objectName: firstEntity.objectName,
+          textString: firstEntity.textString,
+          layer: firstEntity.layer,
         };
+        entityInfoRef.value.showContent(selectEntity.value);
+      } else {
+        selectEntity.value = null;
       }
     });
   };
@@ -192,8 +202,15 @@
     // 设置缩放比例
     const viewCoord = currentMxCAD.getViewCADCoord();
     const viewWidth = viewCoord.pt1.distanceTo(viewCoord.pt2);
+    const viewHeight = viewCoord.pt1.distanceTo(viewCoord.pt3);
     const entityWidth = bbox.maxPt.x - bbox.minPt.x;
-    const targetScale = (viewWidth * 0.2) / entityWidth;
+    const entityHeight = bbox.maxPt.y - bbox.minPt.y;
+    let targetScale = 0;
+    if (entityWidth > entityHeight) {
+      targetScale = (viewWidth * 0.2) / entityWidth;
+    } else {
+      targetScale = (viewHeight * 0.2) / entityHeight;
+    }
     currentMxCAD.zoomScale(targetScale);
 
     // 记录实体颜色
@@ -212,6 +229,13 @@
     // 设置边框
     createRedBorder(entity, currentMxCAD);
     currentMxCAD.updateDisplay();
+    // 显示实体信息
+    entityInfoRef.value.showContent({
+      layer: entity.layer,
+      objectName: entity.objectName,
+      textString: entity.textString,
+      handle: entity.getHandle(),
+    });
   };
 
   const showEntityById = (tag: any) => {
@@ -237,7 +261,7 @@
   };
 
   const getSelectEntity = () => {
-    return selectEntity;
+    return selectEntity.value;
   };
 
   const handleUploadChange = (info: UploadChangeParam) => {
@@ -317,6 +341,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+    .entity-info {
+      position: absolute;
+      top: 0;
+      right: 10px;
+      z-index: 99;
+      background-color: #7fffd4;
+      opacity: 0.8;
     }
   }
 </style>
