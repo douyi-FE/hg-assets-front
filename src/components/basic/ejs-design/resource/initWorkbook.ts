@@ -2,6 +2,7 @@ import { store } from '../store';
 import { tableRowChanged } from './tableRowChanged';
 import { TemplateCellType } from './templateCellType';
 import { Evaluate } from './evaluateFunction';
+import { message } from 'ant-design-vue';
 
 // 初始化工作簿
 export function initWorkbook(spread, callback?: (spread: any) => void) {
@@ -56,4 +57,8 @@ export function initWorkbook(spread, callback?: (spread: any) => void) {
   if (callback) {
     callback(spread);
   }
+  // 非法操作提示事件
+  spread.bind(GC.Spread.Sheets.Events.InvalidOperation, function (e, info) {
+    message.error(info.message);
+  });
 }

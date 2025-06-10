@@ -87,8 +87,9 @@ import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './ad
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
 import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
-import { initCustomCommentsEvents, renderCommentsByData, renderCommentsBySheet, renderSummarySheetComments } from './customComments';
+import { initCustomCommentsEvents, renderCommentsByData, renderSummarySheetComments } from './customComments';
 import { useUserStore } from '@/store/modules/user';
+// import { initCustomPasteEvents } from './customPasteEvents';
 const userStore = useUserStore();
 const openAttachList = ref(false);
 const openPreviewFile = ref(false);
@@ -202,6 +203,7 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           initCustomCommentsEvents(spread);
           renderCommentsByData(spread, dataSource);
           renderSummarySheetComments(spread, summarySheetComments);
+          // initCustomPasteEvents(spread);
         });
         sheet.recalcAll(true);
         resolve(true);
