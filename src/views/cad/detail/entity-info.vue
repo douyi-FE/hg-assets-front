@@ -47,6 +47,10 @@
 <style lang="less" scoped>
   .entity-info-container {
     padding: 10px;
+    background-color: #000;
+    opacity: 0.8;
+    color: #fff;
+
     .entity-info-header {
       display: flex;
       justify-content: flex-end;

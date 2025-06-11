@@ -19,6 +19,7 @@
       :get-click-cell="getClickCell"
       @update:mx-file-url="updateMxFileUrl"
       @selectEntityChange="selectEntityChange"
+      @clearCellTag="clearCellTag"
     />
     <a-empty v-else class="wgh-empty">
       <template #description>
@@ -50,10 +51,10 @@
   import { UploadOutlined } from '@ant-design/icons-vue';
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
+  import { HighlightTagCellType, tagList } from './highlightTagCellType';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
-  import { HighlightTagCellType } from './highlightTagCellType';
 
   const userStore = useUserStore();
   const token = userStore.token;
@@ -99,6 +100,8 @@
         message.success({
           content: `${info.file.name} 上传成功.`,
         });
+        // 清除单元格tag
+        clearCellTag();
       } else {
         message.error({
           content: `${info.file.name} 上传失败.`,
@@ -136,6 +139,20 @@
     });
   };
 
+  const clearCellTag = () => {
+    console.log('clearCellTag', tagList);
+    if (!spread) {
+      return;
+    }
+    const sheet = spread.getActiveSheet();
+    tagList.forEach((item) => {
+      sheet.setTag(item.row, item.col, null);
+      sheet.setStyle(item.row, item.col, null);
+    });
+    tagList.length = 0;
+    sheet.repaint();
+  };
+
   const getData = async function () {
     const excelEjs = await getExcelEjs();
     return {
@@ -171,25 +188,18 @@
       message.error('请先选择单元格');
       return;
     }
-    const selectEntity = wghRef.value.getSelectEntity();
-    if (!selectEntity) {
+    const selectEntitys = wghRef.value.getSelectEntitys();
+    if (!selectEntitys.length) {
       message.error('请先选择cad图元素');
       return;
     }
-    const tag = {
-      id: selectEntity.id,
-      handle: selectEntity.handle,
-    };
-    sheet.setTag(col, row, tag);
-    // const style = new GC.Spread.Sheets.Style();
-    // style.decoration = {
-    //   cornerFold: {
-    //     size: 10,
-    //     position: GC.Spread.Sheets.CornerPosition.rightTop,
-    //     color: 'red',
-    //   },
-    // };
-    // sheet.setStyle(row, col, style);
+    const tag = selectEntitys.map((item) => {
+      return {
+        id: item.id,
+        handle: item.handle,
+      };
+    });
+    sheet.setTag(row, col, tag);
     sheet.repaint();
     message.info(`关联成功`);
   };
@@ -201,7 +211,7 @@
       return;
     }
     const sheet = spread.getActiveSheet();
-    sheet.setTag(col, row, null);
+    sheet.setTag(row, col, null);
     sheet.setStyle(row, col, null);
     message.info('解除关联成功');
   };
@@ -223,8 +233,8 @@
         try {
           const { col, row } = args;
           const sheet = spread.getActiveSheet();
-          const tag = sheet.getTag(col, row);
-          if (tag) {
+          const tag = sheet.getTag(row, col);
+          if (tag && tag.length) {
             wghRef.value.showEntityById(tag);
           } else {
             message.error(`未关联cad图纸`);
