@@ -36,14 +36,7 @@
 <script setup lang="ts">
   import { ref, watch, h } from 'vue';
   import { UploadOutlined, InfoCircleFilled } from '@ant-design/icons-vue';
-  import {
-    createMxCad,
-    MxCADResbuf,
-    MxCADSelectionSet,
-    McCmColor,
-    McGePoint3d,
-    McDbPolyline,
-  } from 'mxcad';
+  import { createMxCad, MxCADSelectionSet, McCmColor, McGePoint3d, McDbPolyline } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
   import EntityInfo from './entity-info.vue';
   import { useUserStore } from '@/store/modules/user';
@@ -76,7 +69,7 @@
   const fileList = ref<any[]>([]);
   const mxCad = ref<any>(null);
   let entityColorMap: any = {};
-  const entityAllList: any[] = [];
+  const entityAllMap: any = {};
   const entityAllLineList: any[] = [];
   const selectEntitys = ref<any[]>([]);
   const entityInfoRef = ref<any>(null);
@@ -91,7 +84,9 @@
           id: ids[0].id,
           handle: entityHandle,
         });
-        showEntryByPosition(firstEntity);
+        showEntryByBox(firstEntity?.getBoundingBox());
+        // 重置实体颜色
+        resetAllEntityColor();
         createRedText(firstEntity, mxCad);
         createRedBorder(firstEntity, mxCad);
         // 显示实体信息
@@ -117,47 +112,29 @@
   };
 
   const getAllEntity = () => {
-    const entityList: any[] = [];
-    // 创建选择集实例
-    const selectionSet = new MxCADSelectionSet();
-    const filter = new MxCADResbuf();
-    // 设置过滤器：仅选择文字和直线
-    filter.AddMcDbEntityTypes('TEXT');
-    // 选择所有图形元素
-    selectionSet.allSelect();
-    // 遍历并获取所有实体
-    selectionSet.forEach((objId: any) => {
-      const entity = objId.getMcDbEntity();
-      if (entity) {
-        entityList.push(entity);
-        entityAllList.push(entity);
-      }
-    });
-  };
-
-  const getEntryByHandle = (handle: any) => {
     // 创建选择集实例
     const selectionSet = new MxCADSelectionSet();
     // 选择所有图形元素
     selectionSet.allSelect();
     const ids = selectionSet.getIds();
-    const id = ids.find((id: any) => id.getMcDbEntity().getHandle() === handle);
-    if (id) {
-      return id.getMcDbEntity();
-    }
-    return null;
+    // 遍历并获取所有实体
+    ids.forEach((id: any) => {
+      const entity = id.getMcDbEntity();
+      const handle = entity.getHandle();
+      entityAllMap[handle] = entity;
+    });
   };
 
-  const resetPrevEntityColor = () => {
+  const resetAllEntityColor = () => {
     Object.keys(entityColorMap).forEach((key: any) => {
       const color = entityColorMap[key].clone();
       entityColorMap[key] = color;
-      const entity = getEntryByHandle(key);
+      const entity = entityAllMap[key];
       if (entity) {
         entity.trueColor = color;
-        mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
       }
     });
+    mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
   };
 
   const clearAllLine = (mxCAD: any) => {
@@ -175,8 +152,6 @@
     entityColorMap[handle] = entity.trueColor.clone();
     // 清除当前选择
     currentMxCAD.mxdraw.clearMxCurrentSelect();
-    // 重置上个实体颜色
-    resetPrevEntityColor();
     // 设置文字颜色
     const color = entity.trueColor.clone();
     color.setRGB(255, 0, 0);
@@ -208,37 +183,6 @@
   };
 
   // 显示实体位置
-  const showEntryByPosition = (entity: any) => {
-    const bbox = entity?.getBoundingBox();
-    if (!bbox) {
-      message.error('实体没有包围盒，无法联动显示');
-      return;
-    }
-    const aliginPoint = new McGePoint3d(
-      (bbox.minPt.x + bbox.maxPt.x) / 2,
-      (bbox.minPt.y + bbox.maxPt.y) / 2,
-      0,
-    );
-    const currentMxCAD = mxCad.value.getMxCpp().App.getCurrentMxCAD();
-    currentMxCAD.zoomAll();
-    currentMxCAD.zoomCenter(aliginPoint.x, aliginPoint.y);
-
-    // 设置缩放比例
-    const viewCoord = currentMxCAD.getViewCADCoord();
-    const viewWidth = viewCoord.pt1.distanceTo(viewCoord.pt2);
-    const viewHeight = viewCoord.pt1.distanceTo(viewCoord.pt3);
-    const entityWidth = bbox.maxPt.x - bbox.minPt.x;
-    const entityHeight = bbox.maxPt.y - bbox.minPt.y;
-    let targetScale = 0;
-    if (entityWidth > entityHeight) {
-      targetScale = (viewWidth * 0.2) / entityWidth;
-    } else {
-      targetScale = (viewHeight * 0.2) / entityHeight;
-    }
-    currentMxCAD.zoomScale(targetScale);
-    currentMxCAD.updateDisplay();
-  };
-
   const showEntryByBox = (bbox: any) => {
     if (!bbox) {
       message.error('实体没有包围盒，无法联动显示');
@@ -255,15 +199,15 @@
 
     // 设置缩放比例
     const viewCoord = currentMxCAD.getViewCADCoord();
-    const viewWidth = viewCoord.pt1.distanceTo(viewCoord.pt2);
-    const viewHeight = viewCoord.pt1.distanceTo(viewCoord.pt3);
+    const viewHeight = viewCoord.pt1.distanceTo(viewCoord.pt2);
+    const viewWidth = viewCoord.pt1.distanceTo(viewCoord.pt4);
     const entityWidth = bbox.maxPt.x - bbox.minPt.x;
     const entityHeight = bbox.maxPt.y - bbox.minPt.y;
     let targetScale = 0;
     if (entityWidth > entityHeight) {
-      targetScale = (viewWidth * 0.3) / entityWidth;
+      targetScale = (viewWidth * 0.5) / entityWidth;
     } else {
-      targetScale = (viewHeight * 0.3) / entityHeight;
+      targetScale = (viewHeight * 0.5) / entityHeight;
     }
     currentMxCAD.zoomScale(targetScale);
     currentMxCAD.updateDisplay();
@@ -303,8 +247,10 @@
     }
     if (Array.isArray(tag) && tag.length > 0) {
       if (tag.length === 1) {
-        const entity = getEntryByHandle(tag[0].handle);
-        showEntryByPosition(entity);
+        const entity = entityAllMap[tag[0].handle];
+        showEntryByBox(entity?.getBoundingBox());
+        // 重置实体颜色
+        resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
         createRedBorder(entity, mxCad.value);
@@ -318,13 +264,17 @@
       } else {
         const entitys = tag
           .map((item: any) => {
-            return getEntryByHandle(item.handle);
+            return entityAllMap[item.handle];
           })
-          .filter((entity) => entity !== null);
+          .filter((entity) => entity);
         const bbox = getEntitysBbox(entitys);
         showEntryByBox(bbox);
         createRedBorder(entitys[0], mxCad.value, bbox);
-        resetPrevEntityColor();
+        // 重置实体颜色
+        resetAllEntityColor();
+        entitys.forEach((entity) => {
+          createRedText(entity, mxCad.value);
+        });
       }
     }
   };
@@ -363,10 +313,9 @@
     if (info.file.status === 'done') {
       const { response } = info.file;
       if (response.code === 200) {
-        console.log('response', response);
         emit('update:mxFileUrl', response.data.filename);
-        message.success(`${info.file.name} 上传成功.`);
         emit('clearCellTag');
+        message.success(`${info.file.name} 上传成功.`);
       } else {
         message.error(`${info.file.name} 上传失败.`);
       }
@@ -379,7 +328,6 @@
     if (!props.mxFileUrl) {
       return;
     }
-    // debugger;
     return createMxCad({
       canvas: '#myCanvas',
       browse: 2,
@@ -391,11 +339,10 @@
         return `/2d-st/${fileName}`;
       },
       fileUrl: props.mxFileUrl,
-      // fileUrl: '/cad/2025-06-10/珠海预可研总图01.13-202506102049729.mxweb',
       fontspath: '/fonts',
       onOpenFileComplete: () => {
         registerEvent(mxCad.value);
-        // getAllEntityV2();
+        getAllEntity();
       },
     }).then((mxCad: any) => {
       return mxCad;
@@ -413,9 +360,10 @@
   );
 
   defineExpose({
-    showEntryByPosition,
     showEntityById,
     getSelectEntitys,
+    resetAllEntityColor,
+    clearAllLine,
   });
 </script>
 

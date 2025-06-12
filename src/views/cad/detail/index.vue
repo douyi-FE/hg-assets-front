@@ -213,6 +213,8 @@
     const sheet = spread.getActiveSheet();
     sheet.setTag(row, col, null);
     sheet.setStyle(row, col, null);
+    wghRef.value.clearAllLine();
+    wghRef.value.resetAllEntityColor();
     message.info('解除关联成功');
   };
 
