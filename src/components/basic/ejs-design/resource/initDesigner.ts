@@ -6,6 +6,7 @@ import { clearSelections, startSelectMode } from './initFormulaBar';
 import { addScript, runScript } from './scripts';
 import { setFieldsModel } from './setFieldsModel';
 import { printPreview } from './printPreview';
+import { conditionFormatConfig } from './conditionFormatsConfig';
 // 初始化设计器及相关菜单项
 export function initDesigner(divId) {
   // 获取初始化配置
@@ -272,6 +273,7 @@ export function initDesigner(divId) {
           direction: 'vertical',
           commands: ['SetAttach'],
         },
+        conditionFormatConfig,
       ],
     },
   });
