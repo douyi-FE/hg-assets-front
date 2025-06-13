@@ -287,11 +287,16 @@
     ss.userSelect('框选需要的对象').then((is) => {
       if (is) {
         const ids = ss.getIds();
-        selectEntitys.value = ids.map((id) => {
-          const entity = id.getMcDbEntity();
-          createRedBorder(entity, mxCad.value);
+        const entitys = ids.map((id) => {
+          return id.getMcDbEntity();
+        });
+        const bbox = getEntitysBbox(entitys);
+        createRedBorder(entitys[0], mxCad.value, bbox);
+        resetAllEntityColor();
+        selectEntitys.value = entitys.map((entity) => {
+          createRedText(entity, mxCad.value);
           return {
-            id: id.id,
+            id: entity.id,
             handle: entity.getHandle(),
             objectName: entity.objectName,
             textString: entity.textString,

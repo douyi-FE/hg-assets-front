@@ -228,6 +228,7 @@
     return { col, row };
   };
 
+  // 绑定单元格点击事件
   const bindSpreadEvent = function () {
     if (spread !== null) {
       var spreadNS = GC.Spread.Sheets;
@@ -239,7 +240,27 @@
           if (tag && tag.length) {
             wghRef.value.showEntityById(tag);
           } else {
-            message.error(`未关联cad图纸`);
+            const tagList: any[] = [];
+            let span = sheet.getSpan(row, col);
+            function getTagListBySpan(span) {
+              if (span) {
+                let nextCol = span.col + span.colCount;
+                for (let spanRow = span.row; spanRow < span.row + span.rowCount; spanRow++) {
+                  const tag = sheet.getTag(spanRow, nextCol);
+                  if (tag && tag.length) {
+                    tagList.push(...(Array.isArray(tag) ? tag : [tag]));
+                  }
+                  const nextSpan = sheet.getSpan(spanRow, nextCol);
+                  getTagListBySpan(nextSpan);
+                }
+              }
+            }
+            getTagListBySpan(span);
+            if (tagList.length) {
+              wghRef.value.showEntityById(tagList);
+            } else {
+              message.error(`未关联cad图纸`);
+            }
           }
         } catch (error) {
           message.error(`联动定位失败`);
@@ -249,6 +270,7 @@
     }
   };
 
+  // 渲染Excel
   const renderExcel = (ejs: string = '') => {
     if (!spread) {
       spread = new GC.Spread.Sheets.Workbook(document.getElementById('excel_book_content'), {
