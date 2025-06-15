@@ -85,7 +85,7 @@ import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
-import { fillTableRows } from '@/components/basic/ejs-design/resource/tableRowChanged';
+import { fillTableRows, fillFormulas } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
 import { initCustomCommentsEvents, renderCommentsByData, renderSummarySheetComments } from './customComments';
 import { useUserStore } from '@/store/modules/user';
@@ -176,6 +176,19 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           ds.engineer = dataSource.engineer;
         }
         sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(ds));
+        const table = sheet.tables.all()[0];
+        const dataRange = table.dataRange();
+        const col = dataRange.col;
+        const row = dataRange.row;
+        const colCount = dataRange.colCount;
+        sheet.suspendCalcService();
+        for (let c = col; c < colCount; c++) {
+          const formula = sheet.getFormula(row, c);
+          if (formula) {
+            fillFormulas(spread, sheet, dataRange, c);
+          }
+        }
+        sheet.resumeCalcService(true);
         // 设置汇总数据
         const tableBindingPath = getSummaryDataTable(summaryDataByType);
         if (tableBindingPath && Object.keys(tableBindingPath).length > 0) {
