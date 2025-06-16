@@ -17,7 +17,7 @@
             'X-Transfer-Mode': 'cad',
           }"
           accept=".dwg,.mxweb"
-          action="/api/api/tools/upload/dwg"
+          :action="`${baseApiUrl}/api/tools/upload/dwg`"
           :showUploadList="false"
           @change="handleUploadChange"
         >
@@ -64,6 +64,7 @@
     },
   );
 
+  const baseApiUrl = import.meta.env.VITE_BASE_API_URL;
   const userStore = useUserStore();
   const token = userStore.token;
   const fileList = ref<any[]>([]);
