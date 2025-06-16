@@ -85,7 +85,7 @@ import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
 import { initCustomInsertRows } from './customInsertRows';
 import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
 import { exportToExcel, getSheetTableData, addSheetRows, updateAppContainerStyle, protectSheet } from './commonFuncs';
-import { fillTableRows, fillFormulas } from '@/components/basic/ejs-design/resource/tableRowChanged';
+import { fillTableRows, fillFormulas, fillCellTypes } from '@/components/basic/ejs-design/resource/tableRowChanged';
 import Api from '@/api';
 import { initCustomCommentsEvents, renderCommentsByData, renderSummarySheetComments } from './customComments';
 import { useUserStore } from '@/store/modules/user';
@@ -186,6 +186,10 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
           const formula = sheet.getFormula(row, c);
           if (formula) {
             fillFormulas(spread, sheet, dataRange, c);
+          }
+          const cellType = sheet.getCellType(row, c);
+          if (cellType.typeName !== 'TemplateCellType') {
+            fillCellTypes(sheet, dataRange, c);
           }
         }
         sheet.resumeCalcService(true);

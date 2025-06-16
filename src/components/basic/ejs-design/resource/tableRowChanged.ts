@@ -1,5 +1,5 @@
 import { message } from 'ant-design-vue';
-import { fillFileUploadCellType, setTableRowChangedCellType } from './fileUploadCellType';
+import { fillFileUploadCellType, setTableRowChangedCellType, FileUploadCellType } from './fileUploadCellType';
 
 // 监听表格行变化，自动带入列样式
 export function tableRowChanged(spread: any) {
@@ -65,6 +65,29 @@ export function fillFormulas(spread, sheet, dataRange, col) {
     autoFillType: GC.Spread.Sheets.Fill.AutoFillType.fillSeries,
     fillDirection: GC.Spread.Sheets.Fill.FillDirection.down
   });
+}
+
+export function fillCellTypes(sheet, dataRange, col) {
+  const startRow = dataRange.row;
+  const cellType = sheet.getCellType(startRow, col);
+  if (cellType.typeName !== 'TemplateCellType') {
+    const endRow = dataRange.row + dataRange.rowCount;
+    if (cellType.typeName === 'FileUploadCellType') {
+      for (let r = startRow; r < endRow; r++) {
+        const currentCellType = sheet.getCellType(r, col);
+        if (currentCellType.typeName !== 'FileUploadCellType') {
+          sheet.setCellType(r, col, new FileUploadCellType());
+        }
+      }
+    } else {
+      for (let r = startRow; r < endRow; r++) {
+        const currentCellType = sheet.getCellType(r, col);
+        if (currentCellType.typeName !== cellType.typeName) {
+          sheet.setCellType(r, col, cellType);
+        }
+      }
+    }
+  }
 }
 
 // 弃用
