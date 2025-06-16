@@ -331,6 +331,8 @@
             if (tagList.length) {
               wghRef.value.showEntityById(tagList);
             } else {
+              wghRef.value.clearAllLine();
+              wghRef.value.resetAllEntityColor();
               message.error(`未关联cad图纸`);
             }
           }

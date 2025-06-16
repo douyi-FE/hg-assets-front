@@ -1,5 +1,19 @@
 <template>
   <a-modal v-model:open="open" :title="props.mode === 'edit' ? '编辑' : '详情'" @ok="handleEditOk">
+    <template #footer>
+      <a-button
+        v-if="props.mode === 'edit' && handlesList.length > indexNum + 1"
+        key="next"
+        @click="handleNext"
+      >
+        下一个
+      </a-button>
+      <a-button v-if="props.mode === 'edit' && indexNum > 0" key="prev" @click="handlePrev">
+        上一个
+      </a-button>
+      <a-button key="back" @click="open = false">取消</a-button>
+      <a-button key="submit" type="primary" @click="handleEditOk">确定</a-button>
+    </template>
     <a-form
       v-if="props.mode === 'edit'"
       ref="formRef"
@@ -61,12 +75,16 @@
   const sheetName = ref<string>('');
   const row = ref<number>(0);
   const col = ref<number>(0);
+  const handlesList = ref<string[]>([]);
+  const indexNum = ref<number>(0);
 
-  const show = (tagData: any, handles: string[]) => {
+  const show = (tagData: any, handles: string[], index: number = 0) => {
     list.value = tagData.tag;
-    const attach = tagData.tag.find((item: any) => handles.includes(item.handle))?.attach || {};
+    handlesList.value = handles;
+    indexNum.value = index;
+    const attach = tagData.tag.find((item: any) => item.handle === handles[index])?.attach || {};
     form.value = {
-      handle: handles[0],
+      handle: handles[index],
       name: attach.name,
       price: attach.price,
       time: attach.time?.map((item: any) => dayjs(item)),
@@ -75,6 +93,14 @@
     row.value = tagData.row;
     col.value = tagData.col;
     open.value = true;
+  };
+
+  const handlePrev = () => {
+    show(list.value, handlesList.value, indexNum.value - 1);
+  };
+
+  const handleNext = () => {
+    show(list.value, handlesList.value, indexNum.value + 1);
   };
 
   const handleEditOk = () => {
