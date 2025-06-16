@@ -29,7 +29,7 @@
       </template>
     </DynamicTable>
     <a-drawer
-      title="新增项目图纸"
+      :title="detialId ? (mode === 'edit' ? '编辑项目图纸' : '查看项目图纸') : '新增项目图纸'"
       placement="right"
       :closable="true"
       :destroyOnClose="true"
@@ -50,6 +50,7 @@
         ref="cadDetailRef"
         v-model:mx-file-url="mxFileUrl"
         :detial-id="detialId"
+        :mode="mode"
         :is-show-excel-file="isShowCadDrawer"
       />
     </a-drawer>
@@ -71,6 +72,7 @@
   const mxFileUrl = ref<string>('');
   const cadDetailRef = ref<any>(null);
   const detialId = ref<string>('');
+  const mode = ref<'edit' | 'view'>('edit');
 
   const saveCad = async () => {
     if (projectName.value === '') {
@@ -83,7 +85,6 @@
         ...data,
         projectName: projectName.value,
       }).then((res) => {
-        console.log('res', res);
         message.success('新增成功');
         isShowCadDrawer.value = false;
         dynamicTableInstance.reload();
@@ -93,7 +94,6 @@
         ...data,
         projectName: projectName.value,
       }).then((res) => {
-        console.log('res', res);
         message.success('新增成功');
         isShowCadDrawer.value = false;
         dynamicTableInstance.reload();
@@ -112,8 +112,8 @@
       actions: ({ record }) => [
         {
           label: '编辑',
-          // disabled: record.status === 2,
           onClick: () => {
+            mode.value = 'edit';
             detialId.value = record._id;
             projectName.value = record.name;
             isShowCadDrawer.value = true;
@@ -122,7 +122,10 @@
         {
           label: '查看',
           onClick: () => {
-            console.log('查看', record);
+            mode.value = 'view';
+            detialId.value = record._id;
+            projectName.value = record.name;
+            isShowCadDrawer.value = true;
           },
         },
         {
