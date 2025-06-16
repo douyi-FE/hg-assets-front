@@ -74,7 +74,12 @@
   const entityAllLineList: any[] = [];
   const selectEntitys = ref<any[]>([]);
   const entityInfoRef = ref<any>(null);
-  const emit = defineEmits(['selectEntityChange', 'update:mxFileUrl', 'clearCellTag']);
+  const emit = defineEmits([
+    'selectEntityChange',
+    'update:mxFileUrl',
+    'clearCellTag',
+    'showCellByTag',
+  ]);
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
@@ -362,6 +367,15 @@
     },
     {
       immediate: true,
+    },
+  );
+
+  watch(
+    () => selectEntitys.value,
+    () => {
+      if (selectEntitys.value.length > 0) {
+        emit('showCellByTag', selectEntitys.value[0]);
+      }
     },
   );
 

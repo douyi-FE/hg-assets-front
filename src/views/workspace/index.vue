@@ -49,12 +49,26 @@
       </a-col>
       <a-col :span="8">
         <QuickNav />
-        <a-card title="我的日程" :bordered="false" style="height: 500px; margin-top: 20px">
-          <a-list size="small" bordered :data-source="[]">
-            <template #renderItem="{ item }">
-              <a-list-item>{{ item }}</a-list-item>
-            </template></a-list
-          >
+        <a-card
+          title="我的日程"
+          :bordered="false"
+          style="height: 500px; margin-top: 20px; overflow: auto"
+        >
+          <a-calendar v-model:value="value">
+            <template #dateCellRender="{ current }">
+              <ul class="events">
+                <li v-for="item in getListData(current)" :key="item.content">
+                  <a-badge :status="item.type" :text="item.content" />
+                </li>
+              </ul>
+            </template>
+            <template #monthCellRender="{ current }">
+              <div v-if="getMonthData(current)" class="notes-month">
+                <section>{{ getMonthData(current) }}</section>
+                <span>待办数量</span>
+              </div>
+            </template>
+          </a-calendar>
         </a-card>
       </a-col>
     </a-row>
@@ -62,7 +76,46 @@
 </template>
 
 <script setup lang="ts">
+  import { ref } from 'vue';
+  import { Dayjs } from 'dayjs';
   import QuickNav from './quick-nav-v2.vue';
+
+  const value = ref<Dayjs>();
+
+  const getListData = (value: Dayjs) => {
+    let listData;
+    switch (value.date()) {
+      case 8:
+        listData = [
+          { type: 'warning', content: '已经逾期, 请尽快处理xxx任务' },
+          { type: 'success', content: '正常, 请尽快处理xxx任务' },
+        ];
+        break;
+      case 10:
+        listData = [
+          { type: 'warning', content: '已经逾期, 请尽快处理xxx任务' },
+          { type: 'success', content: '正常, 请尽快处理xxx任务' },
+          { type: 'error', content: '已经逾期, 请尽快处理xxx任务' },
+        ];
+        break;
+      case 15:
+        listData = [
+          { type: 'warning', content: '已经逾期, 请尽快处理xxx任务' },
+          { type: 'success', content: '正常, 请尽快处理xxx任务' },
+          { type: 'error', content: '已经逾期, 请尽快处理xxx任务' },
+          { type: 'error', content: '已经逾期, 请尽快处理xxx任务' },
+        ];
+        break;
+      default:
+    }
+    return listData || [];
+  };
+
+  const getMonthData = (value: Dayjs) => {
+    if (value.month() === 8) {
+      return 1394;
+    }
+  };
 </script>
 
 <style lang="less" scoped>

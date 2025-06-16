@@ -20,6 +20,7 @@
       @update:mx-file-url="updateMxFileUrl"
       @selectEntityChange="selectEntityChange"
       @clearCellTag="clearCellTag"
+      @showCellByTag="showCellByTag"
     />
     <a-empty v-else class="wgh-empty">
       <template #description>
@@ -43,6 +44,7 @@
         </a-button>
       </a-upload>
     </a-empty>
+    <CellDialog ref="cellDialogRef" @update:tag="setCellTag" :mode="mode" />
   </div>
 </template>
 
@@ -52,6 +54,7 @@
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
   import { HighlightTagCellType, tagList } from './highlightTagCellType';
+  import CellDialog from './cell-dialog.vue';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
@@ -64,6 +67,10 @@
   });
 
   const props = defineProps({
+    mode: {
+      type: String,
+      default: 'edit',
+    },
     detialId: {
       type: String,
       default: '',
@@ -83,6 +90,8 @@
   const wghRef = ref<any>(null);
   const selectedEntity = ref<any>(null);
   const fileList = ref<any[]>([]);
+  const cellDialogRef = ref<any>(null);
+  const selectEntityHandles = ref<string[]>([]);
 
   const updateMxFileUrl = (url: string) => {
     emits('update:mxFileUrl', url);
@@ -122,6 +131,42 @@
     selectedEntity.value = entity;
   };
 
+  const setCellTag = (tag: any, cell: { sheetName: string; row: number; col: number }) => {
+    let sheet: any = null;
+    if (cell.sheetName) {
+      sheet = spread.getSheetFromName(cell.sheetName);
+    } else {
+      sheet = spread.getActiveSheet();
+    }
+    sheet.setTag(cell.row, cell.col, tag);
+    sheet.repaint();
+  };
+
+  const showCellByTag = (tag: any) => {
+    selectEntityHandles.value = [tag.handle];
+    const cell = tagList.find((item) => {
+      return item.tag
+        .map((item) => {
+          return item.handle;
+        })
+        .find((item) => {
+          return tag.handle === item;
+        });
+    });
+    if (cell) {
+      const { row, col, sheetName } = cell;
+      spread.setActiveSheet(sheetName);
+      const sheet = spread.getSheetFromName(sheetName);
+      sheet.showCell(
+        row,
+        col,
+        GC.Spread.Sheets.VerticalPosition.top,
+        GC.Spread.Sheets.HorizontalPosition.left,
+      );
+      sheet.setActiveCell(row, col);
+    }
+  };
+
   const getExcelEjs = function () {
     const wb = GC.Spread.Sheets.findControl('excel_book_content');
     return new Promise((resolve, reject) => {
@@ -141,7 +186,6 @@
   };
 
   const clearCellTag = () => {
-    console.log('clearCellTag', tagList);
     if (!spread) {
       return;
     }
@@ -229,6 +273,33 @@
     return { col, row };
   };
 
+  // 设置单元格详情按钮
+  const setCellDetailButton = () => {
+    tagList.forEach((item) => {
+      const { row, col, sheetName } = item;
+      const sheet = spread.getSheetFromName(sheetName);
+      const cell = sheet.getCell(row, col);
+      const tag = sheet.getTag(row, col);
+      cell.cellButtons([
+        {
+          caption: '详情',
+          captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
+          imageType: GC.Spread.Sheets.ButtonImageType.collapse,
+          visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
+          command: (sheet, row, col, option) => {
+            cellDialogRef.value.show(
+              item,
+              selectEntityHandles.value.length > 0
+                ? selectEntityHandles.value
+                : tag.map((item) => item.handle),
+            );
+          },
+        },
+      ]);
+      sheet.repaint();
+    });
+  };
+
   // 绑定单元格点击事件
   const bindSpreadEvent = function () {
     if (spread !== null) {
@@ -290,6 +361,9 @@
           const defaultStyle = sheet.getDefaultStyle();
           defaultStyle.cellType = new HighlightTagCellType();
           sheet.setDefaultStyle(defaultStyle);
+          setTimeout(() => {
+            setCellDetailButton();
+          }, 1000);
         }
         message.success(`导入成功`);
       });

@@ -19,13 +19,20 @@ HighlightTagCellType.prototype.paint = function (ctx, value, x, y, w, h, style, 
         color: 'red',
       },
     };
-    if (
-      tagList.find((item) => item.row === context.row && item.col === context.col) === undefined
-    ) {
+    const existIndex = tagList.findIndex(
+      (item) => item.row === context.row && item.col === context.col,
+    );
+    // 未存在，则添加
+    if (existIndex === -1) {
       tagList.push({
         row: context.row,
         col: context.col,
+        tag: tag,
+        sheetName: context.sheet.name(),
       });
+    } else {
+      // 存在，则更新
+      tagList[existIndex].tag = tag;
     }
   }
   GC.Spread.Sheets.CellTypes.Text.prototype.paint.apply(this, [
