@@ -33,7 +33,7 @@
           'X-Transfer-Mode': 'cad',
         }"
         accept=".dwg,.mxweb"
-        action="/api/api/tools/upload/dwg"
+        :action="`${baseApiUrl}/api/tools/upload/dwg`"
         :showUploadList="false"
         @change="handleChange"
       >
@@ -56,6 +56,7 @@
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
 
+  const baseApiUrl = import.meta.env.VITE_BASE_API_URL;
   const userStore = useUserStore();
   const token = userStore.token;
   message.config({
