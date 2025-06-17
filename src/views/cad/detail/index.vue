@@ -2,10 +2,11 @@
   <div class="cad-container">
     <div class="excel-book__list">
       <div class="excel-book__list-header">
-        <a-space>
+        <a-space v-if="mode === 'edit'">
           <a-button @click="openExcelFile" type="primary">打开文件</a-button>
           <a-button @click="linkCad">关联cad</a-button>
           <a-button @click="unlinkCad">解除关联</a-button>
+          <upload-info @uploadSuccess="uploadSuccess" />
         </a-space>
       </div>
       <div id="excel_book_content" class="excel-book__content" />
@@ -14,6 +15,7 @@
       v-if="mxFileUrl !== ''"
       class="excel-book__cad"
       ref="wghRef"
+      :mode="mode"
       :mx-file-url="mxFileUrl"
       :detial-id="detialId"
       :get-click-cell="getClickCell"
@@ -59,6 +61,7 @@
   import wgh from '../detail/wgh.vue';
   import { HighlightTagCellType, tagList, setCurrentMode } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
+  import UploadInfo from './upload-info.vue';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
@@ -268,6 +271,48 @@
       });
     };
     input.click();
+  };
+
+  // 上传成功
+  const uploadSuccess = (cellInfo: any) => {
+    console.log('cellInfo', cellInfo);
+    const sheet = spread.getActiveSheet();
+    const rowCount = sheet.getRowCount();
+    const colCount = sheet.getColumnCount();
+    let res: any = null;
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const cellValue = sheet.getValue(row, col);
+        if (cellValue === '资产名称') {
+          res = { sheetName: sheet.name(), row: row, col: col, rowCount };
+          break;
+        }
+      }
+    }
+    if (!res) {
+      message.error('未找到资产名称单元格');
+      return;
+    }
+    cellInfo.forEach((item: any) => {
+      const { row, sheetName, attach } = item;
+      // const { name, time, price } = attach;
+      const sheet = spread.getSheetFromName(sheetName);
+      let tag = sheet.getTag(row, res.col);
+      if (tag && tag.length) {
+        tag = tag.map((item: any) => {
+          item.attach = attach;
+          return item;
+        });
+      } else {
+        tag = [
+          {
+            attach,
+          },
+        ];
+      }
+      console.log('tag', row, res.col, tag);
+      sheet.setTag(row, res.col, tag);
+    });
   };
 
   // 关联cad图纸

@@ -52,7 +52,7 @@
       <canvas id="myCanvas" />
     </div>
     <div class="wgh-tools" v-if="detialId !== ''">
-      <a-tooltip>
+      <a-tooltip v-if="mode === 'edit'">
         <template #title>点击上传可上传图纸</template>
         <a-upload
           v-model:file-list="fileList"
@@ -72,7 +72,7 @@
           </a-button>
         </a-upload>
       </a-tooltip>
-      <a-tooltip>
+      <a-tooltip v-if="mode === 'edit'">
         <template #title>点击框选开始框选，右键结束框选</template>
         <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
       </a-tooltip>
@@ -102,6 +102,7 @@
       getAllCellByRowAndCol?: Function;
       getTagListBySpan?: Function;
       bindCellTag?: Function;
+      mode?: string;
     }>(),
     {
       mxFileUrl: '',
@@ -121,6 +122,7 @@
       bindCellTag() {
         return null;
       },
+      mode: 'edit',
     },
   );
 
@@ -150,7 +152,14 @@
     'showCell',
   ]);
 
-  const showEntityInfo = (entity: any) => {
+  const showEntityInfo = (entity: any, info: any = null) => {
+    if (info) {
+      entityInfoRef.value.showContent(info);
+      return;
+    }
+    if (!entity) {
+      return;
+    }
     const cell = props.getCellInfoByHandle(entity.getHandle());
     if (cell) {
       const { attach = {} } = cell;
@@ -273,6 +282,9 @@
 
   // 创建红色字体
   const createRedText = (entity: any, mxCAD: any) => {
+    if (!entity) {
+      return;
+    }
     const currentMxCAD = mxCAD.getMxCpp().App.getCurrentMxCAD();
     // 清除当前选择
     currentMxCAD.mxdraw.clearMxCurrentSelect();
@@ -285,6 +297,9 @@
 
   // 创建红色边框实体
   const createRedBorder = (entry: any, mxCAD: any, bbox: any = null) => {
+    if (!entry) {
+      return;
+    }
     clearAllLine();
     if (!bbox) {
       bbox = entry.getBoundingBox();
@@ -373,13 +388,15 @@
       if (tag.length === 1) {
         const entity = entityAllMap[tag[0].handle];
         showEntryByBox(entity?.getBoundingBox());
+        // 清除所有边框
+        clearAllLine();
         // 重置实体颜色
         resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
         createRedBorder(entity, mxCad.value);
         // 显示实体信息
-        showEntityInfo(entity);
+        showEntityInfo(entity, tag[0].attach);
       } else {
         const entitys = tag
           .map((item: any) => {
