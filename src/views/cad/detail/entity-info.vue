@@ -5,24 +5,24 @@
       <FullscreenOutlined v-else class="show-icon" @click="show" />
     </div>
     <div class="entity-info-content" v-if="isShowContent">
-      <p>图层：{{ entityInfo.layer }}</p>
-      <p>类型：{{ entityInfo.objectName }}</p>
-      <p v-if="entityInfo.objectName === 'McDbText'">文字：{{ entityInfo.textString }}</p>
-      <p>句柄标识：{{ entityInfo.handle }}</p>
+      <p>名称：{{ entityInfo.name }}</p>
+      <p>开始时间：{{ entityInfo.time[0] }}</p>
+      <p>结束时间：{{ entityInfo.time[1] }}</p>
+      <p>剩余天数：{{ remainingDays }}</p>
+      <p>价格：{{ entityInfo.price }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons-vue';
 
   const isShowContent = ref(true);
   const entityInfo = ref({
-    layer: '',
-    objectName: '',
-    textString: '',
-    handle: '',
+    name: '',
+    price: '',
+    time: [],
   });
 
   const close = () => {
@@ -35,9 +35,21 @@
 
   const showContent = (info: any = {}) => {
     isShowContent.value = true;
-    const { layer, objectName, textString, handle } = info;
-    entityInfo.value = { layer, objectName, textString, handle };
+    const { name, price, time } = info;
+    entityInfo.value = { name, price, time };
   };
+
+  // 计算剩余天数
+  const remainingDays = computed(() => {
+    const { time } = entityInfo.value;
+    if (!time || time.length !== 2) {
+      return 0;
+    }
+    const start = new Date(time[0]);
+    const end = new Date(time[1]);
+    const diff = end.getTime() - start.getTime();
+    return diff / (1000 * 60 * 60 * 24);
+  });
 
   defineExpose({
     showContent,

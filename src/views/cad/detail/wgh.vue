@@ -1,12 +1,57 @@
 <template>
   <div class="wgh-container">
-    <div class="wgh-header" v-if="detialId !== ''">
-      <a-tooltip>
-        <template #title>点击框选开始框选，右键结束框选</template>
-        <a-button type="primary" @click="handleSelectModeChange" :icon="h(InfoCircleFilled)">
-          框选
-        </a-button>
-      </a-tooltip>
+    <div class="wgh-header">
+      <a-form
+        :model="searchForm"
+        :label-col="{ span: 10 }"
+        :wrapper-col="{ span: 14 }"
+        layout="inline"
+      >
+        <a-row style="width: 100%">
+          <a-col :span="6">
+            <a-form-item label="资产业务线">
+              <a-select
+                allow-clear
+                show-search
+                v-model:value="searchForm.businessLine"
+                :options="businessLineOptions"
+                @change="handleBusinessLineChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="资产业务点">
+              <a-select
+                allow-clear
+                show-search
+                v-model:value="searchForm.businessPoint"
+                :options="businessPointOptions"
+                @change="handleBusinessPointChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="资产名称">
+              <a-select
+                allow-clear
+                show-search
+                v-model:value="searchForm.assetName"
+                :options="assetNameOptions"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6" style="text-align: right">
+            <a-button type="primary" @click="handleSearch" style="margin-right: 10px"
+              >查询</a-button
+            >
+          </a-col>
+        </a-row>
+      </a-form>
+    </div>
+    <div class="wgh-content">
+      <canvas id="myCanvas" />
+    </div>
+    <div class="wgh-tools" v-if="detialId !== ''">
       <a-tooltip>
         <template #title>点击上传可上传图纸</template>
         <a-upload
@@ -21,14 +66,17 @@
           :showUploadList="false"
           @change="handleUploadChange"
         >
-          <a-button>
+          <a-button type="primary">
             <upload-outlined />
             上传
           </a-button>
         </a-upload>
       </a-tooltip>
+      <a-tooltip>
+        <template #title>点击框选开始框选，右键结束框选</template>
+        <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
+      </a-tooltip>
     </div>
-    <canvas id="myCanvas" />
     <entity-info ref="entityInfoRef" class="entity-info" />
   </div>
 </template>
@@ -50,6 +98,9 @@
       mxFileUrl: string;
       detialId: string;
       getClickCell?: Function;
+      getCellInfoByHandle?: Function;
+      getAllCellByRowAndCol?: Function;
+      getTagListBySpan?: Function;
       bindCellTag?: Function;
     }>(),
     {
@@ -57,6 +108,15 @@
       detialId: '',
       getClickCell() {
         return null;
+      },
+      getCellInfoByHandle() {
+        return undefined;
+      },
+      getAllCellByRowAndCol() {
+        return [];
+      },
+      getTagListBySpan() {
+        return [];
       },
       bindCellTag() {
         return null;
@@ -74,12 +134,68 @@
   const entityAllLineList: any[] = [];
   const selectEntitys = ref<any[]>([]);
   const entityInfoRef = ref<any>(null);
+  const businessLineOptions = ref<any[]>([]);
+  const businessPointOptions = ref<any[]>([]);
+  const assetNameOptions = ref<any[]>([]);
+  const searchForm = ref<any>({
+    businessLine: '',
+    businessPoint: '',
+    assetName: '',
+  });
   const emit = defineEmits([
     'selectEntityChange',
     'update:mxFileUrl',
     'clearCellTag',
     'showCellByTag',
+    'showCell',
   ]);
+
+  const showEntityInfo = (entity: any) => {
+    const cell = props.getCellInfoByHandle(entity.getHandle());
+    if (cell) {
+      const { attach = {} } = cell;
+      const { name, price, time = [] } = attach;
+      entityInfoRef.value.showContent({
+        name,
+        price,
+        time,
+      });
+    } else {
+      entityInfoRef.value.showContent({
+        name: '',
+        price: '',
+        time: [],
+      });
+    }
+  };
+
+  const setSearchOptions = (data: any = {}) => {
+    businessLineOptions.value = data;
+  };
+
+  const handleBusinessLineChange = (value: any) => {
+    if (!value) {
+      businessPointOptions.value = [];
+      searchForm.value.businessPoint = '';
+      assetNameOptions.value = [];
+      searchForm.value.assetName = '';
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    businessPointOptions.value = cellList;
+  };
+
+  const handleBusinessPointChange = (value: any) => {
+    if (!value) {
+      assetNameOptions.value = [];
+      searchForm.value.assetName = '';
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    assetNameOptions.value = cellList;
+  };
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
@@ -96,12 +212,7 @@
         createRedText(firstEntity, mxCad);
         createRedBorder(firstEntity, mxCad);
         // 显示实体信息
-        entityInfoRef.value.showContent({
-          layer: firstEntity.layer,
-          objectName: firstEntity.objectName,
-          textString: firstEntity.textString,
-          handle: entityHandle,
-        });
+        showEntityInfo(firstEntity);
         selectEntitys.value = [
           {
             id: ids[0].id,
@@ -143,19 +254,26 @@
     mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
   };
 
-  const clearAllLine = (mxCAD: any) => {
+  const clearAllLine = () => {
     entityAllLineList.forEach((line: any) => {
       line.erase();
     });
     entityAllLineList.length = 0;
   };
 
+  // 设置初始实体颜色,用于恢复实体颜色
+  const setInitEntityColor = (handles: string[]) => {
+    handles.forEach((handle: string) => {
+      const entity = entityAllMap[handle];
+      if (entity) {
+        entityColorMap[handle] = entity.trueColor.clone();
+      }
+    });
+  };
+
   // 创建红色字体
   const createRedText = (entity: any, mxCAD: any) => {
     const currentMxCAD = mxCAD.getMxCpp().App.getCurrentMxCAD();
-    // 记录实体颜色
-    const handle = entity.getHandle();
-    entityColorMap[handle] = entity.trueColor.clone();
     // 清除当前选择
     currentMxCAD.mxdraw.clearMxCurrentSelect();
     // 设置文字颜色
@@ -167,7 +285,7 @@
 
   // 创建红色边框实体
   const createRedBorder = (entry: any, mxCAD: any, bbox: any = null) => {
-    clearAllLine(mxCAD);
+    clearAllLine();
     if (!bbox) {
       bbox = entry.getBoundingBox();
     }
@@ -247,7 +365,7 @@
     return bbox;
   };
 
-  const showEntityById = (tag: any) => {
+  const showEntityByTag = (tag: any) => {
     if (!tag) {
       return;
     }
@@ -261,12 +379,7 @@
         // 设置边框
         createRedBorder(entity, mxCad.value);
         // 显示实体信息
-        entityInfoRef.value.showContent({
-          layer: entity.layer,
-          objectName: entity.objectName,
-          textString: entity.textString,
-          handle: entity.getHandle(),
-        });
+        showEntityInfo(entity);
       } else {
         const entitys = tag
           .map((item: any) => {
@@ -360,6 +473,48 @@
     });
   };
 
+  const handleSearch = () => {
+    const { businessLine, businessPoint, assetName } = searchForm.value;
+    let cellInfo: any = null;
+    if (assetName) {
+      cellInfo = JSON.parse(assetName);
+      const { tag } = cellInfo;
+      showEntityByTag(tag);
+    } else if (businessPoint) {
+      cellInfo = JSON.parse(businessPoint);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else if (businessLine) {
+      cellInfo = JSON.parse(businessLine);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else {
+      clearAllLine();
+      resetAllEntityColor();
+      message.error(`请选择查询条件`);
+    }
+    if (cellInfo) {
+      const { row, col, sheetName } = cellInfo;
+      emit('showCell', sheetName, row, col);
+    }
+  };
+
   watch(
     () => props.mxFileUrl,
     async () => {
@@ -380,10 +535,12 @@
   );
 
   defineExpose({
-    showEntityById,
+    setInitEntityColor,
+    showEntityByTag,
     getSelectEntitys,
     resetAllEntityColor,
     clearAllLine,
+    setSearchOptions,
   });
 </script>
 
@@ -392,9 +549,20 @@
     height: 100%;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .wgh-content {
+      flex: 1;
+      overflow: auto;
+    }
+
     .wgh-header {
+      height: 40px;
+    }
+    .wgh-tools {
       position: absolute;
-      top: 10px;
+      top: 70px;
       left: 10px;
       padding: 5px;
       background-color: #fff;
@@ -406,7 +574,7 @@
     }
     .entity-info {
       position: absolute;
-      top: 0;
+      top: 40px;
       right: 10px;
       z-index: 99;
     }
