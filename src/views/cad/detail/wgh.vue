@@ -13,6 +13,7 @@
               <a-select
                 allow-clear
                 show-search
+                placeholder="请选择资产业务线"
                 v-model:value="searchForm.businessLine"
                 :options="businessLineOptions"
                 @change="handleBusinessLineChange"
@@ -24,6 +25,7 @@
               <a-select
                 allow-clear
                 show-search
+                placeholder="请选择资产业务点"
                 v-model:value="searchForm.businessPoint"
                 :options="businessPointOptions"
                 @change="handleBusinessPointChange"
@@ -35,6 +37,7 @@
               <a-select
                 allow-clear
                 show-search
+                placeholder="请选择资产名称"
                 v-model:value="searchForm.assetName"
                 :options="assetNameOptions"
               />
@@ -140,9 +143,9 @@
   const businessPointOptions = ref<any[]>([]);
   const assetNameOptions = ref<any[]>([]);
   const searchForm = ref<any>({
-    businessLine: '',
-    businessPoint: '',
-    assetName: '',
+    businessLine: undefined,
+    businessPoint: undefined,
+    assetName: undefined,
   });
   const emit = defineEmits([
     'selectEntityChange',
@@ -185,9 +188,9 @@
   const handleBusinessLineChange = (value: any) => {
     if (!value) {
       businessPointOptions.value = [];
-      searchForm.value.businessPoint = '';
+      searchForm.value.businessPoint = undefined;
       assetNameOptions.value = [];
-      searchForm.value.assetName = '';
+      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);
@@ -198,7 +201,7 @@
   const handleBusinessPointChange = (value: any) => {
     if (!value) {
       assetNameOptions.value = [];
-      searchForm.value.assetName = '';
+      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);

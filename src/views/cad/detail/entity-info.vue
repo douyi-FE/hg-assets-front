@@ -1,8 +1,8 @@
 <template>
   <div class="entity-info-container">
     <div class="entity-info-header">
-      <FullscreenExitOutlined v-if="isShowContent" class="close-icon" @click="close" />
-      <FullscreenOutlined v-else class="show-icon" @click="show" />
+      <LineOutlined v-if="isShowContent" class="close-icon" @click="close" />
+      <BorderOutlined v-else class="show-icon" @click="show" />
     </div>
     <div class="entity-info-content" v-if="isShowContent">
       <p>名称：{{ entityInfo.name }}</p>
@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons-vue';
+  import { BorderOutlined, LineOutlined } from '@ant-design/icons-vue';
 
   const isShowContent = ref(true);
   const entityInfo = ref({
