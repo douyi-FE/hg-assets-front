@@ -15,6 +15,7 @@
 <script setup lang="ts">
   import { onMounted } from 'vue';
   import { message } from 'ant-design-vue';
+  import { assetColText } from './config';
   const emit = defineEmits(['uploadSuccess']);
 
   let spread: any = null;
@@ -74,7 +75,7 @@
   };
 
   const getAllCellInfo = function () {
-    const assetNameCell = getAllCellByValue('资产名称');
+    const assetNameCell = getAllCellByValue(assetColText);
     const assetNameInfo = getCellInfo(assetNameCell);
     return assetNameInfo;
   };

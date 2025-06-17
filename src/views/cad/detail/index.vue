@@ -62,16 +62,10 @@
   import { HighlightTagCellType, tagList, setCurrentMode } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
   import UploadInfo from './upload-info.vue';
+  import { assetColText } from './config';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
-
-  const baseApiUrl = import.meta.env.VITE_BASE_API_URL;
-  const userStore = useUserStore();
-  const token = userStore.token;
-  message.config({
-    maxCount: 1,
-  });
 
   const props = defineProps({
     mode: {
@@ -92,7 +86,12 @@
     },
   });
   const emits = defineEmits(['update:mxFileUrl']);
-
+  message.config({
+    maxCount: 1,
+  });
+  const baseApiUrl = import.meta.env.VITE_BASE_API_URL;
+  const userStore = useUserStore();
+  const token = userStore.token;
   let spread: any = null;
   const wghRef = ref<any>(null);
   const selectedEntity = ref<any>(null);
@@ -283,7 +282,7 @@
     for (let row = 0; row < rowCount; row++) {
       for (let col = 0; col < colCount; col++) {
         const cellValue = sheet.getValue(row, col);
-        if (cellValue === '资产名称') {
+        if (cellValue === assetColText) {
           res = { sheetName: sheet.name(), row: row, col: col, rowCount };
           break;
         }
