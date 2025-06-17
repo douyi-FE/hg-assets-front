@@ -58,10 +58,12 @@
 
 <style lang="less" scoped>
   .entity-info-container {
-    padding: 10px;
     background-color: #000;
     opacity: 0.8;
     color: #fff;
+    max-width: 300px;
+    max-height: 300px;
+    overflow: auto;
 
     .entity-info-header {
       display: flex;

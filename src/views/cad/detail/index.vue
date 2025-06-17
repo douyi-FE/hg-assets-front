@@ -4,8 +4,8 @@
       <div class="excel-book__list-header">
         <a-space v-if="mode === 'edit'">
           <a-button @click="openExcelFile" type="primary">打开文件</a-button>
-          <a-button @click="linkCad">关联cad</a-button>
-          <a-button @click="unlinkCad">解除关联</a-button>
+          <a-button @click="linkCad" :disabled="isLinkCad">关联cad</a-button>
+          <a-button @click="unlinkCad" :disabled="isLinkCad">解除关联</a-button>
           <upload-info @uploadSuccess="uploadSuccess" />
         </a-space>
       </div>
@@ -98,7 +98,7 @@
   const fileList = ref<any[]>([]);
   const cellDialogRef = ref<any>(null);
   const selectEntityHandles = ref<string[]>([]);
-
+  const isLinkCad = ref<boolean>(false);
   // 更新图纸url
   const updateMxFileUrl = (url: string) => {
     emits('update:mxFileUrl', url);
@@ -504,6 +504,12 @@
           const { col, row } = args;
           const sheet = spread.getActiveSheet();
           const tag = sheet.getTag(row, col);
+          const span = sheet.getSpan(row, col);
+          if (span) {
+            isLinkCad.value = true;
+          } else {
+            isLinkCad.value = false;
+          }
           if (tag && tag.length) {
             wghRef.value.showEntityByTag(tag);
           } else {

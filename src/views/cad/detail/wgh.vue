@@ -53,34 +53,34 @@
     </div>
     <div class="wgh-content">
       <canvas id="myCanvas" />
+      <div class="wgh-tools" v-if="detialId !== '' && mode === 'edit'">
+        <a-tooltip>
+          <template #title>点击上传可上传图纸</template>
+          <a-upload
+            v-model:file-list="fileList"
+            name="file"
+            :headers="{
+              Authorization: `Bearer ${token}`,
+              'X-Transfer-Mode': 'cad',
+            }"
+            accept=".dwg,.mxweb"
+            :action="`${baseApiUrl}/api/tools/upload/dwg`"
+            :showUploadList="false"
+            @change="handleUploadChange"
+          >
+            <a-button type="primary">
+              <upload-outlined />
+              上传
+            </a-button>
+          </a-upload>
+        </a-tooltip>
+        <a-tooltip>
+          <template #title>点击框选开始框选，右键结束框选</template>
+          <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
+        </a-tooltip>
+      </div>
+      <entity-info ref="entityInfoRef" class="entity-info" />
     </div>
-    <div class="wgh-tools" v-if="detialId !== ''">
-      <a-tooltip v-if="mode === 'edit'">
-        <template #title>点击上传可上传图纸</template>
-        <a-upload
-          v-model:file-list="fileList"
-          name="file"
-          :headers="{
-            Authorization: `Bearer ${token}`,
-            'X-Transfer-Mode': 'cad',
-          }"
-          accept=".dwg,.mxweb"
-          :action="`${baseApiUrl}/api/tools/upload/dwg`"
-          :showUploadList="false"
-          @change="handleUploadChange"
-        >
-          <a-button type="primary">
-            <upload-outlined />
-            上传
-          </a-button>
-        </a-upload>
-      </a-tooltip>
-      <a-tooltip v-if="mode === 'edit'">
-        <template #title>点击框选开始框选，右键结束框选</template>
-        <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
-      </a-tooltip>
-    </div>
-    <entity-info ref="entityInfoRef" class="entity-info" />
   </div>
 </template>
 
@@ -567,12 +567,12 @@
 <style scoped lang="less">
   .wgh-container {
     height: 100%;
-    position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
 
     .wgh-content {
+      position: relative;
       flex: 1;
       overflow: auto;
     }
@@ -582,7 +582,7 @@
     }
     .wgh-tools {
       position: absolute;
-      top: 70px;
+      top: 10px;
       left: 10px;
       padding: 5px;
       background-color: #fff;
@@ -594,8 +594,8 @@
     }
     .entity-info {
       position: absolute;
-      top: 40px;
-      right: 10px;
+      top: 10px;
+      right: 20px;
       z-index: 99;
     }
   }
