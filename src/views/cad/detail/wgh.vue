@@ -1,35 +1,98 @@
 <template>
   <div class="wgh-container">
-    <div class="wgh-header" v-if="detialId !== ''">
-      <a-tooltip>
-        <template #title>点击框选开始框选，右键结束框选</template>
-        <a-button type="primary" @click="handleSelectModeChange" :icon="h(InfoCircleFilled)">
-          框选
-        </a-button>
-      </a-tooltip>
-      <a-tooltip>
-        <template #title>点击上传可上传图纸</template>
-        <a-upload
-          v-model:file-list="fileList"
-          name="file"
-          :headers="{
-            Authorization: `Bearer ${token}`,
-            'X-Transfer-Mode': 'cad',
-          }"
-          accept=".dwg,.mxweb"
-          :action="`${baseApiUrl}/api/tools/upload/dwg`"
-          :showUploadList="false"
-          @change="handleUploadChange"
-        >
-          <a-button>
-            <upload-outlined />
-            上传
-          </a-button>
-        </a-upload>
-      </a-tooltip>
+    <div class="wgh-header">
+      <a-form
+        :model="searchForm"
+        :label-col="{ span: 10 }"
+        :wrapper-col="{ span: 14 }"
+        layout="inline"
+      >
+        <a-row style="width: 100%">
+          <a-col :span="5">
+            <a-form-item label="资产使用性质">
+              <a-select
+                allow-clear
+                show-search
+                placeholder="请选择资产使用性质"
+                v-model:value="searchForm.assetUseType"
+                :options="assetUseTypeOptions"
+                @change="handleAssetUseTypeChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="5">
+            <a-form-item label="资产业务线">
+              <a-select
+                allow-clear
+                show-search
+                placeholder="请选择资产业务线"
+                v-model:value="searchForm.businessLine"
+                :options="businessLineOptions"
+                @change="handleBusinessLineChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="5">
+            <a-form-item label="资产业务点">
+              <a-select
+                allow-clear
+                show-search
+                placeholder="请选择资产业务点"
+                v-model:value="searchForm.businessPoint"
+                :options="businessPointOptions"
+                @change="handleBusinessPointChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="5">
+            <a-form-item label="资产名称">
+              <a-select
+                allow-clear
+                show-search
+                placeholder="请选择资产名称"
+                v-model:value="searchForm.assetName"
+                :options="assetNameOptions"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="4" style="text-align: right">
+            <a-button type="primary" @click="handleSearch" style="margin-right: 10px"
+              >查询</a-button
+            >
+          </a-col>
+        </a-row>
+      </a-form>
     </div>
-    <canvas id="myCanvas" />
-    <entity-info ref="entityInfoRef" class="entity-info" />
+    <div class="wgh-content">
+      <canvas id="myCanvas" />
+      <div class="wgh-tools" v-if="detialId !== '' && mode === 'edit'">
+        <a-tooltip>
+          <template #title>点击上传可上传图纸</template>
+          <a-upload
+            v-model:file-list="fileList"
+            name="file"
+            :headers="{
+              Authorization: `Bearer ${token}`,
+              'X-Transfer-Mode': 'cad',
+            }"
+            accept=".dwg,.mxweb"
+            :action="`${baseApiUrl}/api/tools/upload/dwg`"
+            :showUploadList="false"
+            @change="handleUploadChange"
+          >
+            <a-button type="primary">
+              <upload-outlined />
+              上传
+            </a-button>
+          </a-upload>
+        </a-tooltip>
+        <a-tooltip>
+          <template #title>点击框选开始框选，右键结束框选</template>
+          <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
+        </a-tooltip>
+      </div>
+      <entity-info ref="entityInfoRef" class="entity-info" />
+    </div>
   </div>
 </template>
 
@@ -50,7 +113,11 @@
       mxFileUrl: string;
       detialId: string;
       getClickCell?: Function;
+      getCellInfoByHandle?: Function;
+      getAllCellByRowAndCol?: Function;
+      getTagListBySpan?: Function;
       bindCellTag?: Function;
+      mode?: string;
     }>(),
     {
       mxFileUrl: '',
@@ -58,9 +125,19 @@
       getClickCell() {
         return null;
       },
+      getCellInfoByHandle() {
+        return undefined;
+      },
+      getAllCellByRowAndCol() {
+        return [];
+      },
+      getTagListBySpan() {
+        return [];
+      },
       bindCellTag() {
         return null;
       },
+      mode: 'edit',
     },
   );
 
@@ -74,12 +151,92 @@
   const entityAllLineList: any[] = [];
   const selectEntitys = ref<any[]>([]);
   const entityInfoRef = ref<any>(null);
+  const assetUseTypeOptions = ref<any[]>([]);
+  const businessLineOptions = ref<any[]>([]);
+  const businessPointOptions = ref<any[]>([]);
+  const assetNameOptions = ref<any[]>([]);
+  const searchForm = ref<any>({
+    assetUseType: undefined,
+    businessLine: undefined,
+    businessPoint: undefined,
+    assetName: undefined,
+  });
   const emit = defineEmits([
     'selectEntityChange',
     'update:mxFileUrl',
     'clearCellTag',
     'showCellByTag',
+    'showCell',
   ]);
+
+  const showEntityInfo = (entity: any, info: any = null) => {
+    if (info) {
+      entityInfoRef.value.showContent(info);
+      return;
+    }
+    if (!entity) {
+      return;
+    }
+    const cell = props.getCellInfoByHandle(entity.getHandle());
+    if (cell) {
+      const { attach = {} } = cell;
+      const { name, price, time = [] } = attach;
+      entityInfoRef.value.showContent({
+        name,
+        price,
+        time,
+      });
+    } else {
+      entityInfoRef.value.showContent({
+        name: '',
+        price: '',
+        time: [],
+      });
+    }
+  };
+
+  const setSearchOptions = (data: any = {}) => {
+    assetUseTypeOptions.value = data;
+  };
+
+  const handleAssetUseTypeChange = (value: any) => {
+    if (!value) {
+      businessLineOptions.value = [];
+      searchForm.value.businessLine = undefined;
+      businessPointOptions.value = [];
+      searchForm.value.businessPoint = undefined;
+      assetNameOptions.value = [];
+      searchForm.value.assetName = undefined;
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    businessLineOptions.value = cellList;
+  };
+
+  const handleBusinessLineChange = (value: any) => {
+    if (!value) {
+      businessPointOptions.value = [];
+      searchForm.value.businessPoint = undefined;
+      assetNameOptions.value = [];
+      searchForm.value.assetName = undefined;
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    businessPointOptions.value = cellList;
+  };
+
+  const handleBusinessPointChange = (value: any) => {
+    if (!value) {
+      assetNameOptions.value = [];
+      searchForm.value.assetName = undefined;
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    assetNameOptions.value = cellList;
+  };
 
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
@@ -96,12 +253,7 @@
         createRedText(firstEntity, mxCad);
         createRedBorder(firstEntity, mxCad);
         // 显示实体信息
-        entityInfoRef.value.showContent({
-          layer: firstEntity.layer,
-          objectName: firstEntity.objectName,
-          textString: firstEntity.textString,
-          handle: entityHandle,
-        });
+        showEntityInfo(firstEntity);
         selectEntitys.value = [
           {
             id: ids[0].id,
@@ -143,19 +295,29 @@
     mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
   };
 
-  const clearAllLine = (mxCAD: any) => {
+  const clearAllLine = () => {
     entityAllLineList.forEach((line: any) => {
       line.erase();
     });
     entityAllLineList.length = 0;
   };
 
+  // 设置初始实体颜色,用于恢复实体颜色
+  const setInitEntityColor = (handles: string[]) => {
+    handles.forEach((handle: string) => {
+      const entity = entityAllMap[handle];
+      if (entity) {
+        entityColorMap[handle] = entity.trueColor.clone();
+      }
+    });
+  };
+
   // 创建红色字体
   const createRedText = (entity: any, mxCAD: any) => {
+    if (!entity) {
+      return;
+    }
     const currentMxCAD = mxCAD.getMxCpp().App.getCurrentMxCAD();
-    // 记录实体颜色
-    const handle = entity.getHandle();
-    entityColorMap[handle] = entity.trueColor.clone();
     // 清除当前选择
     currentMxCAD.mxdraw.clearMxCurrentSelect();
     // 设置文字颜色
@@ -167,7 +329,10 @@
 
   // 创建红色边框实体
   const createRedBorder = (entry: any, mxCAD: any, bbox: any = null) => {
-    clearAllLine(mxCAD);
+    if (!entry) {
+      return;
+    }
+    clearAllLine();
     if (!bbox) {
       bbox = entry.getBoundingBox();
     }
@@ -247,7 +412,7 @@
     return bbox;
   };
 
-  const showEntityById = (tag: any) => {
+  const showEntityByTag = (tag: any) => {
     if (!tag) {
       return;
     }
@@ -255,18 +420,15 @@
       if (tag.length === 1) {
         const entity = entityAllMap[tag[0].handle];
         showEntryByBox(entity?.getBoundingBox());
+        // 清除所有边框
+        clearAllLine();
         // 重置实体颜色
         resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
         createRedBorder(entity, mxCad.value);
         // 显示实体信息
-        entityInfoRef.value.showContent({
-          layer: entity.layer,
-          objectName: entity.objectName,
-          textString: entity.textString,
-          handle: entity.getHandle(),
-        });
+        showEntityInfo(entity, tag[0].attach);
       } else {
         const entitys = tag
           .map((item: any) => {
@@ -360,6 +522,60 @@
     });
   };
 
+  const handleSearch = () => {
+    const { assetUseType, businessLine, businessPoint, assetName } = searchForm.value;
+    let cellInfo: any = null;
+    if (assetName) {
+      cellInfo = JSON.parse(assetName);
+      const { tag } = cellInfo;
+      showEntityByTag(tag);
+    } else if (businessPoint) {
+      cellInfo = JSON.parse(businessPoint);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else if (businessLine) {
+      cellInfo = JSON.parse(businessLine);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else if (assetUseType) {
+      cellInfo = JSON.parse(assetUseType);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else {
+      clearAllLine();
+      resetAllEntityColor();
+      message.error(`请选择查询条件`);
+    }
+    if (cellInfo) {
+      const { row, col, sheetName } = cellInfo;
+      emit('showCell', sheetName, row, col);
+    }
+  };
+
   watch(
     () => props.mxFileUrl,
     async () => {
@@ -380,19 +596,32 @@
   );
 
   defineExpose({
-    showEntityById,
+    setInitEntityColor,
+    showEntityByTag,
     getSelectEntitys,
     resetAllEntityColor,
     clearAllLine,
+    setSearchOptions,
   });
 </script>
 
 <style scoped lang="less">
   .wgh-container {
     height: 100%;
-    position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .wgh-content {
+      position: relative;
+      flex: 1;
+      overflow: auto;
+    }
+
     .wgh-header {
+      height: 40px;
+    }
+    .wgh-tools {
       position: absolute;
       top: 10px;
       left: 10px;
@@ -406,8 +635,8 @@
     }
     .entity-info {
       position: absolute;
-      top: 0;
-      right: 10px;
+      top: 10px;
+      right: 20px;
       z-index: 99;
     }
   }

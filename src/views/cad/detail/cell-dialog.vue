@@ -35,7 +35,7 @@
         <a-input-number v-model:value="form.price" />
       </a-form-item>
     </a-form>
-    <a-descriptions v-else :column="2">
+    <a-descriptions style="display: none" :column="2">
       <a-descriptions-item label="名称">
         {{ form.name }}
       </a-descriptions-item>

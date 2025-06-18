@@ -1,4 +1,9 @@
+let CurrentMode = 'edit';
 export const tagList = [];
+
+export const setCurrentMode = (mode) => {
+  CurrentMode = mode;
+};
 
 export function HighlightTagCellType() {
   GC.Spread.Sheets.CellTypes.Text.call(this);
@@ -11,7 +16,12 @@ HighlightTagCellType.prototype = new GC.Spread.Sheets.CellTypes.Text();
 HighlightTagCellType.prototype.paint = function (ctx, value, x, y, w, h, style, context) {
   const sheet = context.sheet;
   const tag = sheet.getTag(context.row, context.col);
-  if (tag) {
+  // 消除单元格按钮
+  if (CurrentMode === 'view') {
+    style.cellButtons = [];
+  }
+  if (Array.isArray(tag) && tag.find((item) => item.handle)) {
+    // 红色三角
     style.decoration = {
       cornerFold: {
         size: 10,
