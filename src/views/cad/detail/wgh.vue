@@ -8,7 +8,19 @@
         layout="inline"
       >
         <a-row style="width: 100%">
-          <a-col :span="6">
+          <a-col :span="5">
+            <a-form-item label="资产使用性质">
+              <a-select
+                allow-clear
+                show-search
+                placeholder="请选择资产使用性质"
+                v-model:value="searchForm.assetUseType"
+                :options="assetUseTypeOptions"
+                @change="handleAssetUseTypeChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="5">
             <a-form-item label="资产业务线">
               <a-select
                 allow-clear
@@ -20,7 +32,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="6">
+          <a-col :span="5">
             <a-form-item label="资产业务点">
               <a-select
                 allow-clear
@@ -32,7 +44,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="6">
+          <a-col :span="5">
             <a-form-item label="资产名称">
               <a-select
                 allow-clear
@@ -43,7 +55,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="6" style="text-align: right">
+          <a-col :span="4" style="text-align: right">
             <a-button type="primary" @click="handleSearch" style="margin-right: 10px"
               >查询</a-button
             >
@@ -139,10 +151,12 @@
   const entityAllLineList: any[] = [];
   const selectEntitys = ref<any[]>([]);
   const entityInfoRef = ref<any>(null);
+  const assetUseTypeOptions = ref<any[]>([]);
   const businessLineOptions = ref<any[]>([]);
   const businessPointOptions = ref<any[]>([]);
   const assetNameOptions = ref<any[]>([]);
   const searchForm = ref<any>({
+    assetUseType: undefined,
     businessLine: undefined,
     businessPoint: undefined,
     assetName: undefined,
@@ -182,7 +196,22 @@
   };
 
   const setSearchOptions = (data: any = {}) => {
-    businessLineOptions.value = data;
+    assetUseTypeOptions.value = data;
+  };
+
+  const handleAssetUseTypeChange = (value: any) => {
+    if (!value) {
+      businessLineOptions.value = [];
+      searchForm.value.businessLine = undefined;
+      businessPointOptions.value = [];
+      searchForm.value.businessPoint = undefined;
+      assetNameOptions.value = [];
+      searchForm.value.assetName = undefined;
+      return;
+    }
+    const { row, col, sheetName } = JSON.parse(value);
+    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
+    businessLineOptions.value = cellList;
   };
 
   const handleBusinessLineChange = (value: any) => {
@@ -494,7 +523,7 @@
   };
 
   const handleSearch = () => {
-    const { businessLine, businessPoint, assetName } = searchForm.value;
+    const { assetUseType, businessLine, businessPoint, assetName } = searchForm.value;
     let cellInfo: any = null;
     if (assetName) {
       cellInfo = JSON.parse(assetName);
@@ -514,6 +543,18 @@
       }
     } else if (businessLine) {
       cellInfo = JSON.parse(businessLine);
+      const { row, col, sheetName } = cellInfo;
+      const list: any[] = [];
+      props.getTagListBySpan(sheetName, row, col, list);
+      if (list.length) {
+        showEntityByTag(list);
+      } else {
+        clearAllLine();
+        resetAllEntityColor();
+        message.error(`未关联cad图纸`);
+      }
+    } else if (assetUseType) {
+      cellInfo = JSON.parse(assetUseType);
       const { row, col, sheetName } = cellInfo;
       const list: any[] = [];
       props.getTagListBySpan(sheetName, row, col, list);

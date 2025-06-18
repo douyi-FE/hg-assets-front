@@ -62,7 +62,7 @@
   import { HighlightTagCellType, tagList, setCurrentMode } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
   import UploadInfo from './upload-info.vue';
-  import { assetColText } from './config';
+  import { assetColText, filterFirstColText } from './config';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
   import { base64ToArrayBuffer } from '@/components/basic/ejs-design/resource/commonFunctions';
@@ -476,7 +476,7 @@
   };
 
   const setSearchOptions = () => {
-    const businessLineList = getAllCellByValue('资产业务线');
+    const businessLineList = getAllCellByValue(filterFirstColText);
     wghRef.value.setSearchOptions(businessLineList);
   };
 
