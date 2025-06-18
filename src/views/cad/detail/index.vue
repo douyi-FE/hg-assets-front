@@ -274,7 +274,6 @@
 
   // 上传成功
   const uploadSuccess = (cellInfo: any) => {
-    console.log('cellInfo', cellInfo);
     const sheet = spread.getActiveSheet();
     const rowCount = sheet.getRowCount();
     const colCount = sheet.getColumnCount();
@@ -511,15 +510,15 @@
             isLinkCad.value = false;
           }
           if (tag && tag.length) {
-            wghRef.value.showEntityByTag(tag);
+            wghRef.value?.showEntityByTag(tag);
           } else {
             const list: any[] = [];
             getTagListBySpan(sheet.name(), row, col, list);
             if (list.length) {
-              wghRef.value.showEntityByTag(list);
+              wghRef.value?.showEntityByTag(list);
             } else {
-              wghRef.value.clearAllLine();
-              wghRef.value.resetAllEntityColor();
+              wghRef.value?.clearAllLine();
+              wghRef.value?.resetAllEntityColor();
               message.error(`未关联cad图纸`);
             }
           }
@@ -566,13 +565,13 @@
         sheetCount: 1,
       });
     }
+    bindSpreadEvent();
   };
 
   // 渲染详情
   const renderDetail = (detail: any = {}) => {
     const { ejs = '', cadPath = '' } = detail;
     renderExcel(ejs);
-    bindSpreadEvent();
     emits('update:mxFileUrl', cadPath);
   };
 
