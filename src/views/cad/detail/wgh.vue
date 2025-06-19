@@ -277,7 +277,9 @@
         });
         showEntryByBox(firstEntity?.getBoundingBox());
         // 保存实体原本颜色
-        entityColorMap[entityHandle] = firstEntity.trueColor.clone();
+        entityColorMap[entityHandle]
+          ? null
+          : (entityColorMap[entityHandle] = firstEntity.trueColor.clone());
         // 重置实体颜色
         resetAllEntityColor();
         createRedText(firstEntity, mxCad);
@@ -318,7 +320,7 @@
     handles.forEach((handle: string) => {
       const entity = entityAllMap[handle];
       if (entity) {
-        entityColorMap[handle] = entity.trueColor.clone();
+        entityColorMap[handle] ? null : (entityColorMap[handle] = entity.trueColor.clone());
       }
     });
   };
@@ -434,7 +436,9 @@
         // 清除所有边框
         clearAllLine();
         // 重置实体颜色
-        entityColorMap[entity.getHandle()] = entity.trueColor.clone();
+        entityColorMap[entity.getHandle()]
+          ? null
+          : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
         resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
@@ -462,7 +466,9 @@
         drawConnectLine(entitys);
         // 重置实体颜色
         entitys.forEach((entity) => {
-          entityColorMap[entity.getHandle()] = entity.trueColor.clone();
+          entityColorMap[entity.getHandle()]
+            ? null
+            : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
         });
         resetAllEntityColor();
         entitys.forEach((entity) => {
@@ -587,7 +593,9 @@
         createRedBorder(entitys[0], mxCad.value, bbox);
         // 保存实体原本颜色
         entitys.forEach((entity) => {
-          entityColorMap[entity.getHandle()] = entity.trueColor.clone();
+          entityColorMap[entity.getHandle()]
+            ? null
+            : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
         });
         // 重置实体颜色
         resetAllEntityColor();
