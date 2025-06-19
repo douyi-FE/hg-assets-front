@@ -26,6 +26,8 @@ declare module 'mxcad' {
   export const MxCpp: any;
   export const McDb: any;
   export const McDbPolyline: any;
+  export const McDbHatch: any;
+  export const McGePoint3dArray: any;
 }
 
 declare module 'nanoid';
