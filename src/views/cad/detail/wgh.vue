@@ -434,6 +434,7 @@
         // 清除所有边框
         clearAllLine();
         // 重置实体颜色
+        entityColorMap[entity.getHandle()] = entity.trueColor.clone();
         resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
@@ -441,7 +442,15 @@
         // 显示实体信息
         showEntityInfo(entity, tag[0].attach);
       } else {
-        const entitys = tag
+        // 去重
+        const tagList: any[] = [];
+        tag.forEach((item: any) => {
+          const { handle } = item;
+          if (!tagList.find((item: any) => item.handle === handle)) {
+            tagList.push(item);
+          }
+        });
+        const entitys = tagList
           .map((item: any) => {
             return entityAllMap[item.handle];
           })
@@ -452,6 +461,9 @@
         // 绘制连接线
         drawConnectLine(entitys);
         // 重置实体颜色
+        entitys.forEach((entity) => {
+          entityColorMap[entity.getHandle()] = entity.trueColor.clone();
+        });
         resetAllEntityColor();
         entitys.forEach((entity) => {
           createRedText(entity, mxCad.value);
@@ -488,15 +500,50 @@
     clearAllLine();
     resetAllEntityColor();
     mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
-    if (entitys.length > 2) {
+    if (entitys.length >= 2) {
       const distance = 10;
+      const getPointDirection = (bbox1: any, bbox2: any) => {
+        const center1 = new McGePoint3d(
+          (bbox1.minPt.x + bbox1.maxPt.x) / 2,
+          (bbox1.minPt.y + bbox1.maxPt.y) / 2,
+          0,
+        );
+        const center2 = new McGePoint3d(
+          (bbox2.minPt.x + bbox2.maxPt.x) / 2,
+          (bbox2.minPt.y + bbox2.maxPt.y) / 2,
+          0,
+        );
+        let direction = '';
+        if (center1.x < center2.x && center1.y < center2.y) {
+          direction = 'right-top';
+        } else if (center1.x > center2.x && center1.y < center2.y) {
+          direction = 'left-top';
+        } else if (center1.x < center2.x && center1.y > center2.y) {
+          direction = 'right-bottom';
+        } else if (center1.x > center2.x && center1.y > center2.y) {
+          direction = 'left-bottom';
+        }
+        return direction;
+      };
       const points = entitys.map((entity, index) => {
         if (index === 0) {
           const bbox = entity.getBoundingBox();
-          return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.minPt.y - distance, 0);
+          const nextBbox = entitys[index + 1].getBoundingBox();
+          const direction = getPointDirection(bbox, nextBbox);
+          if (direction === 'right-top' || direction === 'left-top') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.maxPt.y + distance, 0);
+          } else if (direction === 'right-bottom' || direction === 'left-bottom') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.minPt.y - distance, 0);
+          }
         } else if (index === entitys.length - 1) {
+          const preBbox = entitys[index - 1].getBoundingBox();
           const bbox = entity.getBoundingBox();
-          return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.maxPt.y + distance, 0);
+          const direction = getPointDirection(preBbox, bbox);
+          if (direction === 'right-top' || direction === 'left-top') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.minPt.y - distance, 0);
+          } else if (direction === 'right-bottom' || direction === 'left-bottom') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.maxPt.y + distance, 0);
+          }
         } else {
           const bbox = entity.getBoundingBox();
           return [
@@ -538,6 +585,11 @@
         });
         const bbox = getEntitysBbox(entitys);
         createRedBorder(entitys[0], mxCad.value, bbox);
+        // 保存实体原本颜色
+        entitys.forEach((entity) => {
+          entityColorMap[entity.getHandle()] = entity.trueColor.clone();
+        });
+        // 重置实体颜色
         resetAllEntityColor();
         selectEntitys.value = entitys.map((entity) => {
           createRedText(entity, mxCad.value);
