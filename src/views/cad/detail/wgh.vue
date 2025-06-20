@@ -8,7 +8,7 @@
         layout="inline"
       >
         <a-row style="width: 100%">
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产使用性质">
               <a-select
                 allow-clear
@@ -20,7 +20,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产业务线">
               <a-select
                 allow-clear
@@ -32,7 +32,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产业务点">
               <a-select
                 allow-clear
@@ -40,18 +40,6 @@
                 placeholder="请选择资产业务点"
                 v-model:value="searchForm.businessPoint"
                 :options="businessPointOptions"
-                @change="handleBusinessPointChange"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="5">
-            <a-form-item label="资产名称">
-              <a-select
-                allow-clear
-                show-search
-                placeholder="请选择资产名称"
-                v-model:value="searchForm.assetName"
-                :options="assetNameOptions"
               />
             </a-form-item>
           </a-col>
@@ -163,12 +151,10 @@
   const assetUseTypeOptions = ref<any[]>([]);
   const businessLineOptions = ref<any[]>([]);
   const businessPointOptions = ref<any[]>([]);
-  const assetNameOptions = ref<any[]>([]);
   const searchForm = ref<any>({
     assetUseType: undefined,
     businessLine: undefined,
     businessPoint: undefined,
-    assetName: undefined,
   });
   const emit = defineEmits([
     'selectEntityChange',
@@ -226,14 +212,20 @@
     assetUseTypeOptions.value = data;
   };
 
+  const initSearchForm = () => {
+    searchForm.value = {
+      assetUseType: undefined,
+      businessLine: undefined,
+      businessPoint: undefined,
+    };
+  };
+
   const handleAssetUseTypeChange = (value: any) => {
     if (!value) {
       businessLineOptions.value = [];
       searchForm.value.businessLine = undefined;
       businessPointOptions.value = [];
       searchForm.value.businessPoint = undefined;
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);
@@ -245,24 +237,11 @@
     if (!value) {
       businessPointOptions.value = [];
       searchForm.value.businessPoint = undefined;
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);
     const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
     businessPointOptions.value = cellList;
-  };
-
-  const handleBusinessPointChange = (value: any) => {
-    if (!value) {
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
-      return;
-    }
-    const { row, col, sheetName } = JSON.parse(value);
-    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
-    assetNameOptions.value = cellList;
   };
 
   const registerEvent = (mxCad: any) => {
@@ -661,10 +640,10 @@
   };
 
   const handleSearch = () => {
-    const { assetUseType, businessLine, businessPoint, assetName } = searchForm.value;
+    const { assetUseType, businessLine, businessPoint } = searchForm.value;
     let cellInfo: any = null;
-    if (assetName) {
-      cellInfo = JSON.parse(assetName);
+    if (businessPoint) {
+      cellInfo = JSON.parse(businessPoint);
       const { tag } = cellInfo;
       showEntityByTag(tag);
     } else if (businessPoint) {
@@ -740,6 +719,7 @@
     resetAllEntityColor,
     clearAllLine,
     setSearchOptions,
+    initSearchForm,
   });
 </script>
 
