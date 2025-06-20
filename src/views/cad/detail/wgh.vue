@@ -404,13 +404,14 @@
     return bbox;
   };
 
-  const showEntityByTag = (tag: any) => {
-    if (!tag) {
+  const showEntityByTag = (entites: any) => {
+    if (!entites) {
+      message.error('未关联cad图纸');
       return;
     }
-    if (Array.isArray(tag) && tag.length > 0) {
-      if (tag.length === 1) {
-        const entity = entityAllMap[tag[0].handle];
+    if (Array.isArray(entites) && entites.length > 0) {
+      if (entites.length === 1) {
+        const entity = entityAllMap[entites[0].handle];
         showEntryByBox(entity?.getBoundingBox());
         // 清除所有边框
         clearAllLine();
@@ -423,11 +424,11 @@
         // 设置边框
         createRedBorder(entity, mxCad.value);
         // 显示实体信息
-        showEntityInfo(entity, tag[0].attach);
+        showEntityInfo(entity, entites[0].attach);
       } else {
         // 去重
         const tagList: any[] = [];
-        tag.forEach((item: any) => {
+        entites.forEach((item: any) => {
           const { handle } = item;
           if (!tagList.find((item: any) => item.handle === handle)) {
             tagList.push(item);
@@ -645,7 +646,7 @@
     if (businessPoint) {
       cellInfo = JSON.parse(businessPoint);
       const { tag } = cellInfo;
-      showEntityByTag(tag);
+      showEntityByTag(tag.entites);
     } else if (businessPoint) {
       cellInfo = JSON.parse(businessPoint);
       const { row, col, sheetName } = cellInfo;

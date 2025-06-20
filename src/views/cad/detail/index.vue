@@ -11,6 +11,7 @@
       </div>
       <div id="excel_book_content" class="excel-book__content" />
       <assets-list
+        :mode="mode"
         class="assets-list__container"
         v-model:open="assetsListOpen"
         ref="assetsListRef"
@@ -65,7 +66,7 @@
   import { UploadOutlined } from '@ant-design/icons-vue';
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
-  import { HighlightTagCellType, tagList, setCurrentMode } from './highlightTagCellType';
+  import { HighlightTagCellType, tagList } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
   import UploadInfo from './upload-info.vue';
   import AssetsList from './assets-list.vue';
@@ -152,13 +153,15 @@
   };
 
   // 设置单元格tag
-  const setCellTag = (tag: any, cell: { sheetName: string; row: number; col: number }) => {
+  const setCellTag = (entites: any, cell: { sheetName: string; row: number; col: number }) => {
     let sheet: any = null;
     if (cell.sheetName) {
       sheet = spread.getSheetFromName(cell.sheetName);
     } else {
       sheet = spread.getActiveSheet();
     }
+    const tag = sheet.getTag(cell.row, cell.col);
+    tag.entites = entites;
     sheet.setTag(cell.row, cell.col, tag);
     sheet.repaint();
   };
@@ -166,7 +169,7 @@
   // 根据handle获取单元格信息
   const getCellInfoByHandle = (handle: string): object | undefined => {
     const cell = tagList.find((item) => {
-      return item.tag
+      return item.tag.entites
         .map((item) => {
           return item.handle;
         })
@@ -175,7 +178,7 @@
         });
     });
     if (cell) {
-      return cell.tag.find((item) => {
+      return cell.tag.entites.find((item) => {
         return item.handle === handle;
       });
     }
@@ -186,7 +189,7 @@
   const showCellByTag = (tag: any) => {
     selectEntityHandles.value = [tag.handle];
     const cell = tagList.find((item) => {
-      return item.tag
+      return item.tag.entites
         .map((item) => {
           return item.handle;
         })
@@ -250,8 +253,12 @@
     }
     const sheet = spread.getActiveSheet();
     tagList.forEach((item) => {
-      sheet.setTag(item.row, item.col, null);
-      sheet.setStyle(item.row, item.col, null);
+      const tag = sheet.getTag(item.row, item.col);
+      if (tag) {
+        tag.entites = null;
+        sheet.setTag(item.row, item.col, tag);
+        sheet.setStyle(item.row, item.col, null);
+      }
     });
     tagList.length = 0;
     sheet.repaint();
@@ -265,22 +272,6 @@
       excelEjs,
       cadFileUrl: props.mxFileUrl,
     };
-  };
-
-  // 打开Excel文件
-  const openExcelFile = function () {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = false;
-    input.accept = '.xlsx';
-    input.onchange = function (e: any) {
-      const file = e.target.files[0];
-      const wb = GC.Spread.Sheets.findControl('excel_book_content');
-      wb.import(file, () => {
-        console.log('导入成功');
-      });
-    };
-    input.click();
   };
 
   // 上传成功
@@ -307,13 +298,13 @@
       // const { name, time, price } = attach;
       const sheet = spread.getSheetFromName(sheetName);
       let tag = sheet.getTag(row, res.col);
-      if (tag && tag.length) {
-        tag = tag.map((item: any) => {
+      if (tag.entites && tag.entites.length) {
+        tag.entites = tag.entites.map((item: any) => {
           item.attach = attach;
           return item;
         });
       } else {
-        tag = [
+        tag.entites = [
           {
             attach,
           },
@@ -339,7 +330,8 @@
       message.error('请先选择cad图元素');
       return;
     }
-    const tag = selectEntitys.map((item) => {
+    const tag = sheet.getTag(row, col) || {};
+    tag.entites = selectEntitys.map((item) => {
       return {
         id: item.id,
         handle: item.handle,
@@ -358,7 +350,9 @@
       return;
     }
     const sheet = spread.getActiveSheet();
-    sheet.setTag(row, col, null);
+    const tag = sheet.getTag(row, col);
+    tag.entites = null;
+    sheet.setTag(row, col, tag);
     sheet.setStyle(row, col, null);
     wghRef.value.clearAllLine();
     wghRef.value.resetAllEntityColor();
@@ -457,11 +451,27 @@
       const cell = sheet.getCell(row, col);
       const tag = sheet.getTag(row, col);
       if (props.mode === 'view') {
-        cell.cellButtons([]);
+        cell.cellButtons([
+          {
+            caption: '列表',
+            captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
+            imageType: GC.Spread.Sheets.ButtonImageType.collapse,
+            visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
+            command: (sheet, row, col, option) => {
+              assetsListOpen.value = true;
+              assetsListRef.value.setData({
+                row,
+                col,
+                sheetName: sheet.name(),
+                tag,
+              });
+            },
+          },
+        ]);
       } else {
         cell.cellButtons([
           {
-            caption: '编辑',
+            caption: '列表',
             captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
             imageType: GC.Spread.Sheets.ButtonImageType.collapse,
             visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
@@ -496,6 +506,8 @@
       sheet.setTag(row, col, tag);
     }
     sheet.repaint();
+    message.info('保存成功');
+    assetsListRef.value.close();
   };
 
   const setSearchOptions = () => {
@@ -510,8 +522,8 @@
       let nextCol = span.col + span.colCount;
       for (let spanRow = span.row; spanRow < span.row + span.rowCount; spanRow++) {
         const tag = sheet.getTag(spanRow, nextCol);
-        if (tag && tag.length) {
-          list.push(...(Array.isArray(tag) ? tag : [tag]));
+        if (tag && tag.entites && tag.entites.length) {
+          list.push(...(Array.isArray(tag.entites) ? tag.entites : [tag.entites]));
         }
         getTagListBySpan(sheetName, spanRow, nextCol, list);
       }
@@ -537,8 +549,8 @@
           } else {
             isLinkCad.value = true;
           }
-          if (tag && tag.length) {
-            wghRef.value?.showEntityByTag(tag);
+          if (tag && tag.entites && tag.entites.length) {
+            wghRef.value?.showEntityByTag(tag.entites);
           } else {
             const list: any[] = [];
             getTagListBySpan(sheet.name(), row, col, list);
@@ -587,7 +599,7 @@
           }, 1000);
           setSearchOptions();
           wghRef.value.setInitEntityColor(
-            tagList.map((item) => item.tag.map((item) => item.handle)).flat(),
+            tagList.map((item) => item.tag.entites.map((item) => item.handle)).flat(),
           );
         }
         message.success(`导入成功`);
@@ -599,6 +611,23 @@
       });
     }
     bindSpreadEvent();
+  };
+
+  // 打开Excel文件
+  const openExcelFile = function () {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = false;
+    input.accept = '.xlsx';
+    input.onchange = function (e: any) {
+      const file = e.target.files[0];
+      const wb = GC.Spread.Sheets.findControl('excel_book_content');
+      wb.import(file, () => {
+        console.log('导入成功');
+        assetCell.value = getCellByText(spread, assetColText);
+      });
+    };
+    input.click();
   };
 
   // 渲染详情
@@ -627,17 +656,6 @@
           }
         });
       }
-    },
-    {
-      immediate: true,
-    },
-  );
-
-  // 监听模式
-  watch(
-    () => props.mode,
-    (newVal) => {
-      setCurrentMode(newVal);
     },
     {
       immediate: true,

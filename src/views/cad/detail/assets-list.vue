@@ -1,9 +1,9 @@
 <template>
   <div class="assets-list__container" v-if="open">
     <div class="assets-list__header">
-      <a-button type="primary" @click="onAdd">添加</a-button>
-      <a-button @click="onSave" style="margin-left: 16px">保存</a-button>
-      <a-button @click="onClose" style="margin-left: 16px">关闭</a-button>
+      <a-button v-if="mode === 'edit'" type="primary" @click="onAdd">添加</a-button>
+      <a-button v-if="mode === 'edit'" @click="onSave" style="margin-left: 16px">保存</a-button>
+      <a-button @click="close" style="margin-left: 16px">关闭</a-button>
     </div>
     <a-table
       class="assets-list__table"
@@ -14,7 +14,7 @@
       :scroll="{ y: 240 }"
     >
       <template #bodyCell="{ column, text, record }">
-        <template v-if="record.mode === 'add'">
+        <template v-if="mode === 'edit'">
           <template v-if="column.dataIndex === 'name'">
             <a-input v-model:value="record[column.dataIndex as string]" placeholder="请输入名称" />
           </template>
@@ -50,6 +50,7 @@
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { nanoid } from 'nanoid';
+  import dayjs from 'dayjs';
 
   const props = defineProps({
     open: {
@@ -57,13 +58,17 @@
       type: Boolean,
       default: false,
     },
+    mode: {
+      type: String,
+      default: 'edit',
+    },
   });
   const emits = defineEmits(['update:open', 'update:cell-tag']);
   const list = ref<any[]>([]);
   const rowIndex = ref<number>(0);
   const colIndex = ref<number>(0);
   const sheetName = ref<string>('');
-  const columns = [
+  const basicColumns = [
     {
       title: '资产名称',
       dataIndex: 'name',
@@ -80,16 +85,21 @@
       title: '价格',
       dataIndex: 'price',
     },
-    {
-      title: '操作',
-      dataIndex: 'action',
-      width: 100,
-    },
   ];
+  const columns =
+    props.mode === 'edit'
+      ? [
+          ...basicColumns,
+          {
+            title: '操作',
+            dataIndex: 'action',
+            width: 100,
+          },
+        ]
+      : basicColumns;
 
   const onAdd = () => {
     list.value.push({
-      mode: 'add',
       id: nanoid(),
       name: '',
       startTime: '',
@@ -97,28 +107,21 @@
       price: 0,
     });
   };
-  const onClose = () => {
+  const close = () => {
     emits('update:open', false);
   };
   const onSave = () => {
-    const addList = list.value.filter((item) => item.mode === 'add');
-    const addKeyList = addList.map((item) => item.id);
     emits('update:cell-tag', {
       row: rowIndex.value,
       col: colIndex.value,
-      childs: list.value,
-      sheetName: sheetName.value,
-    });
-    list.value = list.value.map((item) => {
-      if (addKeyList.includes(item.id)) {
+      childs: list.value.map((item) => {
         return {
           ...item,
           startTime: item.startTime.format('YYYY-MM-DD'),
           endTime: item.endTime.format('YYYY-MM-DD'),
-          mode: 'edit',
         };
-      }
-      return item;
+      }),
+      sheetName: sheetName.value,
     });
   };
   const onDelete = (record: any) => {
@@ -131,11 +134,18 @@
     rowIndex.value = row;
     colIndex.value = col;
     sheetName.value = sheetNameValue;
-    list.value = childs;
+    list.value = childs.map((item) => {
+      return {
+        ...item,
+        startTime: props.mode === 'edit' ? dayjs(item.startTime) : item.startTime,
+        endTime: props.mode === 'edit' ? dayjs(item.endTime) : item.endTime,
+      };
+    });
   };
 
   defineExpose({
     setData,
+    close,
   });
 </script>
 <style lang="less" scoped>
