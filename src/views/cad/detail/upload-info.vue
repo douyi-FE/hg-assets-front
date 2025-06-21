@@ -26,20 +26,16 @@
       return [];
     }
     let res: any = null;
-    const sheetCount = spread.getSheetCount();
+    const sheet = spread.getActiveSheet();
+    const rowCount = sheet.getRowCount();
+    const colCount = sheet.getColumnCount();
 
-    for (let i = 0; i < sheetCount; i++) {
-      const sheet = spread.getSheet(i);
-      const rowCount = sheet.getRowCount();
-      const colCount = sheet.getColumnCount();
-
-      for (let row = 0; row < rowCount; row++) {
-        for (let col = 0; col < colCount; col++) {
-          const cellValue = sheet.getValue(row, col);
-          if (cellValue === value) {
-            res = { sheetName: sheet.name(), row: row, col: col, rowCount };
-            break;
-          }
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const cellValue = sheet.getValue(row, col);
+        if (cellValue === value) {
+          res = { sheetName: sheet.name(), row: row, col: col, rowCount };
+          break;
         }
       }
     }
@@ -53,23 +49,57 @@
     const res: any[] = [];
     const { sheetName, row, col, rowCount } = cell;
     const sheet = spread.getSheetFromName(sheetName);
+
     for (let i = row + 1; i < rowCount; i++) {
-      const name = sheet.getValue(i, col + 1);
-      const startTime = sheet.getValue(i, col + 2);
-      const endTime = sheet.getValue(i, col + 3);
-      const price = sheet.getValue(i, col + 4);
-      if (!name && !startTime && !endTime && !price) {
-        continue;
+      const span = sheet.getSpan(i, col);
+      if (span) {
+        const list: any[] = [];
+        const spanRowCount = span.rowCount;
+        for (let num = 0; num < spanRowCount; num++) {
+          const name = sheet.getValue(i + num, col + 2);
+          const startTime = sheet.getValue(i + num, col + 3);
+          const endTime = sheet.getValue(i + num, col + 4);
+          const price = sheet.getValue(i + num, col + 5);
+          if (!name && !startTime && !endTime && !price) {
+            continue;
+          }
+          list.push({
+            name,
+            startTime,
+            endTime,
+            price,
+          });
+        }
+        list.length &&
+          res.push({
+            row: i,
+            col,
+            sheetName,
+            childs: list,
+          });
+        i = i + spanRowCount - 1;
+      } else {
+        const name = sheet.getValue(i, col + 2);
+        const startTime = sheet.getValue(i, col + 3);
+        const endTime = sheet.getValue(i, col + 4);
+        const price = sheet.getValue(i, col + 5);
+        if (!name && !startTime && !endTime && !price) {
+          continue;
+        }
+        res.push({
+          row: i,
+          col,
+          sheetName,
+          childs: [
+            {
+              name,
+              startTime,
+              endTime,
+              price,
+            },
+          ],
+        });
       }
-      res.push({
-        row: i,
-        sheetName,
-        attach: {
-          name,
-          time: [startTime, endTime],
-          price,
-        },
-      });
     }
     return res;
   };

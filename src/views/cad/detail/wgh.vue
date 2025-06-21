@@ -8,7 +8,7 @@
         layout="inline"
       >
         <a-row style="width: 100%">
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产使用性质">
               <a-select
                 allow-clear
@@ -20,7 +20,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产业务线">
               <a-select
                 allow-clear
@@ -32,7 +32,7 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="5">
+          <a-col :span="6">
             <a-form-item label="资产业务点">
               <a-select
                 allow-clear
@@ -40,18 +40,6 @@
                 placeholder="请选择资产业务点"
                 v-model:value="searchForm.businessPoint"
                 :options="businessPointOptions"
-                @change="handleBusinessPointChange"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="5">
-            <a-form-item label="资产名称">
-              <a-select
-                allow-clear
-                show-search
-                placeholder="请选择资产名称"
-                v-model:value="searchForm.assetName"
-                :options="assetNameOptions"
               />
             </a-form-item>
           </a-col>
@@ -99,7 +87,16 @@
 <script setup lang="ts">
   import { ref, watch, h } from 'vue';
   import { UploadOutlined, InfoCircleFilled } from '@ant-design/icons-vue';
-  import { createMxCad, MxCADSelectionSet, McCmColor, McGePoint3d, McDbPolyline } from 'mxcad';
+  import {
+    createMxCad,
+    MxCADSelectionSet,
+    McCmColor,
+    McGePoint3d,
+    McDbPolyline,
+    McDbLine,
+    McDbHatch,
+    McGePoint3dArray,
+  } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
   import EntityInfo from './entity-info.vue';
   import { useUserStore } from '@/store/modules/user';
@@ -154,12 +151,10 @@
   const assetUseTypeOptions = ref<any[]>([]);
   const businessLineOptions = ref<any[]>([]);
   const businessPointOptions = ref<any[]>([]);
-  const assetNameOptions = ref<any[]>([]);
   const searchForm = ref<any>({
     assetUseType: undefined,
     businessLine: undefined,
     businessPoint: undefined,
-    assetName: undefined,
   });
   const emit = defineEmits([
     'selectEntityChange',
@@ -168,6 +163,24 @@
     'showCellByTag',
     'showCell',
   ]);
+
+  const resetAllEntityColor = () => {
+    Object.keys(entityColorMap).forEach((key: any) => {
+      const color = entityColorMap[key].clone();
+      entityColorMap[key] = color;
+      const entity = entityAllMap[key];
+      if (entity) {
+        entity.trueColor = color;
+      }
+    });
+    mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
+  };
+
+  const clearAllLine = () => {
+    entityAllLineList.forEach((line: any) => {
+      line.erase();
+    });
+  };
 
   const showEntityInfo = (entity: any, info: any = null) => {
     if (info) {
@@ -199,14 +212,20 @@
     assetUseTypeOptions.value = data;
   };
 
+  const initSearchForm = () => {
+    searchForm.value = {
+      assetUseType: undefined,
+      businessLine: undefined,
+      businessPoint: undefined,
+    };
+  };
+
   const handleAssetUseTypeChange = (value: any) => {
     if (!value) {
       businessLineOptions.value = [];
       searchForm.value.businessLine = undefined;
       businessPointOptions.value = [];
       searchForm.value.businessPoint = undefined;
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);
@@ -218,8 +237,6 @@
     if (!value) {
       businessPointOptions.value = [];
       searchForm.value.businessPoint = undefined;
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
       return;
     }
     const { row, col, sheetName } = JSON.parse(value);
@@ -227,19 +244,9 @@
     businessPointOptions.value = cellList;
   };
 
-  const handleBusinessPointChange = (value: any) => {
-    if (!value) {
-      assetNameOptions.value = [];
-      searchForm.value.assetName = undefined;
-      return;
-    }
-    const { row, col, sheetName } = JSON.parse(value);
-    const cellList = props.getAllCellByRowAndCol(sheetName, row, col);
-    assetNameOptions.value = cellList;
-  };
-
   const registerEvent = (mxCad: any) => {
     mxCad.on('selectChange', (ids: any[]) => {
+      console.log('selectChange', ids);
       if (ids.length > 0) {
         const firstEntity: any = ids[0].getMcDbEntity();
         const entityHandle = firstEntity.getHandle();
@@ -248,6 +255,10 @@
           handle: entityHandle,
         });
         showEntryByBox(firstEntity?.getBoundingBox());
+        // 保存实体原本颜色
+        entityColorMap[entityHandle]
+          ? null
+          : (entityColorMap[entityHandle] = firstEntity.trueColor.clone());
         // 重置实体颜色
         resetAllEntityColor();
         createRedText(firstEntity, mxCad);
@@ -283,31 +294,12 @@
     });
   };
 
-  const resetAllEntityColor = () => {
-    Object.keys(entityColorMap).forEach((key: any) => {
-      const color = entityColorMap[key].clone();
-      entityColorMap[key] = color;
-      const entity = entityAllMap[key];
-      if (entity) {
-        entity.trueColor = color;
-      }
-    });
-    mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
-  };
-
-  const clearAllLine = () => {
-    entityAllLineList.forEach((line: any) => {
-      line.erase();
-    });
-    entityAllLineList.length = 0;
-  };
-
   // 设置初始实体颜色,用于恢复实体颜色
   const setInitEntityColor = (handles: string[]) => {
     handles.forEach((handle: string) => {
       const entity = entityAllMap[handle];
       if (entity) {
-        entityColorMap[handle] = entity.trueColor.clone();
+        entityColorMap[handle] ? null : (entityColorMap[handle] = entity.trueColor.clone());
       }
     });
   };
@@ -412,37 +404,156 @@
     return bbox;
   };
 
-  const showEntityByTag = (tag: any) => {
-    if (!tag) {
+  const showEntityByTag = (entites: any) => {
+    if (!entites) {
+      message.error('未关联cad图纸');
       return;
     }
-    if (Array.isArray(tag) && tag.length > 0) {
-      if (tag.length === 1) {
-        const entity = entityAllMap[tag[0].handle];
+    if (Array.isArray(entites) && entites.length > 0) {
+      if (entites.length === 1) {
+        const entity = entityAllMap[entites[0].handle];
         showEntryByBox(entity?.getBoundingBox());
         // 清除所有边框
         clearAllLine();
         // 重置实体颜色
+        entityColorMap[entity.getHandle()]
+          ? null
+          : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
         resetAllEntityColor();
         createRedText(entity, mxCad.value);
         // 设置边框
         createRedBorder(entity, mxCad.value);
         // 显示实体信息
-        showEntityInfo(entity, tag[0].attach);
+        showEntityInfo(entity, entites[0].attach);
       } else {
-        const entitys = tag
+        // 去重
+        const tagList: any[] = [];
+        entites.forEach((item: any) => {
+          const { handle } = item;
+          if (!tagList.find((item: any) => item.handle === handle)) {
+            tagList.push(item);
+          }
+        });
+        const entitys = tagList
           .map((item: any) => {
             return entityAllMap[item.handle];
           })
           .filter((entity) => entity);
         const bbox = getEntitysBbox(entitys);
         showEntryByBox(bbox);
-        createRedBorder(entitys[0], mxCad.value, bbox);
+        // createRedBorder(entitys[0], mxCad.value, bbox);
+        // 绘制连接线
+        drawConnectLine(entitys);
         // 重置实体颜色
+        entitys.forEach((entity) => {
+          entityColorMap[entity.getHandle()]
+            ? null
+            : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
+        });
         resetAllEntityColor();
         entitys.forEach((entity) => {
           createRedText(entity, mxCad.value);
         });
+      }
+    }
+  };
+
+  // 线条绘制箭头
+  const drawArrow = (line: any) => {
+    const arrowLength = 20;
+    const pt1 = line.endPoint;
+    const pt2 = line.startPoint;
+    // 方向向量: endPoint -> startPoint
+    const vec = pt2.sub(pt1).normalize().mult(arrowLength);
+    // 箭头基点: endPoint往startPoint方向退一个箭头长度
+    const pt = pt1.clone().addvec(vec);
+    // 法向量，构造箭头两边
+    const _vec = vec
+      .clone()
+      .rotateBy(Math.PI / 2)
+      .normalize()
+      .mult(arrowLength / 8);
+    const pt3 = pt.clone().addvec(_vec);
+    const pt4 = pt.clone().subvec(_vec);
+    const solid = new McDbHatch();
+    solid.appendLoop(new McGePoint3dArray([pt1, pt3, pt4]));
+    solid.trueColor = new McCmColor(255, 0, 0);
+    return solid;
+  };
+
+  // 绘制连接线
+  const drawConnectLine = (entitys: any[]) => {
+    clearAllLine();
+    resetAllEntityColor();
+    mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
+    if (entitys.length >= 2) {
+      const distance = 10;
+      const getPointDirection = (bbox1: any, bbox2: any) => {
+        const center1 = new McGePoint3d(
+          (bbox1.minPt.x + bbox1.maxPt.x) / 2,
+          (bbox1.minPt.y + bbox1.maxPt.y) / 2,
+          0,
+        );
+        const center2 = new McGePoint3d(
+          (bbox2.minPt.x + bbox2.maxPt.x) / 2,
+          (bbox2.minPt.y + bbox2.maxPt.y) / 2,
+          0,
+        );
+        let direction = '';
+        if (center1.x < center2.x && center1.y < center2.y) {
+          direction = 'right-top';
+        } else if (center1.x > center2.x && center1.y < center2.y) {
+          direction = 'left-top';
+        } else if (center1.x < center2.x && center1.y > center2.y) {
+          direction = 'right-bottom';
+        } else if (center1.x > center2.x && center1.y > center2.y) {
+          direction = 'left-bottom';
+        }
+        return direction;
+      };
+      const points = entitys.map((entity, index) => {
+        if (index === 0) {
+          const bbox = entity.getBoundingBox();
+          const nextBbox = entitys[index + 1].getBoundingBox();
+          const direction = getPointDirection(bbox, nextBbox);
+          if (direction === 'right-top' || direction === 'left-top') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.maxPt.y + distance, 0);
+          } else if (direction === 'right-bottom' || direction === 'left-bottom') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.minPt.y - distance, 0);
+          }
+        } else if (index === entitys.length - 1) {
+          const preBbox = entitys[index - 1].getBoundingBox();
+          const bbox = entity.getBoundingBox();
+          const direction = getPointDirection(preBbox, bbox);
+          if (direction === 'right-top' || direction === 'left-top') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.minPt.y - distance, 0);
+          } else if (direction === 'right-bottom' || direction === 'left-bottom') {
+            return new McGePoint3d((bbox.minPt.x + bbox.maxPt.x) / 2, bbox.maxPt.y + distance, 0);
+          }
+        } else {
+          const bbox = entity.getBoundingBox();
+          return [
+            new McGePoint3d((bbox.maxPt.x + bbox.minPt.x) / 2, bbox.maxPt.y + distance, 0),
+            new McGePoint3d((bbox.maxPt.x + bbox.minPt.x) / 2, bbox.minPt.y - distance, 0),
+          ];
+        }
+      });
+      for (let i = 0; i < points.length - 1; i++) {
+        let startPoint = points[i];
+        let endPoint = points[i + 1];
+        if (Array.isArray(startPoint)) {
+          startPoint = startPoint[1];
+        }
+        if (Array.isArray(endPoint)) {
+          endPoint = endPoint[0];
+        }
+        const line = new McDbLine(startPoint.x, startPoint.y, 0, endPoint.x, endPoint.y, 0);
+        line.trueColor = new McCmColor(255, 0, 0);
+        const lineId = mxCad.value.drawEntity(line);
+        const arrow = drawArrow(line);
+        const arrowId = mxCad.value.drawEntity(arrow);
+        entityAllLineList.push(lineId);
+        entityAllLineList.push(arrowId);
       }
     }
   };
@@ -460,6 +571,13 @@
         });
         const bbox = getEntitysBbox(entitys);
         createRedBorder(entitys[0], mxCad.value, bbox);
+        // 保存实体原本颜色
+        entitys.forEach((entity) => {
+          entityColorMap[entity.getHandle()]
+            ? null
+            : (entityColorMap[entity.getHandle()] = entity.trueColor.clone());
+        });
+        // 重置实体颜色
         resetAllEntityColor();
         selectEntitys.value = entitys.map((entity) => {
           createRedText(entity, mxCad.value);
@@ -523,12 +641,12 @@
   };
 
   const handleSearch = () => {
-    const { assetUseType, businessLine, businessPoint, assetName } = searchForm.value;
+    const { assetUseType, businessLine, businessPoint } = searchForm.value;
     let cellInfo: any = null;
-    if (assetName) {
-      cellInfo = JSON.parse(assetName);
+    if (businessPoint) {
+      cellInfo = JSON.parse(businessPoint);
       const { tag } = cellInfo;
-      showEntityByTag(tag);
+      showEntityByTag(tag.entites);
     } else if (businessPoint) {
       cellInfo = JSON.parse(businessPoint);
       const { row, col, sheetName } = cellInfo;
@@ -602,6 +720,7 @@
     resetAllEntityColor,
     clearAllLine,
     setSearchOptions,
+    initSearchForm,
   });
 </script>
 

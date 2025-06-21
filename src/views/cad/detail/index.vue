@@ -10,6 +10,13 @@
         </a-space>
       </div>
       <div id="excel_book_content" class="excel-book__content" />
+      <assets-list
+        :mode="mode"
+        class="assets-list__container"
+        v-model:open="assetsListOpen"
+        ref="assetsListRef"
+        @update:cell-tag="updateCellTag"
+      />
     </div>
     <wgh
       v-if="mxFileUrl !== ''"
@@ -59,9 +66,11 @@
   import { UploadOutlined } from '@ant-design/icons-vue';
   import { type UploadChangeParam, message } from 'ant-design-vue';
   import wgh from '../detail/wgh.vue';
-  import { HighlightTagCellType, tagList, setCurrentMode } from './highlightTagCellType';
+  import { HighlightTagCellType, tagList } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
   import UploadInfo from './upload-info.vue';
+  import AssetsList from './assets-list.vue';
+  import { getCellByText } from './utils';
   import { assetColText, filterFirstColText } from './config';
   import { useUserStore } from '@/store/modules/user';
   import { getCadDetail } from '@/api/backend/api/cad';
@@ -97,8 +106,11 @@
   const selectedEntity = ref<any>(null);
   const fileList = ref<any[]>([]);
   const cellDialogRef = ref<any>(null);
+  const assetsListRef = ref<any>(null);
   const selectEntityHandles = ref<string[]>([]);
   const isLinkCad = ref<boolean>(false);
+  const assetCell = ref<any>(null);
+  const assetsListOpen = ref<boolean>(false);
   // 更新图纸url
   const updateMxFileUrl = (url: string) => {
     emits('update:mxFileUrl', url);
@@ -141,13 +153,15 @@
   };
 
   // 设置单元格tag
-  const setCellTag = (tag: any, cell: { sheetName: string; row: number; col: number }) => {
+  const setCellTag = (entites: any, cell: { sheetName: string; row: number; col: number }) => {
     let sheet: any = null;
     if (cell.sheetName) {
       sheet = spread.getSheetFromName(cell.sheetName);
     } else {
       sheet = spread.getActiveSheet();
     }
+    const tag = sheet.getTag(cell.row, cell.col);
+    tag.entites = entites;
     sheet.setTag(cell.row, cell.col, tag);
     sheet.repaint();
   };
@@ -155,7 +169,7 @@
   // 根据handle获取单元格信息
   const getCellInfoByHandle = (handle: string): object | undefined => {
     const cell = tagList.find((item) => {
-      return item.tag
+      return item.tag.entites
         .map((item) => {
           return item.handle;
         })
@@ -164,7 +178,7 @@
         });
     });
     if (cell) {
-      return cell.tag.find((item) => {
+      return cell.tag.entites.find((item) => {
         return item.handle === handle;
       });
     }
@@ -175,7 +189,7 @@
   const showCellByTag = (tag: any) => {
     selectEntityHandles.value = [tag.handle];
     const cell = tagList.find((item) => {
-      return item.tag
+      return item.tag.entites
         .map((item) => {
           return item.handle;
         })
@@ -239,8 +253,12 @@
     }
     const sheet = spread.getActiveSheet();
     tagList.forEach((item) => {
-      sheet.setTag(item.row, item.col, null);
-      sheet.setStyle(item.row, item.col, null);
+      const tag = sheet.getTag(item.row, item.col);
+      if (tag) {
+        tag.entites = null;
+        sheet.setTag(item.row, item.col, tag);
+        sheet.setStyle(item.row, item.col, null);
+      }
     });
     tagList.length = 0;
     sheet.repaint();
@@ -256,24 +274,9 @@
     };
   };
 
-  // 打开Excel文件
-  const openExcelFile = function () {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = false;
-    input.accept = '.xlsx';
-    input.onchange = function (e: any) {
-      const file = e.target.files[0];
-      const wb = GC.Spread.Sheets.findControl('excel_book_content');
-      wb.import(file, () => {
-        console.log('导入成功');
-      });
-    };
-    input.click();
-  };
-
   // 上传成功
   const uploadSuccess = (cellInfo: any) => {
+    console.log(cellInfo);
     const sheet = spread.getActiveSheet();
     const rowCount = sheet.getRowCount();
     const colCount = sheet.getColumnCount();
@@ -288,29 +291,23 @@
       }
     }
     if (!res) {
-      message.error('未找到资产名称单元格');
+      message.error('未找到对应单元格');
       return;
     }
     cellInfo.forEach((item: any) => {
-      const { row, sheetName, attach } = item;
-      // const { name, time, price } = attach;
-      const sheet = spread.getSheetFromName(sheetName);
+      const { row, childs = [] } = item;
       let tag = sheet.getTag(row, res.col);
-      if (tag && tag.length) {
-        tag = tag.map((item: any) => {
-          item.attach = attach;
-          return item;
-        });
+      if (tag) {
+        tag.childs = tag.childs ? tag.childs.concat(...childs) : childs;
       } else {
-        tag = [
-          {
-            attach,
-          },
-        ];
+        tag = {
+          childs,
+        };
       }
-      console.log('tag', row, res.col, tag);
+      console.log('tag', sheet.name(), row, res.col, tag);
       sheet.setTag(row, res.col, tag);
     });
+    sheet.repaint();
   };
 
   // 关联cad图纸
@@ -329,7 +326,8 @@
       message.error('请先选择cad图元素');
       return;
     }
-    const tag = selectEntitys.map((item) => {
+    const tag = sheet.getTag(row, col) || {};
+    tag.entites = selectEntitys.map((item) => {
       return {
         id: item.id,
         handle: item.handle,
@@ -348,7 +346,9 @@
       return;
     }
     const sheet = spread.getActiveSheet();
-    sheet.setTag(row, col, null);
+    const tag = sheet.getTag(row, col);
+    tag.entites = null;
+    sheet.setTag(row, col, tag);
     sheet.setStyle(row, col, null);
     wghRef.value.clearAllLine();
     wghRef.value.resetAllEntityColor();
@@ -362,40 +362,36 @@
     }
     let res: any = null;
     const allRowValue: any[] = [];
-    const sheetCount = spread.getSheetCount();
+    const sheet = spread.getActiveSheet();
+    const rowCount = sheet.getRowCount();
+    const colCount = sheet.getColumnCount();
 
-    for (let i = 0; i < sheetCount; i++) {
-      const sheet = spread.getSheet(i);
-      const rowCount = sheet.getRowCount();
-      const colCount = sheet.getColumnCount();
-
-      for (let row = 0; row < rowCount; row++) {
-        for (let col = 0; col < colCount; col++) {
-          const cellValue = sheet.getValue(row, col);
-          if (cellValue === value) {
-            res = { sheetName: sheet.name(), row: row, col: col, rowCount };
-            break;
-          }
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const cellValue = sheet.getValue(row, col);
+        if (cellValue === value) {
+          res = { sheetName: sheet.name(), row: row, col: col, rowCount };
+          break;
         }
       }
+    }
 
-      if (res) {
-        for (let i = res.row + 1; i < rowCount; i++) {
-          const cellValue = sheet.getValue(i, res.col);
-          cellValue &&
-            !allRowValue.find((item) => item.value === cellValue) &&
-            allRowValue.push({
-              sheetName: sheet.name(),
-              row: i,
+    if (res) {
+      for (let i = res.row + 1; i < rowCount; i++) {
+        const cellValue = sheet.getValue(i, res.col);
+        cellValue &&
+          !allRowValue.find((item) => item.value === cellValue) &&
+          allRowValue.push({
+            sheetName: sheet.name(),
+            row: i,
+            col: res.col,
+            label: cellValue,
+            value: JSON.stringify({
               col: res.col,
-              label: cellValue,
-              value: JSON.stringify({
-                col: res.col,
-                row: i,
-                sheetName: sheet.name(),
-              }),
-            });
-        }
+              row: i,
+              sheetName: sheet.name(),
+            }),
+          });
       }
     }
     return allRowValue;
@@ -445,33 +441,49 @@
 
   // 设置单元格详情按钮
   const setCellDetailButton = () => {
-    tagList.forEach((item) => {
-      const { row, col, sheetName } = item;
+    const assetCell = getCellByText(spread, assetColText);
+    if (assetCell) {
+      const { row, col, sheetName } = assetCell;
       const sheet = spread.getSheetFromName(sheetName);
-      const cell = sheet.getCell(row, col);
-      const tag = sheet.getTag(row, col);
-      if (props.mode === 'view') {
-        cell.cellButtons([]);
-      } else {
+      const rowCount = sheet.getRowCount();
+      for (let i = row + 1; i < rowCount; i++) {
+        const cell = sheet.getCell(i, col);
         cell.cellButtons([
           {
-            caption: '编辑',
+            caption: '列表',
             captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
             imageType: GC.Spread.Sheets.ButtonImageType.collapse,
             visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
             command: (sheet, row, col, option) => {
-              cellDialogRef.value.show(
-                item,
-                selectEntityHandles.value.length > 0
-                  ? selectEntityHandles.value
-                  : tag.map((item) => item.handle),
-              );
+              assetsListOpen.value = true;
+              nextTick(() => {
+                const tag = sheet.getTag(i, col);
+                assetsListRef.value.setData({
+                  row: i,
+                  col,
+                  sheetName: sheet.name(),
+                  tag,
+                });
+              });
             },
           },
         ]);
       }
       sheet.repaint();
-    });
+    }
+  };
+
+  const updateCellTag = (data: any) => {
+    const { row, col, sheetName, childs } = data;
+    const sheet = spread.getSheetFromName(sheetName);
+    const tag = sheet.getTag(row, col);
+    if (tag) {
+      tag.childs = childs;
+      sheet.setTag(row, col, tag);
+    }
+    sheet.repaint();
+    message.info('保存成功');
+    assetsListRef.value.close();
   };
 
   const setSearchOptions = () => {
@@ -486,8 +498,8 @@
       let nextCol = span.col + span.colCount;
       for (let spanRow = span.row; spanRow < span.row + span.rowCount; spanRow++) {
         const tag = sheet.getTag(spanRow, nextCol);
-        if (tag && tag.length) {
-          list.push(...(Array.isArray(tag) ? tag : [tag]));
+        if (tag && tag.entites && tag.entites.length) {
+          list.push(...(Array.isArray(tag.entites) ? tag.entites : [tag.entites]));
         }
         getTagListBySpan(sheetName, spanRow, nextCol, list);
       }
@@ -498,19 +510,23 @@
   const bindSpreadEvent = function () {
     if (spread !== null) {
       var spreadNS = GC.Spread.Sheets;
+      // 单击事件
       spread.bind(spreadNS.Events.CellClick, function (e, args) {
         try {
           const { col, row } = args;
           const sheet = spread.getActiveSheet();
           const tag = sheet.getTag(row, col);
-          const span = sheet.getSpan(row, col);
-          if (span) {
-            isLinkCad.value = true;
-          } else {
+          if (
+            assetCell.value &&
+            assetCell.value.sheetName === sheet.name() &&
+            assetCell.value.col === col
+          ) {
             isLinkCad.value = false;
+          } else {
+            isLinkCad.value = true;
           }
-          if (tag && tag.length) {
-            wghRef.value?.showEntityByTag(tag);
+          if (tag && tag.entites && tag.entites.length) {
+            wghRef.value?.showEntityByTag(tag.entites);
           } else {
             const list: any[] = [];
             getTagListBySpan(sheet.name(), row, col, list);
@@ -526,6 +542,10 @@
           message.error(`联动定位失败`);
           console.log('联动定位失败:', error);
         }
+      });
+      // 切换sheet事件
+      spread.bind(GC.Spread.Sheets.Events.ActiveSheetChanged, function (sender, args) {
+        wghRef.value?.initSearchForm();
       });
     }
   };
@@ -543,6 +563,7 @@
         type: 'application/octet-stream',
       });
       spread.open(fileBlob, function () {
+        assetCell.value = getCellByText(spread, assetColText);
         const sheetCount = spread.getSheetCount();
         for (let i = 0; i < sheetCount; i++) {
           const sheet = spread.getSheet(i);
@@ -554,7 +575,7 @@
           }, 1000);
           setSearchOptions();
           wghRef.value.setInitEntityColor(
-            tagList.map((item) => item.tag.map((item) => item.handle)).flat(),
+            tagList.map((item) => item.tag.entites.map((item) => item.handle)).flat(),
           );
         }
         message.success(`导入成功`);
@@ -566,6 +587,23 @@
       });
     }
     bindSpreadEvent();
+  };
+
+  // 打开Excel文件
+  const openExcelFile = function () {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = false;
+    input.accept = '.xlsx';
+    input.onchange = function (e: any) {
+      const file = e.target.files[0];
+      const wb = GC.Spread.Sheets.findControl('excel_book_content');
+      wb.import(file, () => {
+        console.log('导入成功');
+        assetCell.value = getCellByText(spread, assetColText);
+      });
+    };
+    input.click();
   };
 
   // 渲染详情
@@ -600,17 +638,6 @@
     },
   );
 
-  // 监听模式
-  watch(
-    () => props.mode,
-    (newVal) => {
-      setCurrentMode(newVal);
-    },
-    {
-      immediate: true,
-    },
-  );
-
   // 暴露方法
   defineExpose({
     getData,
@@ -626,6 +653,7 @@
     gap: 20px;
 
     .excel-book__list {
+      position: relative;
       width: 40%;
       border-right: 1px solid #bcbcbc;
 
@@ -634,7 +662,8 @@
       }
 
       .excel-book__content {
-        height: 100%;
+        height: calc(100% - 42px);
+        // height: 100%;
       }
     }
 
@@ -649,6 +678,17 @@
       justify-content: center;
       align-items: center;
       flex-direction: column;
+    }
+
+    .assets-list__container {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 300px;
+      overflow: hidden;
+      border: 1px solid #ebedf0;
+      background: #fafafa;
+      z-index: 1000;
     }
   }
 </style>
