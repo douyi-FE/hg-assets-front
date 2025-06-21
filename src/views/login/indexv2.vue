@@ -20,7 +20,7 @@
           @submit.prevent="handleSubmit"
         >
           <a-form-item>
-            <a-input v-model:value="loginFormModel.username" size="large" placeholder="admin">
+            <a-input v-model:value="loginFormModel.username" size="large" placeholder="请输入用户名">
               <template #prefix> <Icon icon="ant-design:user-outlined" /> </template>
             </a-input>
           </a-form-item>
@@ -29,7 +29,7 @@
               v-model:value="loginFormModel.password"
               size="large"
               type="password"
-              placeholder="a123456"
+              placeholder="请输入密码"
               autocomplete="new-password"
             >
               <template #prefix> <Icon icon="ant-design:lock-outlined" /></template>
@@ -79,8 +79,8 @@
   const loading = ref(false);
   const captcha = ref('');
   const loginFormModel = ref({
-    username: 'admin',
-    password: 'a123456',
+    username: '',
+    password: '',
     verifyCode: '',
     captchaId: '',
   });
