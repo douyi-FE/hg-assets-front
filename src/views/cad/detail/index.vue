@@ -276,6 +276,7 @@
 
   // 上传成功
   const uploadSuccess = (cellInfo: any) => {
+    console.log(cellInfo);
     const sheet = spread.getActiveSheet();
     const rowCount = sheet.getRowCount();
     const colCount = sheet.getColumnCount();
@@ -294,24 +295,19 @@
       return;
     }
     cellInfo.forEach((item: any) => {
-      const { row, sheetName, attach } = item;
-      // const { name, time, price } = attach;
-      const sheet = spread.getSheetFromName(sheetName);
+      const { row, childs = [] } = item;
       let tag = sheet.getTag(row, res.col);
-      if (tag.entites && tag.entites.length) {
-        tag.entites = tag.entites.map((item: any) => {
-          item.attach = attach;
-          return item;
-        });
+      if (tag) {
+        tag.childs = tag.childs ? tag.childs.concat(...childs) : childs;
       } else {
-        tag.entites = [
-          {
-            attach,
-          },
-        ];
+        tag = {
+          childs,
+        };
       }
+      console.log('tag', sheet.name(), row, res.col, tag);
       sheet.setTag(row, res.col, tag);
     });
+    sheet.repaint();
   };
 
   // 关联cad图纸
@@ -445,12 +441,13 @@
 
   // 设置单元格详情按钮
   const setCellDetailButton = () => {
-    tagList.forEach((item) => {
-      const { row, col, sheetName } = item;
+    const assetCell = getCellByText(spread, assetColText);
+    if (assetCell) {
+      const { row, col, sheetName } = assetCell;
       const sheet = spread.getSheetFromName(sheetName);
-      const cell = sheet.getCell(row, col);
-      const tag = sheet.getTag(row, col);
-      if (props.mode === 'view') {
+      const rowCount = sheet.getRowCount();
+      for (let i = row + 1; i < rowCount; i++) {
+        const cell = sheet.getCell(i, col);
         cell.cellButtons([
           {
             caption: '列表',
@@ -459,42 +456,21 @@
             visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
             command: (sheet, row, col, option) => {
               assetsListOpen.value = true;
-              assetsListRef.value.setData({
-                row,
-                col,
-                sheetName: sheet.name(),
-                tag,
+              nextTick(() => {
+                const tag = sheet.getTag(i, col);
+                assetsListRef.value.setData({
+                  row: i,
+                  col,
+                  sheetName: sheet.name(),
+                  tag,
+                });
               });
-            },
-          },
-        ]);
-      } else {
-        cell.cellButtons([
-          {
-            caption: '列表',
-            captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
-            imageType: GC.Spread.Sheets.ButtonImageType.collapse,
-            visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
-            command: (sheet, row, col, option) => {
-              assetsListOpen.value = true;
-              assetsListRef.value.setData({
-                row,
-                col,
-                sheetName: sheet.name(),
-                tag,
-              });
-              // cellDialogRef.value.show(
-              //   item,
-              //   selectEntityHandles.value.length > 0
-              //     ? selectEntityHandles.value
-              //     : tag.map((item) => item.handle),
-              // );
             },
           },
         ]);
       }
       sheet.repaint();
-    });
+    }
   };
 
   const updateCellTag = (data: any) => {
