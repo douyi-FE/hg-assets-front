@@ -481,13 +481,73 @@
     return solid;
   };
 
+  // 绘制线段中点左右两侧的两个空心箭头（底部不闭合）
+  const drawArrowsAtLineCenter = (
+    line: any,
+    gap = 40,
+    arrowLength = 20,
+    angle = Math.PI / 4, // 默认45°
+  ) => {
+    const pt1 = line.startPoint;
+    const pt2 = line.endPoint;
+
+    // 线段方向
+    const dir = pt2.clone().sub(pt1).normalize();
+    // 中点
+    const mid = pt1.clone().addvec(dir.clone().mult(pt2.clone().sub(pt1).length() / 2));
+    // 两箭头顶点
+    const halfGap = gap / 2;
+    const arrowTip1 = mid.clone().subvec(dir.clone().mult(halfGap));
+    const arrowTip2 = mid.clone().addvec(dir.clone().mult(halfGap));
+
+    // 箭头两边点计算（开角可配置）
+    function getArrowLines(tip: any, direction: any) {
+      // 箭头底边基点
+      const base = tip.clone().subvec(direction.clone().normalize().mult(arrowLength));
+      // 以开角angle，绕direction旋转
+      // 构造两边向量
+      const leftVec = direction
+        .clone()
+        .rotateBy(angle / 2)
+        .normalize()
+        .mult(arrowLength);
+      const rightVec = direction
+        .clone()
+        .rotateBy(-angle / 2)
+        .normalize()
+        .mult(arrowLength);
+
+      const ptLeft = tip.clone().subvec(leftVec);
+      const ptRight = tip.clone().subvec(rightVec);
+
+      // 画两边
+      const polyline1 = new McDbPolyline();
+      polyline1.addVertexAt(new McGePoint3d(tip.x, tip.y, 0));
+      polyline1.addVertexAt(new McGePoint3d(ptLeft.x, ptLeft.y, 0));
+      polyline1.constantWidth = 3;
+      polyline1.trueColor = new McCmColor(255, 0, 0);
+      const polyline2 = new McDbPolyline();
+      polyline2.addVertexAt(new McGePoint3d(tip.x, tip.y, 0));
+      polyline2.addVertexAt(new McGePoint3d(ptRight.x, ptRight.y, 0));
+      polyline2.constantWidth = 3;
+      polyline2.trueColor = new McCmColor(255, 0, 0);
+      return [polyline1, polyline2];
+    }
+
+    // 两箭头都朝向 dir
+    const arrows1 = getArrowLines(arrowTip1, dir);
+    const arrows2 = getArrowLines(arrowTip2, dir);
+
+    return [...arrows1, ...arrows2];
+  };
+
   // 绘制连接线
   const drawConnectLine = (entitys: any[]) => {
     clearAllLine();
     resetAllEntityColor();
     mxCad.value.getMxCpp().App.getCurrentMxCAD().updateDisplay();
     if (entitys.length >= 2) {
-      const distance = 10;
+      const distance = 5;
       const getPointDirection = (bbox1: any, bbox2: any) => {
         const center1 = new McGePoint3d(
           (bbox1.minPt.x + bbox1.maxPt.x) / 2,
@@ -547,13 +607,20 @@
         if (Array.isArray(endPoint)) {
           endPoint = endPoint[0];
         }
+
+        const polyline = new McDbPolyline();
+        polyline.addVertexAt(new McGePoint3d(startPoint.x, startPoint.y, 0));
+        polyline.addVertexAt(new McGePoint3d(endPoint.x, endPoint.y, 0));
+        polyline.constantWidth = 3;
+        polyline.trueColor = new McCmColor(255, 0, 0);
+        const polylineId = mxCad.value.drawEntity(polyline);
+        entityAllLineList.push(polylineId);
         const line = new McDbLine(startPoint.x, startPoint.y, 0, endPoint.x, endPoint.y, 0);
-        line.trueColor = new McCmColor(255, 0, 0);
-        const lineId = mxCad.value.drawEntity(line);
-        const arrow = drawArrow(line);
-        const arrowId = mxCad.value.drawEntity(arrow);
-        entityAllLineList.push(lineId);
-        entityAllLineList.push(arrowId);
+        const arrows = drawArrowsAtLineCenter(line);
+        arrows.forEach((item) => {
+          const arrowId = mxCad.value.drawEntity(item);
+          entityAllLineList.push(arrowId);
+        });
       }
     }
   };
