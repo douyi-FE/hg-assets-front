@@ -56,7 +56,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import { nanoid } from 'nanoid';
   import dayjs from 'dayjs';
   import ExportExcel from './export-excel.vue';
@@ -97,17 +97,7 @@
       dataIndex: 'price',
     },
   ];
-  const columns =
-    props.mode === 'edit'
-      ? [
-          ...basicColumns,
-          {
-            title: '操作',
-            dataIndex: 'action',
-            width: 100,
-          },
-        ]
-      : basicColumns;
+  const columns = ref<any[]>([]);
 
   const onAdd = () => {
     list.value.push({
@@ -156,6 +146,20 @@
       };
     });
   };
+
+  watch(
+    () => props.mode,
+    (newVal) => {
+      if (newVal === 'edit') {
+        columns.value = [...basicColumns, { title: '操作', dataIndex: 'action', width: 100 }];
+      } else {
+        columns.value = basicColumns;
+      }
+    },
+    {
+      immediate: true,
+    },
+  );
 
   defineExpose({
     setData,
