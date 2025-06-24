@@ -6,7 +6,7 @@
           <a-button @click="openExcelFile" type="primary">打开文件</a-button>
           <a-button @click="linkCad" :disabled="isLinkCad">关联cad</a-button>
           <a-button @click="unlinkCad" :disabled="isLinkCad">解除关联</a-button>
-          <upload-info @uploadSuccess="uploadSuccess" />
+          <!-- <upload-info @uploadSuccess="uploadSuccess" /> -->
         </a-space>
       </div>
       <div id="excel_book_content" class="excel-book__content" />
@@ -19,7 +19,7 @@
       />
     </div>
     <wgh
-      v-if="mxFileUrl !== ''"
+      v-if="isShowExcelFile && mxFileUrl !== ''"
       class="excel-book__cad"
       ref="wghRef"
       :mode="mode"
@@ -68,7 +68,6 @@
   import wgh from '../detail/wgh.vue';
   import { HighlightTagCellType, tagList } from './highlightTagCellType';
   import CellDialog from './cell-dialog.vue';
-  import UploadInfo from './upload-info.vue';
   import AssetsList from './assets-list.vue';
   import { getCellByText } from './utils';
   import { assetColText, filterFirstColText } from './config';
@@ -458,18 +457,19 @@
               assetsListOpen.value = true;
               nextTick(() => {
                 const tag = sheet.getTag(i, col);
+                const cellValue = sheet.getValue(i, col);
                 assetsListRef.value.setData({
                   row: i,
                   col,
                   sheetName: sheet.name(),
                   tag,
+                  cellValue,
                 });
               });
             },
           },
         ]);
       }
-      sheet.repaint();
     }
   };
 
@@ -487,8 +487,10 @@
   };
 
   const setSearchOptions = () => {
+    console.time('setSearchOptions');
     const businessLineList = getAllCellByValue(filterFirstColText);
     wghRef.value.setSearchOptions(businessLineList);
+    console.timeEnd('setSearchOptions');
   };
 
   const getTagListBySpan = (sheetName: string, row: number, col: number, list: any[]) => {
@@ -545,9 +547,18 @@
       });
       // 切换sheet事件
       spread.bind(GC.Spread.Sheets.Events.ActiveSheetChanged, function (sender, args) {
+        customCell();
         wghRef.value?.initSearchForm();
       });
     }
+  };
+
+  const customCell = () => {
+    const sheet = spread.getActiveSheet();
+    const defaultStyle = sheet.getDefaultStyle();
+    defaultStyle.cellType = new HighlightTagCellType();
+    sheet.setDefaultStyle(defaultStyle);
+    setCellDetailButton();
   };
 
   // 渲染Excel
@@ -564,21 +575,12 @@
       });
       spread.open(fileBlob, function () {
         assetCell.value = getCellByText(spread, assetColText);
-        const sheetCount = spread.getSheetCount();
-        for (let i = 0; i < sheetCount; i++) {
-          const sheet = spread.getSheet(i);
-          const defaultStyle = sheet.getDefaultStyle();
-          defaultStyle.cellType = new HighlightTagCellType();
-          sheet.setDefaultStyle(defaultStyle);
-          setTimeout(() => {
-            setCellDetailButton();
-          }, 1000);
-          setSearchOptions();
-          wghRef.value.setInitEntityColor(
-            tagList.map((item) => item.tag.entites.map((item) => item.handle)).flat(),
-          );
-        }
-        message.success(`导入成功`);
+        customCell();
+        wghRef.value.setInitEntityColor(
+          tagList.map((item) => item.tag.entites.map((item) => item.handle)).flat(),
+        );
+        setSearchOptions();
+        message.success(`导入成功`, 1);
       });
     } else {
       spread.destroy();
@@ -599,7 +601,6 @@
       const file = e.target.files[0];
       const wb = GC.Spread.Sheets.findControl('excel_book_content');
       wb.import(file, () => {
-        console.log('导入成功');
         assetCell.value = getCellByText(spread, assetColText);
       });
     };
@@ -631,6 +632,12 @@
             renderExcel();
           }
         });
+      } else {
+        if (spread) {
+          spread.destroy();
+          spread = null;
+          emits('update:mxFileUrl', '');
+        }
       }
     },
     {

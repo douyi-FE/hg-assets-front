@@ -3,6 +3,13 @@
     <div class="assets-list__header">
       <a-button v-if="mode === 'edit'" type="primary" @click="onAdd">添加</a-button>
       <a-button v-if="mode === 'edit'" @click="onSave" style="margin-left: 16px">保存</a-button>
+      <a-button
+        v-if="mode === 'view'"
+        type="primary"
+        @click="onExportExcel"
+        style="margin-left: 16px"
+        >导出</a-button
+      >
       <a-button @click="close" style="margin-left: 16px">关闭</a-button>
     </div>
     <a-table
@@ -45,12 +52,14 @@
         </template>
       </template>
     </a-table>
+    <ExportExcel ref="exportExcelRef" />
   </div>
 </template>
 <script lang="ts" setup>
   import { ref } from 'vue';
   import { nanoid } from 'nanoid';
   import dayjs from 'dayjs';
+  import ExportExcel from './export-excel.vue';
 
   const props = defineProps({
     open: {
@@ -68,6 +77,8 @@
   const rowIndex = ref<number>(0);
   const colIndex = ref<number>(0);
   const sheetName = ref<string>('');
+  const exportExcelRef = ref<any>(null);
+  const cellTitle = ref<string>('');
   const basicColumns = [
     {
       title: '资产名称',
@@ -127,12 +138,15 @@
   const onDelete = (record: any) => {
     list.value = list.value.filter((item) => item.id !== record.id);
   };
-
+  const onExportExcel = () => {
+    exportExcelRef.value.exportExcel(list.value, cellTitle.value);
+  };
   const setData = (data: any = {}) => {
     console.log('setData', data);
-    const { row, col, sheetName: sheetNameValue, tag: { childs = [] } = {} } = data;
+    const { row, col, sheetName: sheetNameValue, tag: { childs = [] } = {}, cellValue } = data;
     rowIndex.value = row;
     colIndex.value = col;
+    cellTitle.value = cellValue;
     sheetName.value = sheetNameValue;
     list.value = childs.map((item) => {
       return {

@@ -74,10 +74,10 @@
             </a-button>
           </a-upload>
         </a-tooltip>
-        <a-tooltip>
+        <!-- <a-tooltip>
           <template #title>点击框选开始框选，右键结束框选</template>
           <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
-        </a-tooltip>
+        </a-tooltip> -->
       </div>
       <entity-info ref="entityInfoRef" class="entity-info" />
     </div>
@@ -85,8 +85,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, h } from 'vue';
-  import { UploadOutlined, InfoCircleFilled } from '@ant-design/icons-vue';
+  import { ref, watch } from 'vue';
+  import { UploadOutlined } from '@ant-design/icons-vue';
   import {
     createMxCad,
     MxCADSelectionSet,
@@ -151,6 +151,15 @@
   const assetUseTypeOptions = ref<any[]>([]);
   const businessLineOptions = ref<any[]>([]);
   const businessPointOptions = ref<any[]>([]);
+  const lineColors = ref<any[]>([
+    [41, 121, 255],
+    [255, 214, 0],
+    [0, 229, 255],
+    [255, 145, 0],
+    [105, 240, 174],
+    [213, 0, 249],
+    [255, 23, 68],
+  ]);
   const searchForm = ref<any>({
     assetUseType: undefined,
     businessLine: undefined,
@@ -406,6 +415,8 @@
 
   const showEntityByTag = (entites: any) => {
     if (!entites) {
+      clearAllLine();
+      resetAllEntityColor();
       message.error('未关联cad图纸');
       return;
     }
@@ -484,6 +495,7 @@
   // 绘制线段中点左右两侧的两个空心箭头（底部不闭合）
   const drawArrowsAtLineCenter = (
     line: any,
+    color: any,
     gap = 40,
     arrowLength = 20,
     angle = Math.PI / 4, // 默认45°
@@ -502,8 +514,6 @@
 
     // 箭头两边点计算（开角可配置）
     function getArrowLines(tip: any, direction: any) {
-      // 箭头底边基点
-      const base = tip.clone().subvec(direction.clone().normalize().mult(arrowLength));
       // 以开角angle，绕direction旋转
       // 构造两边向量
       const leftVec = direction
@@ -525,12 +535,12 @@
       polyline1.addVertexAt(new McGePoint3d(tip.x, tip.y, 0));
       polyline1.addVertexAt(new McGePoint3d(ptLeft.x, ptLeft.y, 0));
       polyline1.constantWidth = 3;
-      polyline1.trueColor = new McCmColor(255, 0, 0);
+      polyline1.trueColor = color;
       const polyline2 = new McDbPolyline();
       polyline2.addVertexAt(new McGePoint3d(tip.x, tip.y, 0));
       polyline2.addVertexAt(new McGePoint3d(ptRight.x, ptRight.y, 0));
       polyline2.constantWidth = 3;
-      polyline2.trueColor = new McCmColor(255, 0, 0);
+      polyline2.trueColor = color;
       return [polyline1, polyline2];
     }
 
@@ -608,15 +618,17 @@
           endPoint = endPoint[0];
         }
 
+        const color = new McCmColor(...lineColors.value[i % lineColors.value.length]);
+
         const polyline = new McDbPolyline();
         polyline.addVertexAt(new McGePoint3d(startPoint.x, startPoint.y, 0));
         polyline.addVertexAt(new McGePoint3d(endPoint.x, endPoint.y, 0));
         polyline.constantWidth = 3;
-        polyline.trueColor = new McCmColor(255, 0, 0);
+        polyline.trueColor = color;
         const polylineId = mxCad.value.drawEntity(polyline);
         entityAllLineList.push(polylineId);
         const line = new McDbLine(startPoint.x, startPoint.y, 0, endPoint.x, endPoint.y, 0);
-        const arrows = drawArrowsAtLineCenter(line);
+        const arrows = drawArrowsAtLineCenter(line, color);
         arrows.forEach((item) => {
           const arrowId = mxCad.value.drawEntity(item);
           entityAllLineList.push(arrowId);
