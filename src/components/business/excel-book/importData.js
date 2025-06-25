@@ -69,11 +69,13 @@ export const importExcel = function (openImportModal, activeSheet) {
           }
         });
         activeSheet.suspendPaint();
+        activeSheet.suspendCalcService();
         table.showFooter(false);
         const startRow = activeSheet.getRowCount();
         activeSheet.addRows(startRow, rowCount);
         activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
         table.showFooter(true);
+        activeSheet.resumeCalcService(true);
         activeSheet.resumePaint();
         fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), startRow, rowCount);
         // 关闭模态窗口

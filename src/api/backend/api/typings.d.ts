@@ -1304,4 +1304,57 @@ declare namespace API {
     reason: string; // 请假原因
     status: string; // 审批状态 (Pending/Approved/Rejected)
   }
+
+  // SSO相关类型定义
+  type OAuth2UserInfo = {
+    nickname: string;
+    deptName: string;
+    email: string;
+    phone: string;
+    qq: string;
+    avatar: string;
+    roles: string;
+  };
+
+  type OAuth2Token = {
+    accessToken: string;
+    refreshToken: string;
+    userId: number;
+    userType: number;
+    userInfo: OAuth2UserInfo;
+    clientId: string;
+    scopes: string[];
+    expiresTime: string;
+    tenantId: number;
+  };
+
+  type OriginalPayload = {
+    uid: number;
+    pv: number;
+    roles: string[];
+    iat: number;
+    exp: number;
+  };
+
+  type OAuth2TokenResponse = {
+    data: {
+      success: boolean;
+      oauth2Token: OAuth2Token;
+      originalPayload: OriginalPayload;
+    };
+    code: number;
+    message: string;
+  };
+
+  type JavaSSOResponse = {
+    code: number;
+    data: {
+      accessToken: string;
+      refreshToken: string;
+      userId: number;
+      userType: number;
+      expiresTime: number;
+    };
+    msg: string;
+  };
 }

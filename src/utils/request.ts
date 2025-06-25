@@ -32,7 +32,7 @@ const controller = new AbortController();
 const service = axios.create({
   baseURL: baseApiUrl,
   // adapter: 'fetch',
-  timeout: 10000,
+  timeout: 60000,
   signal: controller.signal,
   paramsSerializer(params) {
     return qs.stringify(params, { arrayFormat: 'brackets' });

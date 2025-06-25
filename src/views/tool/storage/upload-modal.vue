@@ -13,7 +13,7 @@
     @cancel="onCancel"
   >
     <a-flex justify="space-between" align="center">
-      <a-alert message="单个文件不超过2MB，最多只能上传10个文件" type="info" show-icon />
+      <a-alert message="单个文件不超过20MB，最多只能上传10个文件" type="info" show-icon />
       <a-upload :multiple="true" :before-upload="beforeUpload" :show-upload-list="false">
         <a-button type="primary"> 选择文件 </a-button>
       </a-upload>
@@ -88,8 +88,8 @@
   };
 
   const beforeUpload: UploadProps['beforeUpload'] = async (file) => {
-    if (file.size / 1024 / 1024 > 2) {
-      message.error('单个文件不超过2MB');
+    if (file.size / 1024 / 1024 > 20) {
+      message.error('单个文件不超过20MB');
     } else {
       const item: FileItem = {
         file,

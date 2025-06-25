@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_BASE_SOCKET_NSP: string;
   /** mock API 路径 */
   readonly VITE_MOCK_API: string;
+  /** Java系统基础URL */
+  readonly VITE_JAVA_BASE_URL: string;
   // 更多环境变量...
 }
 

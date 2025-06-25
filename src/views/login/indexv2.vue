@@ -135,7 +135,7 @@
       position: absolute;
       top: 16px;
       left: 16px;
-      width: 185px;
+      width: 55px;
       height: 55px;
       background-image: url('@/assets/images/logo-white.png');
     }

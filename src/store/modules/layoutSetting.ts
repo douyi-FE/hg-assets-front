@@ -45,7 +45,7 @@ export const defaultSetting: LayoutSetting = {
   menu: {
     locale: true,
   },
-  title: '弘庚综合管理平台',
+  title: '综合管理平台',
   pwa: false,
   iconfontUrl: '',
   cacheTabs: false,

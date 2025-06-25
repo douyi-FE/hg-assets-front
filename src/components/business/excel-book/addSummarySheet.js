@@ -98,11 +98,12 @@ const insertLeftColumns = function (sheet) {
 export const insertTableColumns = function (sheet, dataSource) {
   // 添加表格列：创建人
   sheet.suspendPaint();
+  sheet.suspendCalcService();
   sheet.addColumns(sheet.getColumnCount(), 1);
   const table = sheet.tables.all()[0];
-  table.insertColumns(0, 1);
+  // table.insertColumns(0, 1);
   // 左侧插入列
-  insertLeftColumns(sheet);
+  // insertLeftColumns(sheet);
   // 扩展title区域
   const titleRange = sheet.getSpan(0, 0);
   sheet.addSpan(0, 0, 1, titleRange.colCount + 1);
@@ -120,5 +121,6 @@ export const insertTableColumns = function (sheet, dataSource) {
     new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource)
   );
   autoMerge(sheet, table, [0]);
+  sheet.resumeCalcService(true);
   sheet.resumePaint();
 }

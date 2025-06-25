@@ -38,7 +38,7 @@ TemplateCellType.prototype.paint = function (
 ) {
   const sheet = context.sheet;
   // 判断value不为 null, undefined, ''
-  if (!value || value == null || value == undefined || value == '') {
+  if (value === null || value === undefined || value === '') {
     if (sheet) {
       const bindingPath = sheet.getBindingPath(context.row, context.col);
       if (bindingPath) {

@@ -37,7 +37,8 @@ export function fillTableRows(spread, sheet, tableRange, fromRow, rowCount, need
   const startRow = tableRange.row < fromRow ? fromRow : tableRange.row;
   const startRange = new GC.Spread.Sheets.Range(startRow - 1, tableRange.col, 1, tableRange.colCount);
   const fillRange = new GC.Spread.Sheets.Range(startRow, tableRange.col, rowCount, tableRange.colCount - 1);
-  spread.suspendPaint();
+  sheet.suspendPaint();
+  sheet.suspendCalcService();
   spread.commandManager().execute({
     cmd: "fill",
     sheetName: sheet.name(),
@@ -50,7 +51,8 @@ export function fillTableRows(spread, sheet, tableRange, fromRow, rowCount, need
     sheet.getRange(fillRange.row, fillRange.col, fillRange.rowCount, fillRange.colCount).value(null);
   }
   fillFileUploadCellType(sheet, startRange, fillRange);
-  spread.resumePaint();
+  sheet.resumeCalcService(true);
+  sheet.resumePaint();
 }
 
 export function fillFormulas(spread, sheet, dataRange, col) {

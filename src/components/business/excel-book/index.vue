@@ -150,6 +150,8 @@ const renderExcelBySjs = function (ejs: string, dataSource: any = {}, summaryDat
         if (editable !== undefined) {
           isEditable.value = editable;
         }
+        // 增量计算
+        spread.options.incrementalCalculation = true;
         spread.suspendPaint();
         const sheet = spread.getActiveSheet();
         if (dataSource && typeof dataSource === 'string') {
@@ -336,6 +338,7 @@ const importExcel = function () {
           });
         }
         activeSheet.suspendPaint();
+        activeSheet.suspendCalcService();
         table.showFooter(false);
         const fromRow = tableDataRange.row + tableDataRange.rowCount;
         activeSheet.addRows(fromRow, rowCount);
@@ -351,6 +354,7 @@ const importExcel = function () {
         activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
         table.showFooter(true);
         activeSheet.resumePaint();
+        activeSheet.resumeCalcService(true);
         // 关闭模态窗口
         openImportModal.value = false;
       }

@@ -67,6 +67,7 @@ function executeInsertRows(spread, options, before = false) {
     }
     const sheet = spread.getSheetFromName(options.sheetName)
     sheet.suspendPaint()
+    sheet.suspendCalcService()
     const table = sheet.tables.all()[0];
     const tableRange = table.dataRange();
     if (before) {
@@ -76,6 +77,7 @@ function executeInsertRows(spread, options, before = false) {
       sheet.addRows(options.activeRow + 1, parseInt(options.commandOptions))
       fillTableRows(spread, sheet, tableRange, options.activeRow + 1, parseInt(options.commandOptions))
     }
+    sheet.resumeCalcService(true)
     sheet.resumePaint()
   }
 }

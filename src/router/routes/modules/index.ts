@@ -1,3 +1,1 @@
-import demo from './demos';
-
-export default [...demo];
+export default [];

@@ -38,6 +38,7 @@ import * as leave from './leave';
 import * as project from './project';
 import * as device from './device';
 import * as cad from './cad';
+import * as sso from './sso';
 export default {
   auth,
   account,
@@ -75,4 +76,5 @@ export default {
   project,
   device,
   cad,
+  sso,
 };
