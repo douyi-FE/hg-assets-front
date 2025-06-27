@@ -438,41 +438,6 @@
     return { col, row };
   };
 
-  // 设置单元格详情按钮
-  const setCellDetailButton = () => {
-    const assetCell = getCellByText(spread, assetColText);
-    if (assetCell) {
-      const { row, col, sheetName } = assetCell;
-      const sheet = spread.getSheetFromName(sheetName);
-      const rowCount = sheet.getRowCount();
-      for (let i = row + 1; i < rowCount; i++) {
-        const cell = sheet.getCell(i, col);
-        cell.cellButtons([
-          {
-            caption: '列表',
-            captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
-            imageType: GC.Spread.Sheets.ButtonImageType.collapse,
-            visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
-            command: (sheet, row, col, option) => {
-              assetsListOpen.value = true;
-              nextTick(() => {
-                const tag = sheet.getTag(i, col);
-                const cellValue = sheet.getValue(i, col);
-                assetsListRef.value.setData({
-                  row: i,
-                  col,
-                  sheetName: sheet.name(),
-                  tag,
-                  cellValue,
-                });
-              });
-            },
-          },
-        ]);
-      }
-    }
-  };
-
   const updateCellTag = (data: any) => {
     const { row, col, sheetName, childs } = data;
     const sheet = spread.getSheetFromName(sheetName);
@@ -524,6 +489,7 @@
             assetCell.value.col === col
           ) {
             isLinkCad.value = false;
+            setCellDetailButton(row, col);
           } else {
             isLinkCad.value = true;
           }
@@ -553,12 +519,39 @@
     }
   };
 
+  // 设置单元格详情按钮
+  const setCellDetailButton = (row: number, col: number) => {
+    const sheet = spread.getActiveSheet();
+    const cell = sheet.getCell(row, col);
+    cell.cellButtons([
+      {
+        caption: '列表',
+        captionAlign: GC.Spread.Sheets.CaptionAlignment.right,
+        imageType: GC.Spread.Sheets.ButtonImageType.collapse,
+        visibility: GC.Spread.Sheets.ButtonVisibility.onSelected,
+        command: (sheet, row, col, option) => {
+          assetsListOpen.value = true;
+          nextTick(() => {
+            const tag = sheet.getTag(row, col);
+            const cellValue = sheet.getValue(row, col);
+            assetsListRef.value.setData({
+              row,
+              col,
+              sheetName: sheet.name(),
+              tag,
+              cellValue,
+            });
+          });
+        },
+      },
+    ]);
+  };
+
   const customCell = () => {
     const sheet = spread.getActiveSheet();
     const defaultStyle = sheet.getDefaultStyle();
     defaultStyle.cellType = new HighlightTagCellType();
     sheet.setDefaultStyle(defaultStyle);
-    setCellDetailButton();
   };
 
   // 渲染Excel
