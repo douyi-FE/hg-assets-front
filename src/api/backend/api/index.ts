@@ -27,6 +27,7 @@ import * as netDiskOverview from './netDiskOverview';
 import * as businessTodo from './businessTodo';
 import * as template from './template';
 import * as templateData from './templateData';
+import * as templateDataHistory from './templateDataHistory';
 import * as templateVersion from './templateVersion';
 import * as templateAttach from './templateAttach';
 import * as outputvalue from './outputvalue';
@@ -65,6 +66,7 @@ export default {
   businessTodo,
   template,
   templateData,
+  templateDataHistory,
   templateVersion,
   templateAttach,
   outputvalue,
