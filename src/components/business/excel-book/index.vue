@@ -103,16 +103,22 @@
       <div style="display: flex; gap: 10px; padding-bottom: 10px">
         <!-- 打开文件按钮，点击后打开文件选择窗口，选中 Excel 后直接用SpreadJS打开 -->
         <a-button @click="openExcelFile">打开文件</a-button>
-        <a-popconfirm
-          :title="`将当前选中sheet数据导入到表【${activeSheet.name()}】，是否继续？`"
-          ok-text="是"
-          cancel-text="否"
-          @confirm="importExcel"
-          @cancel="() => {}"
-        >
-          <a-button type="primary">导入</a-button>
-        </a-popconfirm>
         <a-button @click="downloadTemplate">下载模板</a-button>
+        <a-space style="margin-left: auto">
+          <a-select v-model:value="importModel" style="width: 120px">
+            <a-select-option value="append">追加</a-select-option>
+            <a-select-option value="overwrite">覆盖</a-select-option>
+          </a-select>
+          <a-popconfirm
+            :title="`将当前选中sheet数据导入到表【${activeSheet.name()}】，是否继续？`"
+            ok-text="是"
+            cancel-text="否"
+            @confirm="importExcel"
+            @cancel="() => {}"
+          >
+            <a-button type="primary">导入</a-button>
+          </a-popconfirm>
+        </a-space>
       </div>
       <div>
         <div id="importSpread" class="import-spread" />
@@ -179,6 +185,7 @@
   let summarySheetDataByType: any = null;
   let activeSheet: any = null;
   const isShowHistoryList = ref(false);
+  const importModel = ref('append');
   // summaryData 设置非必填
   const props = withDefaults(
     defineProps<{
@@ -444,8 +451,13 @@
           const sheetData = activeSheet.getDataSource().getSource();
           Object.keys(sheetData).forEach((key: string) => {
             if (key.startsWith('table')) {
-              // 从 fromRow 开始替换数据
-              sheetData[key].splice(fromRow, rowCount, ...importDataSource);
+              if (importModel.value === 'append') {
+                // 从 fromRow 开始替换数据
+                sheetData[key].splice(fromRow, rowCount, ...importDataSource);
+              } else {
+                // 覆盖替换数据
+                sheetData[key] = importDataSource;
+              }
             }
           });
           activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
