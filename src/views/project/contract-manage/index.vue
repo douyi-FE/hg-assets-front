@@ -8,8 +8,6 @@
       :dataSource="dataSource"
       @saveWorkBook="saveWorkBook"
       @cellClick="cellClick"
-      @saveHistoryVersion="saveHistoryVersion"
-      @historyVersionList="showHistoryList"
     />
     <template-bind
       v-model:isShowTemplateSetting="isShowTemplateSetting"
@@ -20,24 +18,17 @@
         }
       "
     />
-    <History
-      :applicationId="content.applicationId"
-      v-model:isShowHistoryList="isShowHistoryList"
-      @historyVersionApply="handleHistoryVersionApply"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
   import { message } from 'ant-design-vue';
-  import History from './history.vue';
   import excelBook from '@/components/business/excel-book/index.vue';
   import templateBind from '@/components/business/template-bind/index.vue';
   import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
   import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
   import { useUserStore } from '@/store/modules/user';
-  import Api from '@/api';
   const APPLICATION_NAME = '工程咨询服务合同登记表'; // 替换【咨询合同台账】
   let templateId = '';
   const excelBookRef = ref();
@@ -56,7 +47,6 @@
   });
   const isShowTemplateSetting = ref(false);
   const userStore = useUserStore();
-  const isShowHistoryList = ref(false);
   message.config({
     maxCount: 1,
   });
@@ -115,40 +105,6 @@
 
   const cellClick = function (data: any) {
     console.log('data', data);
-  };
-
-  /******** 应用历史版本 ********/
-
-  const addApplicationDataHistory = async (data: any) => {
-    const response = await Api.templateDataHistory.addApplicationDataHistory(data);
-    return response || [];
-  };
-
-  const saveHistoryVersion = function (data: any) {
-    addApplicationDataHistory({
-      ...data,
-      userId: userStore.userInfo.id,
-      mark: '保存为历史版本',
-    })
-      .then((res) => {
-        message.success('保存为历史版本成功');
-      })
-      .catch((err) => {
-        message.error('保存为历史版本失败');
-      });
-  };
-
-  const showHistoryList = function (applicationId: string) {
-    isShowHistoryList.value = true;
-  };
-
-  const handleHistoryVersionApply = function (historyId: string) {
-    Api.templateDataHistory.getApplicationDataHistoryById(historyId).then((res) => {
-      const { applicationData = null } = res;
-      if (applicationData) {
-        excelBookRef.value.updateSheetDataSource(applicationData);
-      }
-    });
   };
 
   onMounted(() => {

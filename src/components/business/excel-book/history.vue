@@ -7,7 +7,7 @@
         style="width: 200px; margin-right: auto"
       />
       <a-button type="primary" @click="handleSearch">搜索</a-button>
-      <a-button type="primary" @click="handleReset">重置</a-button>
+      <a-button @click="handleReset">重置</a-button>
     </div>
     <a-table :columns="historyVersionListColumns" :data-source="historyVersionListData">
       <template #bodyCell="{ column, record }">
@@ -27,7 +27,14 @@
         <template v-if="column.dataIndex === 'action'">
           <a-space>
             <a-button type="primary" @click="handleHistoryVersionApply(record)">应用</a-button>
-            <a-button type="primary" @click="handleHistoryVersionDelete(record)">删除</a-button>
+            <a-popconfirm
+              title="确定删除该版本吗？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleHistoryVersionDelete(record)"
+            >
+              <a-button type="link">删除</a-button>
+            </a-popconfirm>
           </a-space>
         </template>
       </template>

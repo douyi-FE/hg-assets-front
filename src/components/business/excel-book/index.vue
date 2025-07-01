@@ -24,7 +24,7 @@
           <a-dropdown-button type="primary" :disabled="!isEditable" @click="saveWorkBookData">
             <span>保存</span>
             <template #overlay>
-              <a-menu @click="handleMenuClick">
+              <a-menu @click="handleMenuClick" :disabled="!props.content.applicationId">
                 <a-menu-item key="saveHistoryVersion"> 保存为历史版本 </a-menu-item>
                 <a-menu-item key="historyVersionList"> 历史版本列表 </a-menu-item>
               </a-menu>
@@ -118,6 +118,11 @@
         <div id="importSpread" class="import-spread" />
       </div>
     </a-modal>
+    <!-- 历史版本列表 -->
+    <History
+      v-model:isShowHistoryList="isShowHistoryList"
+      :applicationId="props.content.applicationId"
+    />
   </div>
 </template>
 
@@ -126,6 +131,7 @@
   import dayjs from 'dayjs';
   import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
+  import History from './history.vue';
   import {
     initCustomCommentsEvents,
     renderCommentsByData,
@@ -156,6 +162,7 @@
   import { eventBus } from '@/utils/event-bus';
   import Api from '@/api';
   import { useUserStore } from '@/store/modules/user';
+  import { addApplicationDataHistory } from '@/api/backend/api/templateDataHistory';
   // import { initCustomPasteEvents } from './customPasteEvents';
   const userStore = useUserStore();
   const openAttachList = ref(false);
@@ -171,7 +178,7 @@
   let summarySheetData: any = null;
   let summarySheetDataByType: any = null;
   let activeSheet: any = null;
-
+  const isShowHistoryList = ref(false);
   // summaryData 设置非必填
   const props = withDefaults(
     defineProps<{
@@ -209,12 +216,7 @@
       }),
     },
   );
-  const emits = defineEmits([
-    'saveWorkBook',
-    'cellClick',
-    'saveHistoryVersion',
-    'historyVersionList',
-  ]);
+  const emits = defineEmits(['saveWorkBook', 'cellClick']);
   let spread: any = null;
   const isFullscreen = ref(false);
 
@@ -574,13 +576,24 @@
     const { key } = e;
     if (key === 'saveHistoryVersion') {
       const sheetData = getSheetTableData(spread);
-      emits('saveHistoryVersion', {
+      const data = {
         applicationId: props.content.applicationId,
         name: `${props.content.fileName}-${dayjs().format('YYYYMMDDHHmmss')}`,
         applicationData: sheetData,
-      });
+      };
+      addApplicationDataHistory({
+        ...data,
+        userId: userStore.userInfo.id,
+        mark: '保存为历史版本',
+      })
+        .then((res) => {
+          message.success('保存为历史版本成功');
+        })
+        .catch((err) => {
+          message.error('保存为历史版本失败');
+        });
     } else if (key === 'historyVersionList') {
-      emits('historyVersionList', props.content.applicationId);
+      isShowHistoryList.value = true;
     }
   };
 
