@@ -79,7 +79,6 @@
           <a-button @click="handleSelectModeChange" :icon="h(InfoCircleFilled)"> 框选 </a-button>
         </a-tooltip> -->
       </div>
-      <entity-info ref="entityInfoRef" class="entity-info" />
     </div>
   </div>
 </template>
@@ -98,7 +97,6 @@
     McGePoint3dArray,
   } from 'mxcad';
   import { message, type UploadChangeParam } from 'ant-design-vue';
-  import EntityInfo from './entity-info.vue';
   import { useUserStore } from '@/store/modules/user';
 
   message.config({
@@ -813,7 +811,7 @@
     .wgh-content {
       position: relative;
       flex: 1;
-      overflow: auto;
+      overflow: hidden;
     }
 
     .wgh-header {
