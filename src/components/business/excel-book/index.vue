@@ -3,16 +3,6 @@
     <Teleport to="body" :disabled="!isFullscreen">
       <div class="work-book-content">
         <div class="work-book-operator">
-          <!-- <DeptSelecter /> -->
-          <a-switch
-            v-model:checked="summaryByType"
-            inline-prompt
-            checked-children="分类汇总"
-            un-checked-children="按行汇总"
-            :disabled="summaryByTypeDisabled"
-            @change="switchSummaryType"
-          />
-
           <a-button type="default" @click="addDicts" v-if="hasDict && isEditable"
             >添加字典</a-button
           >
@@ -138,14 +128,13 @@
   import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import History from './history.vue';
-  import {
-    initCustomCommentsEvents,
-    renderCommentsByData,
-    renderSummarySheetComments,
-  } from './customComments';
+  // import {
+  //   initCustomCommentsEvents,
+  //   renderCommentsByData,
+  // } from './customComments';
   import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
-  import { getSummaryDataTable, setSummarySheet, canSwitchSummaryType } from './addSummarySheet';
-  import { initCustomInsertRows } from './customInsertRows';
+  import { getSummaryDataTable, setSummarySheet } from './addSummarySheet';
+  import { initCustomInsertRows, initCustomInsertRowsForDesigner } from './customInsertRows';
   import {
     exportToExcel,
     getSheetTableData,
@@ -159,6 +148,7 @@
   import {
     base64ToArrayBuffer,
     base64ToBlob,
+    spreadToBase64,
   } from '@/components/basic/ejs-design/resource/commonFunctions';
   import {
     fillTableRows,
@@ -175,14 +165,11 @@
   const openPreviewFile = ref(false);
   const openImportModal = ref(false);
   const attachListData = ref<any[]>([]);
-  const summaryByType = ref(false);
-  const summaryByTypeDisabled = ref<boolean>(true);
   const hasDict = ref(false);
   const isFilling = ref(true);
   const isEditable = ref(true);
   const dictDataFields = ref<any>({});
   let summarySheetData: any = null;
-  let summarySheetDataByType: any = null;
   let activeSheet: any = null;
   const isShowHistoryList = ref(false);
   const importModel = ref('append');
@@ -194,8 +181,6 @@
         ejs: string;
         dataSource: any;
         summaryData: any;
-        summaryDataByType: any;
-        summarySheetComments: any;
         fileName: string;
         dictData: any[];
         editable: boolean;
@@ -212,10 +197,6 @@
         summaryData: {
           // table: [],
         },
-        summaryDataByType: {
-          // table: [],
-        },
-        summarySheetComments: {},
         fileName: '导出数据文件.xlsx',
         dictData: [],
         editable: true,
@@ -236,13 +217,15 @@
     ejs: string,
     dataSource: any = {},
     summaryData: any = {},
-    summaryDataByType: any = {},
-    summarySheetComments: any = {},
     dictData: any = {},
     editable: boolean = true,
     hasDict: boolean = false,
   ) {
     return new Promise((resolve, reject) => {
+      const _sjs = dataSource['_sjs'];
+      if (_sjs) {
+        ejs = _sjs;
+      }
       const arrayBuffer = base64ToArrayBuffer(ejs);
       const fileBlob = new Blob([arrayBuffer], {
         type: 'application/octet-stream',
@@ -250,7 +233,6 @@
       spread.open(
         fileBlob,
         function () {
-          // clearSelections();
           if (editable !== undefined) {
             isEditable.value = editable;
           }
@@ -265,8 +247,6 @@
               dataSource = {};
             }
           }
-          // 获取当前用户名
-          const userName = userStore.userInfo.username;
           addSheetRows(sheet, dataSource);
           let ds = dataSource[sheet.name()];
           if (ds && typeof ds === 'string') {
@@ -282,29 +262,12 @@
             ds.engineer = dataSource.engineer;
           }
           sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(ds));
-          const table = sheet.tables.all()[0];
-          const dataRange = table.dataRange();
-          const col = dataRange.col;
-          const row = dataRange.row;
-          const colCount = dataRange.colCount;
-          sheet.suspendCalcService();
-          for (let c = col; c < colCount; c++) {
-            const formula = sheet.getFormula(row, c);
-            if (formula) {
-              fillFormulas(spread, sheet, dataRange, c);
-            }
-            const cellType = sheet.getCellType(row, c);
-            if (cellType.typeName !== 'TemplateCellType') {
-              fillCellTypes(sheet, dataRange, c);
-            }
-          }
-          sheet.resumeCalcService(true);
+          fillFormulasAndCellTypes(spread, sheet);
           // 设置汇总数据
-          const tableBindingPath = getSummaryDataTable(summaryDataByType);
+          const tableBindingPath = getSummaryDataTable(summaryData);
           if (tableBindingPath && Object.keys(tableBindingPath).length > 0) {
             //TODO 存在多表数据时，暂时只取一个
             summarySheetData = summaryData[Object.keys(tableBindingPath)[0]];
-            summarySheetDataByType = summaryDataByType[Object.keys(tableBindingPath)[0]];
             setSummarySheet(spread, summarySheetData);
             if (!editable) {
               // 激活汇总表
@@ -315,18 +278,15 @@
             // 设置汇总表样式
             const summarySheet = spread.getSheetFromName('汇总表');
             summarySheet.tables.all()[0].style('standard');
+            // 填充汇总表公式和单元格类型
+            // fillFormulasAndCellTypes(spread, summarySheet);
           }
           // spread.setActiveSheet(sheet.name());
           spread.resumePaint();
           initUploadFile(spread);
           setFieldDict(spread, dictData, dictDataFields);
-          canSwitchSummaryType(spread, summaryByTypeDisabled);
           initWorkbook(spread, (spread) => {
             initCustomInsertRows(spread);
-            initCustomCommentsEvents(spread);
-            renderCommentsByData(spread, dataSource);
-            renderSummarySheetComments(spread, summarySheetComments);
-            // initCustomPasteEvents(spread);
           });
           sheet.recalcAll(true);
           resolve(true);
@@ -337,6 +297,28 @@
       );
     });
   };
+
+  const fillFormulasAndCellTypes = function (spread: any, sheet: any) {
+    if (!sheet) return;
+    debugger;
+    const table = sheet.tables.all()[0];
+    const dataRange = table.dataRange();
+    const col = dataRange.col;
+    const row = dataRange.row;
+    const colCount = dataRange.colCount;
+    sheet.suspendCalcService();
+    for (let c = col; c < colCount; c++) {
+      const formula = sheet.getFormula(row, c);
+      if (formula) {
+        fillFormulas(spread, sheet, dataRange, c);
+      }
+      const cellType = sheet.getCellType(row, c);
+      if (cellType.typeName !== 'TemplateCellType') {
+        fillCellTypes(sheet, dataRange, c);
+      }
+    }
+    sheet.resumeCalcService(true);
+  }
 
   const downloadAttachAll = async () => {
     const list = attachListData.value;
@@ -360,7 +342,11 @@
 
   const saveWorkBookData = function () {
     const sheetData = getSheetTableData(spread);
-    emits('saveWorkBook', sheetData);
+    // 导出 sjs
+    spreadToBase64(spread).then((sjs) => {
+      sheetData['_sjs'] = sjs;
+      emits('saveWorkBook', sheetData);
+    });
   };
 
   const exportExcel = function (withData: boolean = true) {
@@ -480,21 +466,6 @@
     exportExcel(false);
   };
 
-  const switchSummaryType = function () {
-    const sheet = spread.getSheetFromName('汇总表');
-    if (sheet) {
-      if (summaryByType.value) {
-        sheet.setDataSource(
-          new GC.Spread.Sheets.Bindings.CellBindingSource(summarySheetDataByType),
-        );
-      } else {
-        sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summarySheetData));
-      }
-      // spread.addCustomFunction(new Evaluate());
-      spread.setActiveSheet(sheet.name());
-    }
-  };
-
   const updateDicts = async function () {
     await updateDict(spread, dictDataFields, props.content.fileName);
   };
@@ -511,8 +482,6 @@
         toRaw(newVal.ejs),
         toRaw(newVal.dataSource),
         toRaw(newVal.summaryData),
-        toRaw(newVal.summaryDataByType),
-        toRaw(newVal.summarySheetComments),
         toRaw(newVal.dictData),
         newVal.editable,
       ).finally(() => {
@@ -522,7 +491,17 @@
   );
 
   onMounted(() => {
-    spread = new GC.Spread.Sheets.Workbook('work_book_container');
+    const designerConfig = JSON.parse(JSON.stringify(GC.Spread.Sheets.Designer.DefaultConfig));
+    initCustomInsertRowsForDesigner(designerConfig);
+    // 去掉表设计visibleWhen属性
+    designerConfig.ribbon.forEach((item) => {
+      if (item.id === 'tableDesign') {
+        delete item.visibleWhen;
+      }
+    });
+    const designer = new GC.Spread.Sheets.Designer.Designer(document.getElementById('work_book_container'), designerConfig);
+    spread = designer.getWorkbook();
+    // spread = new GC.Spread.Sheets.Workbook('work_book_container');
     // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
     setTimeout(() => {
       eventBus.on('openAttachList', () => {

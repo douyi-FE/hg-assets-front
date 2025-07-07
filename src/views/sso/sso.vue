@@ -47,8 +47,6 @@ const handleSSO = async () => {
       throw new Error('Token转换失败');
     }
 
-    debugger;
-
     loadingText.value = '正在登录Java系统...';
     
     // 3. 调用Java单点登录接口

@@ -1,4 +1,4 @@
-<!-- 静设备-工程量计算书 -->
+<!-- 工程量计算书 -->
 <template>
   <div class="excel-book-container">
     <excel-book
@@ -53,10 +53,6 @@
     summaryData: {
       table: [{}],
     },
-    summaryDataByType: {
-      table: [{}],
-    },
-    summarySheetComments: {},
     dictData: [],
     fileName: app + '.xlsx',
     editable: editable,
@@ -114,13 +110,10 @@
             dataSource.value.device = device;
             dataSource.value.engineerId = engineerId;
             dataSource.value.engineer = engineer;
-            console.log(projectData?.projectDevice?.summarySheetComments);
             content.value = {
               ejs: template.content,
               dataSource: projectData?.projectDevice?.projectData[userName] || dataSource,
               summaryData: projectData?.projectDeviceSummary || dataSource,
-              summaryDataByType: projectData?.projectDeviceSummaryByType || dataSource,
-              summarySheetComments: projectData?.projectDevice?.summarySheetComments || {},
               fileName: template.name,
               dictData: templateFieldDict || [],
               editable: editable,
@@ -139,8 +132,6 @@
 
   const saveWorkBook = function (data: any) {
     const userName = userStore.userInfo.username;
-    const summaryComments = data['summarySheetComments'];
-    delete data['summarySheetComments'];
     saveProjectDevice({
       type,
       project,
@@ -151,7 +142,6 @@
       projectData: {
         [userName]: data || dataSource.value,
       },
-      summarySheetComments: summaryComments,
     })
       .then((res) => {
         message.success('保存数据成功');

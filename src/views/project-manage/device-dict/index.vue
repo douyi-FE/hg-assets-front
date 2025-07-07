@@ -34,9 +34,6 @@ const content = ref({
   summaryData: {
     table: [{}],
   },
-  summaryDataByType: {
-    table: [{}],
-  },
   dictData: [],
   fileName: APPLICATION_NAME + '.xlsx',
 });

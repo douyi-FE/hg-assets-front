@@ -36,6 +36,9 @@ Evaluate.prototype.evaluate = function (arg, val) {
     if (typeof formulaString !== 'string') {
       formulaString = formulaString ? formulaString + '' : null;
     }
+    if (formulaString === null || formulaString === undefined || formulaString === '' || formulaString === 'null' || formulaString === 'undefined' || formulaString === 0) {
+      formulaString = '0';
+    }
     return GC.Spread.Sheets.CalcEngine.evaluateFormula(sheet, formulaString, 0, 0);
   }
   return '参数错误';

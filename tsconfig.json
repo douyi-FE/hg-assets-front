@@ -46,7 +46,7 @@
     "src/**/*.vue",
     "types/**/*.d.ts",
     "types/**/*.ts"
-  ],
+, "src/components/basic/ejs-design/resource/evaluateFunction.js"  ],
   "exclude": ["node_modules", "dist", "**/*.js", "**/*.md", "src/**/*.md"],
   "references": [
     {

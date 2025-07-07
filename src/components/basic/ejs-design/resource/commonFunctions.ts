@@ -49,9 +49,10 @@ export function spreadToJson() {
 }
 
 // 将设计器中的模板转换为 base64 格式
-export function spreadToBase64() {
+export function spreadToBase64(spread) {
   return new Promise((resolve, reject) => {
-    (store.spread as any).save(
+    spread = spread || (store.spread as any);
+    spread.save(
       async function (blob) {
         const fileBlob = new Blob([blob], { type: 'application/vnd.ms-excel' });
         // 将 fileBlob 转换为 base64

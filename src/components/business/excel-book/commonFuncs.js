@@ -58,8 +58,6 @@ export const getSheetTableData = function (spread) {
       sheetData[sheet.name()] = sheet.getDataSource().getSource();
     }
   }
-  const comments = getSummarySheetComments(spread);
-  sheetData['summarySheetComments'] = comments;
   return sheetData;
 }
 

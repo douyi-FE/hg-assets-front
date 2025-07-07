@@ -58,6 +58,30 @@ export const initCustomInsertRows = function (spread) {
   spread.contextMenu.menuView = new CustomMenuView();
 }
 
+// 表设计器中插入行
+export const initCustomInsertRowsForDesigner = function (designerConfig) {
+  designerConfig.commandMap = {
+    "insertRowsBefore": {
+      text: "向上插入",
+      commandName: "insertRowsBefore",
+      visibleContext: "ClickRowHeader",
+      execute: (spread, options) => {
+        executeInsertRows(spread, options, true);
+      }
+    },
+    "insertRowsAfter": {
+      text: "向下插入",
+      commandName: "insertRowsAfter",
+      visibleContext: "ClickRowHeader",
+      execute: (spread, options) => {
+        executeInsertRows(spread, options, false);
+      }
+    }
+  }
+  designerConfig.contextMenu.push("insertRowsBefore");
+  designerConfig.contextMenu.push("insertRowsAfter");
+}
+
 function executeInsertRows(spread, options, before = false) {
   if (options.commandOptions) {
     console.log('增加行数' + options.commandOptions);

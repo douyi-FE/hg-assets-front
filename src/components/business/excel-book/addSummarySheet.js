@@ -34,12 +34,15 @@ export const getSummaryDataTable = function (summaryData) {
 
 export const setSummarySheet = function (spread, summaryData) {
   const sheet = spread.getActiveSheet();
-  let summarySheet = new GC.Spread.Sheets.Worksheet();
-  summarySheet.fromJSON(sheet.toJSON());
-  summarySheet.name('汇总表');
+  let summarySheet = spread.getSheetFromName('汇总表');
+  if (!summarySheet) {
+    summarySheet = new GC.Spread.Sheets.Worksheet();
+    summarySheet.fromJSON(sheet.toJSON());
+    summarySheet.name('汇总表');
+    spread.addSheet(spread.getSheetCount() + 1, summarySheet);
+    summarySheet = spread.getSheetFromName('汇总表');
+  }
   summarySheet.isSelected(false);
-  spread.addSheet(spread.getSheetCount() + 1, summarySheet);
-  summarySheet = spread.getSheetFromName('汇总表');
   summarySheet.options.protectionOptions = protectionOptions;
   summarySheet.options.isProtected = true;
   addSheetRows(summarySheet, summaryData);
@@ -53,7 +56,7 @@ export const setSummarySheet = function (spread, summaryData) {
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
 }
 
-
+// 已过期
 export const canSwitchSummaryType = function (spread, summaryByTypeDisabled) {
   const summarySheet = spread.getSheetFromName('汇总表');
   if (summarySheet) {
@@ -73,6 +76,7 @@ const autoMerge = function (sheet, table, cols) {
       dataRange.rowCount,
       1
     );
+    sheet.autoMerge(range, GC.Spread.Sheets.AutoMerge.AutoMergeDirection.none);
     sheet.autoMerge(
       range,
       GC.Spread.Sheets.AutoMerge.AutoMergeDirection.column,
@@ -99,28 +103,30 @@ export const insertTableColumns = function (sheet, dataSource) {
   // 添加表格列：创建人
   sheet.suspendPaint();
   sheet.suspendCalcService();
-  sheet.addColumns(sheet.getColumnCount(), 1);
   const table = sheet.tables.all()[0];
-  // table.insertColumns(0, 1);
-  // 左侧插入列
-  // insertLeftColumns(sheet);
-  // 扩展title区域
-  const titleRange = sheet.getSpan(0, 0);
-  sheet.addSpan(0, 0, 1, titleRange.colCount + 1);
+  const tableRange = table.range();
+  const lastField = table.getColumnDataField(tableRange.colCount - 1)
+  addSheetRows(sheet, { [sheet.name()]: dataSource });
+  if (lastField === '创建人') {
+    sheet.resumeCalcService(true);
+    sheet.resumePaint();
+    return;
+  }
+  sheet.addColumns(sheet.getColumnCount(), 1);
+  table.insertColumns(tableRange.colCount - 1, 1);
   const cols = [];
   const tableKey = Object.keys(dataSource).find((key) => key.startsWith('table'));
   const dataItem = dataSource[tableKey][0];
-  Object.keys(dataItem).forEach((key, i) => {
-    if (key === '创建人') return;
-    cols.push(new GC.Spread.Sheets.Tables.TableColumn(i + 1, key));
+  Object.keys(dataItem).forEach((key) => {
+    if (key === '创建人' || key.startsWith('_')) return;
+    cols.push(new GC.Spread.Sheets.Tables.TableColumn(cols.length, key));
   });
-  cols.unshift(new GC.Spread.Sheets.Tables.TableColumn(0, '创建人'));
+  cols.push(new GC.Spread.Sheets.Tables.TableColumn(cols.length, '创建人'));
   table.bind(cols, table.name(), dataSource[table.name()]);
-  addSheetRows(sheet, { [sheet.name()]: dataSource });
   sheet.setDataSource(
     new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource)
   );
-  autoMerge(sheet, table, [0]);
+  autoMerge(sheet, table, [cols.length - 1]);
   sheet.resumeCalcService(true);
   sheet.resumePaint();
 }
