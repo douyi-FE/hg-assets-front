@@ -396,3 +396,19 @@ export function generateUUID() {
 export function generateTableName() {
   return "table_" + generateUUID();
 }
+
+export function setChineseFont(config) {
+  // 配置中文字体
+  const fontFamilyCmd = GC.Spread.Sheets.Designer.getCommand("fontFamily");
+  const customCNFont = [
+    { value: "微软雅黑", text: "微软雅黑" },
+    { value: "黑体", text: "黑体" },
+    { value: "新宋体", text: "新宋体" },
+    { value: "仿宋", text: "仿宋" },
+    { value: "隶书", text: "隶书" },
+    { value: "楷体", text: "楷体" },
+  ];
+  fontFamilyCmd.dropdownList = customCNFont.concat(fontFamilyCmd.dropdownList);
+  config.commandMap.fontFamily = fontFamilyCmd;
+  return config;
+}
