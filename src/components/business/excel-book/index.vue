@@ -461,7 +461,7 @@
                 sheetData[key].splice(fromRow, rowCount, ...importDataSource);
               } else {
                 // 覆盖替换数据
-                sheetData[key] = importDataSource;
+                sheetData[key].splice(0, sheetData[key].length, ...importDataSource);
               }
             }
           });
