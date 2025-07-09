@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash-es';
 import { store } from '../store';
-import { getInitData, getSheetBindingPaths, importFile, showAlert } from './commonFunctions';
+import { getInitData, getSheetBindingPaths, importFile, setChineseFont, showAlert } from './commonFunctions';
 import { setHtmlCell } from './htmlCell';
 import { clearSelections, startSelectMode } from './initFormulaBar';
 import { addScript, runScript } from './scripts';
@@ -10,7 +10,7 @@ import { conditionFormatConfig } from './conditionFormatsConfig';
 // 初始化设计器及相关菜单项
 export function initDesigner(divId) {
   // 获取初始化配置
-  const config = cloneDeep(store.designerConfig);
+  let config = cloneDeep(store.designerConfig);
   // 删除 fileMenu
   // delete config.fileMenu;
 
@@ -346,6 +346,8 @@ export function initDesigner(divId) {
     }
     importFile(file);
   });
+
+  config = setChineseFont(config);
 
   const designer = new GC.Spread.Sheets.Designer.Designer(document.getElementById(divId), config);
   document.querySelector('.big-button')?.classList.remove('big-button');

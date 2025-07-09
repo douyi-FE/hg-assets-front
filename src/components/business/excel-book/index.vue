@@ -149,6 +149,7 @@
     base64ToArrayBuffer,
     base64ToBlob,
     spreadToBase64,
+    setChineseFont,
   } from '@/components/basic/ejs-design/resource/commonFunctions';
   import {
     fillTableRows,
@@ -501,7 +502,7 @@
   );
 
   onMounted(() => {
-    const designerConfig = JSON.parse(JSON.stringify(GC.Spread.Sheets.Designer.DefaultConfig));
+    let designerConfig = JSON.parse(JSON.stringify(GC.Spread.Sheets.Designer.DefaultConfig));
     initCustomInsertRowsForDesigner(designerConfig);
     // 去掉表设计visibleWhen属性
     designerConfig.ribbon.forEach((item) => {
@@ -509,6 +510,8 @@
         delete item.visibleWhen;
       }
     });
+    designerConfig = setChineseFont(designerConfig);
+    
     const designer = new GC.Spread.Sheets.Designer.Designer(document.getElementById('work_book_container'), designerConfig);
     spread = designer.getWorkbook();
     // spread = new GC.Spread.Sheets.Workbook('work_book_container');
