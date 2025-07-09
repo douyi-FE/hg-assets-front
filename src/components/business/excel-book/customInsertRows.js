@@ -32,6 +32,18 @@ export const initCustomInsertRows = function (spread) {
   };
   commandManager.register("insertRowsBefore", insertRowsByCountsBefore, null, false, false, false, false);
   commandManager.register("insertRowsAfter", insertRowsByCountsAfter, null, false, false, false, false);
+
+  // 禁用行头原生插入右键菜单项
+  const oldOpenMenu = spread.contextMenu.onOpenMenu;
+  spread.contextMenu.onOpenMenu = function (menuData, itemsDataForShown, hitInfo, spread) {
+    oldOpenMenu.apply(this, arguments);
+    itemsDataForShown.forEach(item => {
+      if (item.name === 'gc.spread.contextMenu.insertRows') {
+        // 删除该菜单项
+        itemsDataForShown.splice(itemsDataForShown.indexOf(item), 1);
+      }
+    })
+  };
   function CustomMenuView() {
   }
   CustomMenuView.prototype = new GC.Spread.Sheets.ContextMenu.MenuView();

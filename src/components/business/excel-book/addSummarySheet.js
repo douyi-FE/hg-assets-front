@@ -44,7 +44,7 @@ export const setSummarySheet = function (spread, summaryData) {
   }
   summarySheet.isSelected(false);
   summarySheet.options.protectionOptions = protectionOptions;
-  summarySheet.options.isProtected = true;
+  // summarySheet.options.isProtected = true;
   addSheetRows(summarySheet, summaryData);
   insertTableColumns(summarySheet, summaryData);
   const table = summarySheet.tables.all()[0];
@@ -54,6 +54,7 @@ export const setSummarySheet = function (spread, summaryData) {
     summaryData[tableBindingPath] = summaryData[tableKey];
   }
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
+  // autoMerge(summarySheet, table, [table.range().colCount - 1]);
 }
 
 // 已过期
@@ -68,6 +69,7 @@ export const canSwitchSummaryType = function (spread, summaryByTypeDisabled) {
 
 // 自动合并
 const autoMerge = function (sheet, table, cols) {
+  debugger;
   const dataRange = table.dataRange();
   for (let c = 0; c < cols.length; c++) {
     const range = new GC.Spread.Sheets.Range(
@@ -126,7 +128,7 @@ export const insertTableColumns = function (sheet, dataSource) {
   sheet.setDataSource(
     new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource)
   );
-  autoMerge(sheet, table, [cols.length - 1]);
+  // autoMerge(sheet, table, [cols.length - 1]);
   sheet.resumeCalcService(true);
   sheet.resumePaint();
 }

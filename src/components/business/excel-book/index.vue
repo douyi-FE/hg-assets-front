@@ -239,7 +239,19 @@
           // 增量计算
           spread.options.incrementalCalculation = true;
           spread.suspendPaint();
-          const sheet = spread.getActiveSheet();
+          let sheet = spread.getActiveSheet();
+          // 先切换到非汇总表
+          if (sheet.name() === '汇总表') {
+            const sheetCount = spread.getSheetCount();
+            for (let i = 0; i < sheetCount; i++) {
+              const sheet = spread.getSheet(i);
+              if (sheet.name() !== '汇总表') {
+                spread.setActiveSheet(sheet.name());
+                break;
+              }
+            }
+          }
+          sheet = spread.getActiveSheet();
           if (dataSource && typeof dataSource === 'string') {
             try {
               dataSource = JSON.parse(dataSource);
@@ -279,9 +291,8 @@
             const summarySheet = spread.getSheetFromName('汇总表');
             summarySheet.tables.all()[0].style('standard');
             // 填充汇总表公式和单元格类型
-            // fillFormulasAndCellTypes(spread, summarySheet);
+            fillFormulasAndCellTypes(spread, summarySheet);
           }
-          // spread.setActiveSheet(sheet.name());
           spread.resumePaint();
           initUploadFile(spread);
           setFieldDict(spread, dictData, dictDataFields);
@@ -300,7 +311,6 @@
 
   const fillFormulasAndCellTypes = function (spread: any, sheet: any) {
     if (!sheet) return;
-    debugger;
     const table = sheet.tables.all()[0];
     const dataRange = table.dataRange();
     const col = dataRange.col;

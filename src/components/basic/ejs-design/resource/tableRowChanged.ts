@@ -58,14 +58,11 @@ export function fillTableRows(spread, sheet, tableRange, fromRow, rowCount, need
 export function fillFormulas(spread, sheet, dataRange, col) {
   const startRow = dataRange.row;
   const startRange = new GC.Spread.Sheets.Range(startRow, col, 1, 1);
-  const fillRange = new GC.Spread.Sheets.Range(startRow + 1, col, dataRange.rowCount - 1, 1);
-  spread.commandManager().execute({
-    cmd: "fill",
-    sheetName: sheet.name(),
-    startRange: startRange,
-    fillRange: fillRange,
-    autoFillType: GC.Spread.Sheets.Fill.AutoFillType.fillSeries,
-    fillDirection: GC.Spread.Sheets.Fill.FillDirection.down
+  const fillRange = new GC.Spread.Sheets.Range(startRow, col, dataRange.rowCount, 1);
+  sheet.fillAuto(startRange, fillRange, {
+    fillType: GC.Spread.Sheets.Fill.FillType.auto,
+    series: GC.Spread.Sheets.Fill.FillSeries.column,
+    direction: GC.Spread.Sheets.Fill.FillDirection.down,
   });
 }
 
