@@ -34,7 +34,8 @@
   const excelBookRef = ref();
   const excelBookKey = ref('');
   const content = ref<any>({
-    applicationId: '',
+    tableName: '',
+    tableKey: '',
     ejs: '',
     dataSource: {
       table: [[]],
@@ -71,7 +72,8 @@
           .then(([template, applicationData]) => {
             dataSource.value = template.initDataSource;
             content.value = {
-              applicationId: applicationData._id,
+              tableName: 'application_data',
+              tableKey: applicationData._id,
               ejs: template.content,
               dataSource: applicationData?.applicationData || dataSource,
               fileName: template.name,

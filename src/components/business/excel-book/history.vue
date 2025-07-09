@@ -50,10 +50,15 @@
     getApplicationDataHistoryList,
     deleteApplicationDataHistory,
     updateApplicationDataHistoryName,
+    getApplicationDataHistoryById,
   } from '@/api/backend/api/templateDataHistory';
 
   const props = defineProps({
-    applicationId: {
+    tableName: {
+      type: String,
+      required: true,
+    },
+    tableKey: {
       type: String,
       required: true,
     },
@@ -96,7 +101,7 @@
   };
   const fetchHistoryVersionList = function (params: any = {}) {
     getApplicationDataHistoryList({
-      applicationId: props.applicationId,
+      tableName: props.tableName,
       ...params,
     }).then((res) => {
       historyVersionListData.value = res;
@@ -104,7 +109,13 @@
   };
 
   const handleHistoryVersionApply = function (record: any) {
-    emits('historyVersionApply', record._id);
+    getApplicationDataHistoryById(record._id)
+      .then((res) => {
+        emits('historyVersionApply', res.applicationData);
+      })
+      .catch((err) => {
+        message.error('发生错误请重试');
+      });
   };
 
   const handleHistoryVersionDelete = function (record: any) {

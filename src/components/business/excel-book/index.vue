@@ -14,7 +14,10 @@
           <a-dropdown-button type="primary" :disabled="!isEditable" @click="saveWorkBookData">
             <span>保存</span>
             <template #overlay>
-              <a-menu @click="handleMenuClick" :disabled="!props.content.applicationId">
+              <a-menu
+                @click="handleMenuClick"
+                :disabled="!props.content.tableName || !props.content.tableKey"
+              >
                 <a-menu-item key="saveHistoryVersion"> 保存为历史版本 </a-menu-item>
                 <a-menu-item key="historyVersionList"> 历史版本列表 </a-menu-item>
               </a-menu>
@@ -116,8 +119,10 @@
     </a-modal>
     <!-- 历史版本列表 -->
     <History
+      :tableName="props.content.tableName"
+      :tableKey="props.content.tableKey"
       v-model:isShowHistoryList="isShowHistoryList"
-      :applicationId="props.content.applicationId"
+      @history-version-apply="handleHistoryVersionApply"
     />
   </div>
 </template>
@@ -177,7 +182,6 @@
   const props = withDefaults(
     defineProps<{
       content: {
-        applicationId: string;
         ejs: string;
         dataSource: any;
         summaryData: any;
@@ -185,6 +189,8 @@
         dictData: any[];
         editable: boolean;
         hasDict: boolean;
+        tableName: string;
+        tableKey: string;
       };
     }>(),
     {
@@ -201,6 +207,8 @@
         dictData: [],
         editable: true,
         hasDict: false,
+        tableName: '',
+        tableKey: '',
       }),
     },
   );
@@ -328,7 +336,7 @@
       }
     }
     sheet.resumeCalcService(true);
-  }
+  };
 
   const downloadAttachAll = async () => {
     const list = attachListData.value;
@@ -509,7 +517,10 @@
         delete item.visibleWhen;
       }
     });
-    const designer = new GC.Spread.Sheets.Designer.Designer(document.getElementById('work_book_container'), designerConfig);
+    const designer = new GC.Spread.Sheets.Designer.Designer(
+      document.getElementById('work_book_container'),
+      designerConfig,
+    );
     spread = designer.getWorkbook();
     // spread = new GC.Spread.Sheets.Workbook('work_book_container');
     // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
@@ -578,7 +589,8 @@
     if (key === 'saveHistoryVersion') {
       const sheetData = getSheetTableData(spread);
       const data = {
-        applicationId: props.content.applicationId,
+        tableName: props.content.tableName,
+        tableKey: props.content.tableKey,
         name: `${props.content.fileName}-${dayjs().format('YYYYMMDDHHmmss')}`,
         applicationData: sheetData,
       };
@@ -596,6 +608,11 @@
     } else if (key === 'historyVersionList') {
       isShowHistoryList.value = true;
     }
+  };
+
+  const handleHistoryVersionApply = (applicationData: Object) => {
+    console.log(applicationData);
+    updateSheetDataSource(applicationData);
   };
 
   const updateSheetDataSource = function (dataSource: any) {

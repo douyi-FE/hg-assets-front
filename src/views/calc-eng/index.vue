@@ -46,6 +46,8 @@
   const excelBookRef = ref();
   const excelBookKey = ref('');
   const content = ref({
+    tableName: '',
+    tableKey: '',
     ejs: '',
     dataSource: {
       table: [{}],
@@ -98,7 +100,7 @@
         ])
           .then(([template, projectData, templateFieldDict]) => {
             let initDataSource = null;
-            const userName = userStore.userInfo.username;
+            const userName = userStore.userInfo.username!;
             try {
               initDataSource = JSON.parse(template.initDataSource);
             } catch (error) {
@@ -111,6 +113,8 @@
             dataSource.value.engineerId = engineerId;
             dataSource.value.engineer = engineer;
             content.value = {
+              tableName: 'project_device',
+              tableKey: projectData.projectDevice._id,
               ejs: template.content,
               dataSource: projectData?.projectDevice?.projectData[userName] || dataSource,
               summaryData: projectData?.projectDeviceSummary || dataSource,
@@ -131,7 +135,7 @@
   };
 
   const saveWorkBook = function (data: any) {
-    const userName = userStore.userInfo.username;
+    const userName = userStore.userInfo.username!;
     saveProjectDevice({
       type,
       project,
