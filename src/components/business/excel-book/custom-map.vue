@@ -56,6 +56,7 @@
       .then((res) => {
         fieldMapConfig.value = res;
         isOpen.value = false;
+        message.success('自定义配置字段保存成功');
       })
       .catch((err) => {
         message.error(err.message);

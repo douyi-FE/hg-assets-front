@@ -462,7 +462,7 @@
                 sheetData[key].splice(fromRow, rowCount, ...newImportData);
               } else {
                 // 覆盖替换数据
-                sheetData[key].splice(0, rowCount, ...newImportData);
+                sheetData[key].splice(0, sheetData[key].length, ...newImportData);
               }
             }
           });
