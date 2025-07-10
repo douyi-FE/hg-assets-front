@@ -95,8 +95,9 @@
     >
       <div style="display: flex; gap: 10px; padding-bottom: 10px">
         <!-- 打开文件按钮，点击后打开文件选择窗口，选中 Excel 后直接用SpreadJS打开 -->
-        <a-button @click="openExcelFile">打开文件</a-button>
+        <a-button type="primary" @click="openExcelFile">打开文件</a-button>
         <a-button @click="downloadTemplate">下载模板</a-button>
+        <a-button @click="setCunstomLink">设置关联字段</a-button>
         <a-space style="margin-left: auto">
           <a-select v-model:value="importModel" style="width: 120px">
             <a-select-option value="append">追加</a-select-option>
@@ -116,6 +117,8 @@
       <div>
         <div id="importSpread" class="import-spread" />
       </div>
+      <!-- 自定义映射关联字段 -->
+      <CustomMap v-model:isOpen="isShowCustomMap" ref="customMapRef" />
     </a-modal>
     <!-- 历史版本列表 -->
     <History
@@ -133,6 +136,7 @@
   import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import History from './history.vue';
+  import CustomMap from './custom-map.vue';
   // import {
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
@@ -178,7 +182,9 @@
   let summarySheetData: any = null;
   let activeSheet: any = null;
   const isShowHistoryList = ref(false);
+  const isShowCustomMap = ref(false);
   const importModel = ref('append');
+  const customMapRef = ref();
   // summaryData 设置非必填
   const props = withDefaults(
     defineProps<{
@@ -425,8 +431,50 @@
         const column = usedRange.col;
         const rowCount = usedRange.rowCount;
         const columnCount = usedRange.colCount;
+        const fieldMapConfig = customMapRef.value.getFieldMapConfig();
+        if (fieldMapConfig) {
+          const importFieldRange = customMapRef.value.getImportFieldRange();
+          const { row, col } = importFieldRange;
+          const importData: any[] = sheet.getArray(row, col, rowCount, endColumn);
+          // 追加到表格数据源中
+          const sheetData = activeSheet.getDataSource().getSource();
+          Object.keys(sheetData).forEach((key: string) => {
+            if (key.startsWith('table')) {
+              const [importFields, ...importDataList] = importData;
+              const newImportData: any[] = [];
+              importDataList.forEach((item) => {
+                const dataItem = {};
+                Object.entries(fieldMapConfig).forEach(([key, val]) => {
+                  if (val) {
+                    const index = (importFields as string[]).findIndex((item) => item === val);
+                    dataItem[key] = item[index];
+                  } else {
+                    dataItem[key] = '';
+                  }
+                });
+                newImportData.push(dataItem);
+              });
+
+              const fromRow = tableDataRange.row + tableDataRange.rowCount;
+              activeSheet.addRows(fromRow, rowCount);
+              if (importModel.value === 'append') {
+                // 从 fromRow
+                sheetData[key].splice(fromRow, rowCount, ...newImportData);
+              } else {
+                // 覆盖替换数据
+                sheetData[key].splice(0, rowCount, ...newImportData);
+              }
+            }
+          });
+          activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
+          table.showFooter(true);
+          activeSheet.resumePaint();
+          activeSheet.resumeCalcService(true);
+          // 关闭模态窗口
+          openImportModal.value = false;
+        }
         // 校验数据区域有效性
-        if (row + rowCount < startRow || column + columnCount < endColumn) {
+        else if (row + rowCount < startRow || column + columnCount < endColumn) {
           message.warning('导入数据区域与模板数据区域不匹配，请检查');
         } else {
           const importData = sheet.getArray(startRow, startColumn, rowCount, endColumn);
@@ -635,6 +683,59 @@
     }
     sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(ds));
     sheet.recalcAll(true);
+  };
+
+  const setCunstomLink = function () {
+    message.info('请在表中选择需要关联的表头');
+    const importSpread = GC.Spread.Sheets.findControl(document.getElementById('importSpread'));
+    if (importSpread) {
+      const importActiveSheet = importSpread.getActiveSheet();
+      importActiveSheet.unbind(GC.Spread.Sheets.Events.SelectionChanged);
+      importActiveSheet.bind(GC.Spread.Sheets.Events.SelectionChanged, function (e, info) {
+        const {
+          newSelections: [firstSelection],
+        } = info;
+        const { colCount, rowCount, col, row } = firstSelection;
+        if (rowCount === 1 && colCount > 1) {
+          message.loading({ content: '计算中', key: 'importRange' });
+          importActiveSheet.unbind(GC.Spread.Sheets.Events.SelectionChanged);
+          const sourceRangeList: any[] = [];
+          const importRangeList: any[] = [];
+          for (let i = col; i < col + colCount; i++) {
+            const text = importActiveSheet.getText(row, i);
+            if (text.trim() === '') {
+              continue;
+            }
+            importRangeList.push({
+              row,
+              col: i,
+              text,
+            });
+          }
+          const table = activeSheet.tables.all()[0];
+          if (table) {
+            const tableRange = table.range();
+            const { row, col, colCount } = tableRange;
+            for (let i = col; i < col + colCount; i++) {
+              sourceRangeList.push({
+                row,
+                col: i,
+                text: table.getColumnName(i),
+              });
+            }
+          }
+          customMapRef.value.setSourceFields(sourceRangeList);
+          customMapRef.value.setImportFields(importRangeList);
+          customMapRef.value.setImportFieldRange(firstSelection);
+          isShowCustomMap.value = true;
+          nextTick(() => {
+            message.destroy('importRange');
+          });
+        } else {
+          message.error('请选择单行范围');
+        }
+      });
+    }
   };
 
   defineExpose({
