@@ -686,55 +686,58 @@
   };
 
   const setCunstomLink = function () {
-    message.info('请在表中选择需要关联的表头');
     const importSpread = GC.Spread.Sheets.findControl(document.getElementById('importSpread'));
-    if (importSpread) {
-      const importActiveSheet = importSpread.getActiveSheet();
-      importActiveSheet.unbind(GC.Spread.Sheets.Events.SelectionChanged);
-      importActiveSheet.bind(GC.Spread.Sheets.Events.SelectionChanged, function (e, info) {
-        const {
-          newSelections: [firstSelection],
-        } = info;
-        const { colCount, rowCount, col, row } = firstSelection;
-        if (rowCount === 1 && colCount > 1) {
-          message.loading({ content: '计算中', key: 'importRange' });
-          importActiveSheet.unbind(GC.Spread.Sheets.Events.SelectionChanged);
-          const sourceRangeList: any[] = [];
-          const importRangeList: any[] = [];
+    const importActiveSheet = importSpread.getActiveSheet();
+    const selections: any[] = importActiveSheet.getSelections();
+    if (selections.length > 0) {
+      let [firstSelection] = selections;
+      if (firstSelection.col === -1) {
+        firstSelection = {
+          ...firstSelection,
+          col: firstSelection.col + 1,
+          colCount: firstSelection.colCount + 1,
+        };
+      }
+      const { colCount, rowCount, col, row } = firstSelection;
+      if (rowCount === 1 && colCount > 1) {
+        message.loading({ content: '计算中', key: 'importRange' });
+        const sourceRangeList: any[] = [];
+        const importRangeList: any[] = [];
+        for (let i = col; i < col + colCount; i++) {
+          const text = importActiveSheet.getText(row, i);
+          if (text.trim() === '') {
+            continue;
+          }
+          importRangeList.push({
+            row,
+            col: i,
+            text,
+          });
+        }
+        const table = activeSheet.tables.all()[0];
+        if (table) {
+          const tableRange = table.range();
+          const { row, col, colCount } = tableRange;
           for (let i = col; i < col + colCount; i++) {
-            const text = importActiveSheet.getText(row, i);
-            if (text.trim() === '') {
-              continue;
-            }
-            importRangeList.push({
+            sourceRangeList.push({
               row,
               col: i,
-              text,
+              text: table.getColumnName(i),
             });
           }
-          const table = activeSheet.tables.all()[0];
-          if (table) {
-            const tableRange = table.range();
-            const { row, col, colCount } = tableRange;
-            for (let i = col; i < col + colCount; i++) {
-              sourceRangeList.push({
-                row,
-                col: i,
-                text: table.getColumnName(i),
-              });
-            }
-          }
-          customMapRef.value.setSourceFields(sourceRangeList);
-          customMapRef.value.setImportFields(importRangeList);
-          customMapRef.value.setImportFieldRange(firstSelection);
-          isShowCustomMap.value = true;
-          nextTick(() => {
-            message.destroy('importRange');
-          });
-        } else {
-          message.error('请选择单行范围');
         }
-      });
+        customMapRef.value.setSourceFields(sourceRangeList);
+        customMapRef.value.setImportFields(importRangeList);
+        customMapRef.value.setImportFieldRange(firstSelection);
+        isShowCustomMap.value = true;
+        nextTick(() => {
+          message.destroy('importRange');
+        });
+      } else {
+        message.error('请选择单行范围');
+      }
+    } else {
+      message.info('请在表中选择需要关联的表头');
     }
   };
 
