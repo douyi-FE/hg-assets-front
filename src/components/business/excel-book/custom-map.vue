@@ -4,7 +4,7 @@
     @close="isOpen = false"
     :get-container="false"
     placement="bottom"
-    height="300"
+    height="100%"
     :destroyOnClose="true"
     :maskClosable="false"
   >
@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onUnmounted, ref } from 'vue';
+  import { onUnmounted, ref, nextTick } from 'vue';
   import { message } from 'ant-design-vue';
   const isOpen = defineModel<boolean>('isOpen');
   const sourceFields = ref<any[]>([]);
@@ -46,6 +46,14 @@
   };
   const setImportFields = function (fields: any[] = []) {
     importFields.value = fields;
+    nextTick(() => {
+      for (let i = 0; i < sourceFields.value.length; i++) {
+        if (fields[i] === undefined) {
+          break;
+        }
+        form.value[sourceFields.value[i].text] = fields[i].text;
+      }
+    });
   };
   const setImportFieldRange = function (range) {
     importFieldRange.value = range;
@@ -86,3 +94,10 @@
     getFieldMapConfig,
   });
 </script>
+
+<style lang="less" scoped>
+  ::v-deep(.ant-form-item-label) > label {
+    white-space: normal;
+    word-break: break-all;
+  }
+</style>

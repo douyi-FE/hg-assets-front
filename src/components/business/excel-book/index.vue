@@ -772,11 +772,14 @@
       border: 1px solid;
     }
   }
-</style>
-
-<style lang="less" scoped>
   .import-spread {
     width: 100%;
     height: calc(100vh - 300px);
+  }
+</style>
+
+<style>
+  .ant-modal-close {
+    z-index: 1000 !important;
   }
 </style>
