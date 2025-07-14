@@ -9,6 +9,7 @@
       :dataSource="dataSource"
       @saveWorkBook="saveWorkBook"
       @cellClick="cellClick"
+      @clearStyles="clearStyles"
     />
     <template-bind
       v-model:isShowTemplateSetting="isShowTemplateSetting"
@@ -30,7 +31,11 @@
   import templateBind from '@/components/business/template-bind/index.vue';
   import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
   import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
-  import { getProjectDevice, saveProjectDevice } from '@/api/backend/api/projectDevice';
+  import {
+    getProjectDevice,
+    saveProjectDevice,
+    clearProjectDeviceStyles,
+  } from '@/api/backend/api/projectDevice';
   import { useUserStore } from '@/store/modules/user';
   // import { eventBus } from '@/utils/event-bus';
   let app = '';
@@ -158,6 +163,27 @@
 
   const cellClick = function (data: any) {
     console.log('data', data);
+  };
+
+  // 清除样式
+  const clearStyles = function () {
+    const userName = userStore.userInfo.username!;
+    clearProjectDeviceStyles({
+      type,
+      project,
+      device,
+      engineerId,
+      engineer,
+      templateId,
+      userName,
+    })
+      .then((res) => {
+        message.success('清除样式成功');
+        fetchExcel();
+      })
+      .catch((err) => {
+        message.error('清除样式失败');
+      });
   };
 
   onMounted(() => {

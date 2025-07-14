@@ -21,6 +21,7 @@ export const getSummaryDataTable = function (summaryData) {
     return null;
   }
   Object.keys(summaryData).forEach((key) => {
+    if (key.startsWith('_')) return;
     const sheetData = summaryData[key];
     Object.keys(sheetData).forEach((sheetKey) => {
       if (sheetKey.startsWith('table')) {
@@ -30,7 +31,6 @@ export const getSummaryDataTable = function (summaryData) {
   });
   return tableBindingPath;
 };
-
 
 export const setSummarySheet = function (spread, summaryData) {
   const sheet = spread.getActiveSheet();
@@ -55,7 +55,9 @@ export const setSummarySheet = function (spread, summaryData) {
   }
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
   // autoMerge(summarySheet, table, [table.range().colCount - 1]);
-}
+  // 完成绑定后，重新设置table名称
+  table.name('table_summary');
+};
 
 // 已过期
 export const canSwitchSummaryType = function (spread, summaryByTypeDisabled) {
@@ -72,20 +74,15 @@ const autoMerge = function (sheet, table, cols) {
   debugger;
   const dataRange = table.dataRange();
   for (let c = 0; c < cols.length; c++) {
-    const range = new GC.Spread.Sheets.Range(
-      dataRange.row,
-      cols[c],
-      dataRange.rowCount,
-      1
-    );
+    const range = new GC.Spread.Sheets.Range(dataRange.row, cols[c], dataRange.rowCount, 1);
     sheet.autoMerge(range, GC.Spread.Sheets.AutoMerge.AutoMergeDirection.none);
     sheet.autoMerge(
       range,
       GC.Spread.Sheets.AutoMerge.AutoMergeDirection.column,
-      GC.Spread.Sheets.AutoMerge.AutoMergeMode.restricted
+      GC.Spread.Sheets.AutoMerge.AutoMergeMode.restricted,
     );
   }
-}
+};
 
 // 表格左侧插入列
 const insertLeftColumns = function (sheet) {
@@ -96,9 +93,9 @@ const insertLeftColumns = function (sheet) {
   if (titleRowCount > 1) {
     sheet.addSpan(range.row, range.col, titleRowCount, 1);
   }
-  sheet.setValue(range.row, range.col, "创建人");
+  sheet.setValue(range.row, range.col, '创建人');
   sheet.setStyle(range.row, range.col, sheet.getStyle(range.row, 2));
-}
+};
 
 // 插入创建人字段
 export const insertTableColumns = function (sheet, dataSource) {
@@ -107,7 +104,7 @@ export const insertTableColumns = function (sheet, dataSource) {
   sheet.suspendCalcService();
   const table = sheet.tables.all()[0];
   const tableRange = table.range();
-  const lastField = table.getColumnDataField(tableRange.colCount - 1)
+  const lastField = table.getColumnDataField(tableRange.colCount - 1);
   addSheetRows(sheet, { [sheet.name()]: dataSource });
   if (lastField === '创建人') {
     sheet.resumeCalcService(true);
@@ -125,10 +122,8 @@ export const insertTableColumns = function (sheet, dataSource) {
   });
   cols.push(new GC.Spread.Sheets.Tables.TableColumn(cols.length, '创建人'));
   table.bind(cols, table.name(), dataSource[table.name()]);
-  sheet.setDataSource(
-    new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource)
-  );
+  sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(dataSource));
   // autoMerge(sheet, table, [cols.length - 1]);
   sheet.resumeCalcService(true);
   sheet.resumePaint();
-}
+};

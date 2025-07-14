@@ -27,3 +27,12 @@ export async function updateProjectDevice(params: any, options?: RequestOptions)
     data: params,
   });
 }
+
+// 保存应用数据
+export async function clearProjectDeviceStyles(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/project-device/clear-styles',
+    method: 'POST',
+    data: params,
+  });
+}

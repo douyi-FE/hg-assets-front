@@ -9,6 +9,14 @@
           <a-button type="default" @click="updateDicts" v-if="hasDict && isEditable"
             >更新字典</a-button
           >
+          <a-popconfirm
+            v-if="isFilling"
+            title="清除样式会保留数据，但所有样式将恢复默认，确定清除样式吗？"
+            @confirm="clearStyles"
+            @cancel="() => {}"
+          >
+            <a-button type="default">清除样式</a-button>
+          </a-popconfirm>
           <a-button type="default" @click="exportExcel">导出</a-button>
           <a-button type="default" @click="openImportDialog">导入</a-button>
           <a-dropdown-button type="primary" :disabled="!isEditable" @click="saveWorkBookData">
@@ -219,7 +227,7 @@
       }),
     },
   );
-  const emits = defineEmits(['saveWorkBook', 'cellClick']);
+  const emits = defineEmits(['saveWorkBook', 'cellClick', 'clearStyles']);
   let spread: any = null;
   const isFullscreen = ref(false);
 
@@ -319,6 +327,13 @@
         },
         function (e) {
           reject(e);
+        },
+        {
+          dynamicReferences: false,
+          calcOnDemand: true,
+          incrementalCalculation: true,
+          openMode: GC.Spread.Sheets.OpenMode.incremental,
+          includeUnusedStyles: false,
         },
       );
     });
@@ -457,6 +472,13 @@
 
               const fromRow = tableDataRange.row + tableDataRange.rowCount;
               activeSheet.addRows(fromRow, rowCount);
+              fillTableRows(
+                activeSheet.getParent(),
+                activeSheet,
+                table.dataRange(),
+                fromRow,
+                rowCount,
+              );
               if (importModel.value === 'append') {
                 // 从 fromRow
                 sheetData[key].splice(fromRow, rowCount, ...newImportData);
@@ -572,6 +594,7 @@
       document.getElementById('work_book_container'),
       designerConfig,
     );
+    designer.setData('isRibbonCollapse', true);
     spread = designer.getWorkbook();
     // spread = new GC.Spread.Sheets.Workbook('work_book_container');
     // 按照文档是可以直接注册事件，而不是延迟注册，但是实际测试不行，貌似是异步的
@@ -739,6 +762,10 @@
     } else {
       message.info('请在表中选择需要关联的表头');
     }
+  };
+
+  const clearStyles = function () {
+    emits('clearStyles');
   };
 
   defineExpose({
