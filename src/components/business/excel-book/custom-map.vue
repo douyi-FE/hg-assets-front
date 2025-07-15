@@ -15,7 +15,7 @@
       <a-row :gutter="[8, 10]">
         <a-col v-for="field in sourceFields" :key="`${field.row}${field.col}`" :span="8">
           <a-form-item :label="field.text" :name="field.text">
-            <a-select v-model:value="form[field.text]">
+            <a-select v-model:value="form[field.text]" allowClear>
               <a-select-option
                 v-for="importField in importFields"
                 :key="`${importField.row}${importField.col}`"
