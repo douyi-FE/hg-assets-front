@@ -393,6 +393,7 @@
     spreadToBase64(spread).then((sjs) => {
       sheetData['_sjs'] = sjs;
       emits('saveWorkBook', sheetData);
+      isSetSummarySheet = false;
     });
   };
 
