@@ -20,12 +20,17 @@ FileUploadCellType.prototype = new GC.Spread.Sheets.CellTypes.HyperLink();
 FileUploadCellType.prototype.paint = function (ctx, val, x, y, w, h, style, context) {
   // const sheet = context.sheet;
   // const val = sheet.getValue(context.row, context.col);
+  let cellType = style.cellType;
+  // cellType.text(fileNamesStr);
+  // cellType.linkToolTip(store.previewToolTip);
+  cellType._text = store.emptyText;
+  cellType._linkToolTip = store.emptyToolTip;
   style.hAlign = GC.Spread.Sheets.HorizontalAlign.center;
   style.vAlign = GC.Spread.Sheets.VerticalAlign.center;
   if (val === null || val === undefined || val.length === 0) {
     GC.Spread.Sheets.CellTypes.HyperLink.prototype.paint.apply(this, [
       ctx,
-      store.emptyText,
+      val,
       x,
       y,
       w,
@@ -38,7 +43,7 @@ FileUploadCellType.prototype.paint = function (ctx, val, x, y, w, h, style, cont
     if (!val.map) {
       GC.Spread.Sheets.CellTypes.HyperLink.prototype.paint.apply(this, [
         ctx,
-        store.emptyText,
+        val,
         x,
         y,
         w,
@@ -58,8 +63,10 @@ FileUploadCellType.prototype.paint = function (ctx, val, x, y, w, h, style, cont
       fileNamesStr += '...';
     }
     let cellType = style.cellType;
-    cellType.text(fileNamesStr);
-    cellType.linkToolTip(store.previewToolTip);
+    // cellType.text(fileNamesStr);
+    // cellType.linkToolTip(store.previewToolTip);
+    cellType._text = fileNamesStr;
+    cellType._linkToolTip = store.previewToolTip;
     style.wordWrap = true;
     style.hAlign = GC.Spread.Sheets.HorizontalAlign.left;
     style.vAlign = GC.Spread.Sheets.VerticalAlign.center;
@@ -87,45 +94,67 @@ export function setAttachColumn(spread, range, bindingPath = 'fileAttach') {
     message.error('请先设置绑定');
     return;
   }
-  const tableRange = table.dataRange();
-  if (tableRange.contains(range.row, range.col)) {
-    // 设置表格绑定列(后缀两位随机字符)
-    table.setColumnDataField(range.col, '上传附件' + Math.random().toString(36).substring(2, 15));
-    // 为每一行设置表格单元格类型
-    const rowCount = tableRange.rowCount;
-    sheet.suspendPaint();
-    for (let i = 0; i < rowCount; i++) {
-      let attachCellType = new FileUploadCellType();
-      sheet.setCellType(tableRange.row + i, range.col, attachCellType);
-      sheet
-        .getCell(tableRange.row + i, range.col)
-        .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
-        .vAlign(GC.Spread.Sheets.VerticalAlign.center);
-    }
-    sheet.resumePaint();
-  } else {
-    // 单元格附件
-    const row = range.row;
-    const col = range.col;
-    const rowCount = range.rowCount;
-    const colCount = range.colCount;
-    sheet.suspendPaint();
-    // 如果多选，合并单元格
-    if (rowCount > 1 || colCount > 1) {
-      sheet.addSpan(row, col, rowCount, colCount);
-    }
-    // 设置绑定路径
-    sheet.setBindingPath(row, col, bindingPath);
-    // 设置单元格类型
-    let attachCellType = new FileUploadCellType();
-    sheet.setCellType(row, col, attachCellType);
-    // 设置对齐方式
-    sheet
-      .getCell(row, col)
-      .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
-      .vAlign(GC.Spread.Sheets.VerticalAlign.center);
-    sheet.resumePaint();
+  // const tableRange = table.dataRange();
+  // if (tableRange.contains(range.row, range.col)) {
+  //   // 设置表格绑定列(后缀两位随机字符)
+  //   table.setColumnDataField(range.col, '上传附件' + Math.random().toString(36).substring(2, 15));
+  //   // 为每一行设置表格单元格类型
+  //   const rowCount = tableRange.rowCount;
+  //   sheet.suspendPaint();
+  //   for (let i = 0; i < rowCount; i++) {
+  //     let attachCellType = new FileUploadCellType();
+  //     sheet.setCellType(tableRange.row + i, range.col, attachCellType);
+  //     sheet
+  //       .getCell(tableRange.row + i, range.col)
+  //       .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
+  //       .vAlign(GC.Spread.Sheets.VerticalAlign.center);
+  //   }
+  //   sheet.resumePaint();
+  // } else {
+  //   // 单元格附件
+  //   const row = range.row;
+  //   const col = range.col;
+  //   const rowCount = range.rowCount;
+  //   const colCount = range.colCount;
+  //   sheet.suspendPaint();
+  //   // 如果多选，合并单元格
+  //   if (rowCount > 1 || colCount > 1) {
+  //     sheet.addSpan(row, col, rowCount, colCount);
+  //   }
+  //   // 设置绑定路径
+  //   sheet.setBindingPath(row, col, bindingPath);
+  //   // 设置单元格类型
+  //   let attachCellType = new FileUploadCellType();
+  //   sheet.setCellType(row, col, attachCellType);
+  //   // 设置对齐方式
+  //   sheet
+  //     .getCell(row, col)
+  //     .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
+  //     .vAlign(GC.Spread.Sheets.VerticalAlign.center);
+  //   sheet.resumePaint();
+  // }
+
+  // 设置附件单元格
+  const row = range.row;
+  const col = range.col;
+  const rowCount = range.rowCount;
+  const colCount = range.colCount;
+  sheet.suspendPaint();
+  // 如果多选，合并单元格
+  if (rowCount > 1 || colCount > 1) {
+    sheet.addSpan(row, col, rowCount, colCount);
   }
+  // 设置绑定路径
+  sheet.setBindingPath(row, col, bindingPath);
+  // 设置单元格类型
+  let attachCellType = new FileUploadCellType();
+  sheet.setCellType(row, col, attachCellType);
+  // 设置对齐方式
+  sheet
+    .getCell(row, col)
+    .hAlign(GC.Spread.Sheets.HorizontalAlign.center)
+    .vAlign(GC.Spread.Sheets.VerticalAlign.center);
+  sheet.resumePaint();
 }
 
 // 针对 tableRowChanged 的单元格类型设置

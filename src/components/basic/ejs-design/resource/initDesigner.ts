@@ -1,12 +1,19 @@
 import { cloneDeep } from 'lodash-es';
 import { store } from '../store';
-import { getInitData, getSheetBindingPaths, importFile, setChineseFont, showAlert } from './commonFunctions';
+import {
+  getInitData,
+  getSheetBindingPaths,
+  importFile,
+  setChineseFont,
+  showAlert,
+} from './commonFunctions';
 import { setHtmlCell } from './htmlCell';
 import { clearSelections, startSelectMode } from './initFormulaBar';
 import { addScript, runScript } from './scripts';
 import { setFieldsModel } from './setFieldsModel';
 import { printPreview } from './printPreview';
 import { conditionFormatConfig } from './conditionFormatsConfig';
+import { setTableColumn } from './tableFunctions';
 // 初始化设计器及相关菜单项
 export function initDesigner(divId) {
   // 获取初始化配置
@@ -128,31 +135,42 @@ export function initDesigner(divId) {
         await printPreview();
       },
     },
-    AutoSetTableColumn: {
-      text: '自动应用到整列',
-      type: 'checkbox',
-      bigButton: true,
-      commandName: 'autoSetTableColumn',
-      execute: async (context, propertyName) => {
-        store.setAutoSetTableColumn(!store.autoSetTableColumn);
-      },
-      getState: (context) => {
-        return store.autoSetTableColumn;
-      },
-    },
-    DesignerFormatCells: {
-      title: '设置单元格格式',
-      text: '设置单元格格式',
+    // AutoSetTableColumn: {
+    //   text: '自动应用到整列',
+    //   type: 'checkbox',
+    //   bigButton: true,
+    //   commandName: 'autoSetTableColumn',
+    //   execute: async (context, propertyName) => {
+    //     store.setAutoSetTableColumn(!store.autoSetTableColumn);
+    //   },
+    //   getState: (context) => {
+    //     return store.autoSetTableColumn;
+    //   },
+    // },
+    SetTableColumn: {
+      title: '第一行应用到整表',
+      text: '第一行应用到整表',
       iconClass: 'ribbon-button-formattable',
       bigButton: 'false',
-      commandName: 'designerFormatCells',
+      commandName: 'setTableColumn',
       execute: async (context, propertyName) => {
-        (store.spread as any).commandManager().execute({
-          cmd: 'formatCells',
-          sheetName: (store.spread as any).getActiveSheet().name(),
-        });
+        const sheet = (store.spread as any).getActiveSheet();
+        setTableColumn(sheet);
       },
     },
+    // DesignerFormatCells: {
+    //   title: '设置单元格格式',
+    //   text: '设置单元格格式',
+    //   iconClass: 'ribbon-button-formattable',
+    //   bigButton: 'false',
+    //   commandName: 'designerFormatCells',
+    //   execute: async (context, propertyName) => {
+    //     (store.spread as any).commandManager().execute({
+    //       cmd: 'formatCells',
+    //       sheetName: (store.spread as any).getActiveSheet().name(),
+    //     });
+    //   },
+    // },
     SetAttach: {
       title: '设置附件',
       text: '设置附件',
@@ -217,12 +235,12 @@ export function initDesigner(divId) {
       children: [
         {
           direction: 'vertical',
-          commands: ['AutoSetTableColumn'],
+          commands: ['SetTableColumn'],
         },
-        {
-          direction: 'vertical',
-          commands: ['DesignerFormatCells'],
-        },
+        // {
+        //   direction: 'vertical',
+        //   commands: ['DesignerFormatCells'],
+        // },
         {
           children: ['dropdownDataValidation', 'circleInvalidDataCommand', 'clearInvalidCircles'],
           command: 'dataValidation',

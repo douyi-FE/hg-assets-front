@@ -32,31 +32,34 @@ export const getSummaryDataTable = function (summaryData) {
   return tableBindingPath;
 };
 
+// 取消动态汇总表，改为模板中配置
 export const setSummarySheet = function (spread, summaryData) {
   const sheet = spread.getActiveSheet();
   let summarySheet = spread.getSheetFromName('汇总表');
   if (!summarySheet) {
-    summarySheet = new GC.Spread.Sheets.Worksheet();
-    summarySheet.fromJSON(sheet.toJSON());
-    summarySheet.name('汇总表');
-    spread.addSheet(spread.getSheetCount() + 1, summarySheet);
-    summarySheet = spread.getSheetFromName('汇总表');
+    return;
   }
   summarySheet.isSelected(false);
-  summarySheet.options.protectionOptions = protectionOptions;
+  // summarySheet.options.protectionOptions = protectionOptions;
   // summarySheet.options.isProtected = true;
   addSheetRows(summarySheet, summaryData);
-  insertTableColumns(summarySheet, summaryData);
+  const tableName = Object.keys(summaryData).find((key) => key.startsWith('table'));
+  if (!tableName) {
+    return;
+  }
+  const tableData = summaryData[tableName];
+  if (!tableData) {
+    return;
+  }
+  const dataCount = tableData.length;
   const table = summarySheet.tables.all()[0];
-  const tableBindingPath = table.bindingPath();
-  if (!summaryData[tableBindingPath]) {
-    const tableKey = Object.keys(summaryData).find((key) => key.startsWith('table'));
-    summaryData[tableBindingPath] = summaryData[tableKey];
+  summaryData[table.bindingPath()] = tableData;
+  delete summaryData[tableName];
+  const rowCount = table.range().rowCount;
+  if (dataCount > rowCount) {
+    summarySheet.addRows(summarySheet.getRowCount(), dataCount - rowCount + 4);
   }
   summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(summaryData));
-  // autoMerge(summarySheet, table, [table.range().colCount - 1]);
-  // 完成绑定后，重新设置table名称
-  table.name('table_summary');
 };
 
 // 已过期
@@ -71,7 +74,6 @@ export const canSwitchSummaryType = function (spread, summaryByTypeDisabled) {
 
 // 自动合并
 const autoMerge = function (sheet, table, cols) {
-  debugger;
   const dataRange = table.dataRange();
   for (let c = 0; c < cols.length; c++) {
     const range = new GC.Spread.Sheets.Range(dataRange.row, cols[c], dataRange.rowCount, 1);

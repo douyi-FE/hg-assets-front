@@ -75,7 +75,14 @@ export function base64ToSpread(base64, callback) {
     function (e) {
       console.log('加载模板出错 ============= >>> ', e);
     },
-    { openMode: GC.Spread.Sheets.OpenMode.lazy },
+    {
+      dynamicReferences: false,
+      calcOnDemand: true,
+      incrementalCalculation: true,
+      openMode: GC.Spread.Sheets.OpenMode.incremental,
+      includeUnusedStyles: false,
+      ignoreFormula: true,
+    },
   );
 }
 
@@ -360,14 +367,14 @@ export function getSheetBindingPaths(sheet) {
         result[bp] = {
           range: range,
           rangeText:
-            "=" +
+            '=' +
             sheet.name() +
-            "!" +
+            '!' +
             GC.Spread.Sheets.CalcEngine.rangeToFormula(
               range,
               0,
               0,
-              GC.Spread.Sheets.CalcEngine.RangeReferenceRelative.allRelative
+              GC.Spread.Sheets.CalcEngine.RangeReferenceRelative.allRelative,
             ),
         };
       }
@@ -377,7 +384,7 @@ export function getSheetBindingPaths(sheet) {
   if (tables && tables.length > 0) {
     const table = tables[0];
     if (table.bindingPath()) {
-      result["tableBindingPath"] = {
+      result['tableBindingPath'] = {
         tableName: table.name(),
         range: table.range(),
         bindingPath: table.bindingPath(),
@@ -394,19 +401,19 @@ export function generateUUID() {
 
 // 生成表格名称
 export function generateTableName() {
-  return "table_" + generateUUID();
+  return 'table_' + generateUUID();
 }
 
 export function setChineseFont(config) {
   // 配置中文字体
-  const fontFamilyCmd = GC.Spread.Sheets.Designer.getCommand("fontFamily");
+  const fontFamilyCmd = GC.Spread.Sheets.Designer.getCommand('fontFamily');
   const customCNFont = [
-    { value: "微软雅黑", text: "微软雅黑" },
-    { value: "黑体", text: "黑体" },
-    { value: "新宋体", text: "新宋体" },
-    { value: "仿宋", text: "仿宋" },
-    { value: "隶书", text: "隶书" },
-    { value: "楷体", text: "楷体" },
+    { value: '微软雅黑', text: '微软雅黑' },
+    { value: '黑体', text: '黑体' },
+    { value: '新宋体', text: '新宋体' },
+    { value: '仿宋', text: '仿宋' },
+    { value: '隶书', text: '隶书' },
+    { value: '楷体', text: '楷体' },
   ];
   fontFamilyCmd.dropdownList = customCNFont.concat(fontFamilyCmd.dropdownList);
   config.commandMap.fontFamily = fontFamilyCmd;

@@ -28,10 +28,19 @@ export async function updateProjectDevice(params: any, options?: RequestOptions)
   });
 }
 
-// 保存应用数据
+// 清空指定用户的样式文件
 export async function clearProjectDeviceStyles(params: any, options?: RequestOptions) {
   return request<any>({
     url: '/api/project-device/clear-styles',
+    method: 'POST',
+    data: params,
+  });
+}
+
+// 清空所有样式文件
+export async function clearAllProjectDeviceStyles(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/project-device/clear-all-styles',
     method: 'POST',
     data: params,
   });

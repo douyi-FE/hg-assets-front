@@ -19,6 +19,7 @@
           </a-popconfirm>
           <a-button type="default" @click="exportExcel">导出</a-button>
           <a-button type="default" @click="openImportDialog">导入</a-button>
+          <!-- <a-button type="default" @click="clearAllStyles">清除所有样式</a-button> -->
           <a-dropdown-button type="primary" :disabled="!isEditable" @click="saveWorkBookData">
             <span>保存</span>
             <template #overlay>
@@ -145,6 +146,7 @@
   import { message } from 'ant-design-vue';
   import History from './history.vue';
   import CustomMap from './custom-map.vue';
+  import { clearAllProjectDeviceStyles } from '@/api/backend/api/projectDevice';
   // import {
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
@@ -169,7 +171,7 @@
     setChineseFont,
   } from '@/components/basic/ejs-design/resource/commonFunctions';
   import {
-    fillTableRows,
+    // fillTableRows,
     fillFormulas,
     fillCellTypes,
   } from '@/components/basic/ejs-design/resource/tableRowChanged';
@@ -187,8 +189,8 @@
   const isFilling = ref(true);
   const isEditable = ref(true);
   const dictDataFields = ref<any>({});
-  let summarySheetData: any = null;
   let activeSheet: any = null;
+  let isSetSummarySheet = false;
   const isShowHistoryList = ref(false);
   const isShowCustomMap = ref(false);
   const importModel = ref('append');
@@ -297,24 +299,22 @@
             ds.engineer = dataSource.engineer;
           }
           sheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(ds));
-          fillFormulasAndCellTypes(spread, sheet);
+          // fillFormulasAndCellTypes(spread, sheet);
           // 设置汇总数据
           const tableBindingPath = getSummaryDataTable(summaryData);
           if (tableBindingPath && Object.keys(tableBindingPath).length > 0) {
             //TODO 存在多表数据时，暂时只取一个
-            summarySheetData = summaryData[Object.keys(tableBindingPath)[0]];
-            setSummarySheet(spread, summarySheetData);
-            if (!editable) {
-              // 激活汇总表
-              spread.setActiveSheet(spread.getSheetFromName('汇总表').name());
-              // 保护所有表
-              protectSheet(spread, true);
-            }
-            // 设置汇总表样式
-            const summarySheet = spread.getSheetFromName('汇总表');
-            summarySheet.tables.all()[0].style('standard');
-            // 填充汇总表公式和单元格类型
-            fillFormulasAndCellTypes(spread, summarySheet);
+            spread.bind(GC.Spread.Sheets.Events.SheetChanging, function (sender, args) {
+              const sheetName = args.sheetName;
+              if (sheetName === '汇总表' && !isSetSummarySheet) {
+                message.loading('汇总数据加载中，请稍后...');
+                isSetSummarySheet = true;
+                setTimeout(() => {
+                  const summarySheetData = summaryData[Object.keys(tableBindingPath)[0]];
+                  setSummarySheet(spread, summarySheetData);
+                }, 100);
+              }
+            });
           }
           spread.resumePaint();
           initUploadFile(spread);
@@ -334,11 +334,13 @@
           incrementalCalculation: true,
           openMode: GC.Spread.Sheets.OpenMode.incremental,
           includeUnusedStyles: false,
+          ignoreFormula: true,
         },
       );
     });
   };
 
+  // 性能问题，已废弃
   const fillFormulasAndCellTypes = function (spread: any, sheet: any) {
     if (!sheet) return;
     const table = sheet.tables.all()[0];
@@ -382,6 +384,11 @@
 
   const saveWorkBookData = function () {
     const sheetData = getSheetTableData(spread);
+    // 去掉汇总数据
+    const summarySheet = spread.getSheetFromName('汇总表');
+    if (summarySheet) {
+      summarySheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource({}));
+    }
     // 导出 sjs
     spreadToBase64(spread).then((sjs) => {
       sheetData['_sjs'] = sjs;
@@ -472,13 +479,6 @@
 
               const fromRow = tableDataRange.row + tableDataRange.rowCount;
               activeSheet.addRows(fromRow, rowCount);
-              fillTableRows(
-                activeSheet.getParent(),
-                activeSheet,
-                table.dataRange(),
-                fromRow,
-                rowCount,
-              );
               if (importModel.value === 'append') {
                 // 从 fromRow
                 sheetData[key].splice(fromRow, rowCount, ...newImportData);
@@ -521,7 +521,7 @@
           table.showFooter(false);
           const fromRow = tableDataRange.row + tableDataRange.rowCount;
           activeSheet.addRows(fromRow, rowCount);
-          fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), fromRow, rowCount);
+          // fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), fromRow, rowCount);
           // 追加到表格数据源中
           const sheetData = activeSheet.getDataSource().getSource();
           Object.keys(sheetData).forEach((key: string) => {
@@ -766,6 +766,12 @@
 
   const clearStyles = function () {
     emits('clearStyles');
+  };
+
+  const clearAllStyles = function () {
+    clearAllProjectDeviceStyles({}).then((res) => {
+      message.success('清除所有样式成功');
+    });
   };
 
   defineExpose({
