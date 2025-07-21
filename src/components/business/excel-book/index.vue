@@ -425,9 +425,20 @@
     input.onchange = function (e: any) {
       const file = e.target.files[0];
       const wb = GC.Spread.Sheets.findControl('importSpread');
-      wb.import(file, () => {
-        //
-      });
+      wb.import(
+        file,
+        () => {
+          //
+        },
+        () => {
+          message.error('导入失败');
+        },
+        {
+          openMode: GC.Spread.Sheets.OpenMode.lazy,
+          includeFormulas: false,
+          includeStyles: false,
+        },
+      );
     };
     input.click();
   };
