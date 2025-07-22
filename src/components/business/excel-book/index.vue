@@ -500,7 +500,9 @@
               }
             }
           });
-          activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
+          // activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
+          // 给底部插入一行，让绑定刷新
+          sheet.addRows(sheet.getRowCount(), 1);
           table.showFooter(true);
           activeSheet.resumePaint();
           activeSheet.resumeCalcService(true);
