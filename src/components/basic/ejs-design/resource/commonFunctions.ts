@@ -156,9 +156,13 @@ export function getRangeValue(ranges) {
   return selectRanges[0];
 }
 
-export function getSpreadSJS() {
+export function getSpreadSJS(spreadjs = null) {
+  const spread = store.spread || spreadjs;
+  if (!spread) {
+    return Promise.reject('spread is null');
+  }
   return new Promise((resolve, reject) => {
-    (store.spread as any).save(
+    (spread as any).save(
       (blob) => {
         // 将 blob 转为 Base64
         const reader = new FileReader();

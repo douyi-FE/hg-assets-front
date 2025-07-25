@@ -119,7 +119,7 @@
             dataSource.value.engineer = engineer;
             content.value = {
               tableName: 'project_device',
-              tableKey: projectData?.projectDevice?._id,
+              tableKey: `${engineerId}-${type}`,
               ejs: template.content,
               dataSource: projectData?.projectDevice?.projectData[userName] || dataSource,
               summaryData: projectData?.projectDeviceSummary || dataSource,

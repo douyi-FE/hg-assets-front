@@ -146,7 +146,6 @@
   import { message } from 'ant-design-vue';
   import History from './history.vue';
   import CustomMap from './custom-map.vue';
-  import { clearAllProjectDeviceStyles } from '@/api/backend/api/projectDevice';
   // import {
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
@@ -159,7 +158,6 @@
     getSheetTableData,
     addSheetRows,
     updateAppContainerStyle,
-    protectSheet,
   } from './commonFuncs';
   import { attachListColumns } from '@/components/basic/ejs-design/config';
   import { initWorkbook } from '@/components/basic/ejs-design/resource/initWorkbook';
@@ -169,7 +167,9 @@
     base64ToBlob,
     spreadToBase64,
     setChineseFont,
+    getSpreadSJS,
   } from '@/components/basic/ejs-design/resource/commonFunctions';
+  import { clearAllProjectDeviceStyles } from '@/api/backend/api/projectDevice';
   import {
     // fillTableRows,
     fillFormulas,
@@ -580,6 +580,7 @@
   watch(
     () => props.content,
     (newVal) => {
+      console.log('newVal:', newVal);
       message.loading('数据渲染中...');
       renderExcelBySjs(
         toRaw(newVal.ejs),
@@ -672,12 +673,14 @@
     }
   };
 
-  const handleMenuClick = (e: any) => {
+  const handleMenuClick = async (e: any) => {
     const { key } = e;
     if (key === 'saveHistoryVersion') {
       const sheetData = getSheetTableData(spread);
+      const ejs = await getSpreadSJS(spread);
       const data = {
         tableName: props.content.tableName,
+        ejs,
         tableKey: props.content.tableKey,
         name: `${props.content.fileName}-${dayjs().format('YYYYMMDDHHmmss')}`,
         applicationData: sheetData,
@@ -698,9 +701,29 @@
     }
   };
 
-  const handleHistoryVersionApply = (applicationData: Object) => {
-    console.log(applicationData);
-    updateSheetDataSource(applicationData);
+  const handleHistoryVersionApply = (applicationData: Object, ejs: string) => {
+    // updateSheetDataSource(applicationData);
+    const arrayBuffer = base64ToArrayBuffer(ejs);
+    const fileBlob = new Blob([arrayBuffer], {
+      type: 'application/octet-stream',
+    });
+    spread.open(
+      fileBlob,
+      function () {
+        message.success('应用历史版本成功');
+      },
+      function (err) {
+        message.error('应用历史版本失败' + err.message);
+      },
+      {
+        dynamicReferences: false,
+        calcOnDemand: true,
+        incrementalCalculation: true,
+        openMode: GC.Spread.Sheets.OpenMode.incremental,
+        includeUnusedStyles: false,
+        ignoreFormula: true,
+      },
+    );
   };
 
   const updateSheetDataSource = function (dataSource: any) {

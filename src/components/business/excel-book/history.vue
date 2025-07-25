@@ -62,6 +62,10 @@
       type: String,
       required: true,
     },
+    ejs: {
+      type: String,
+      required: false,
+    },
   });
   const emits = defineEmits(['historyVersionApply']);
   const isShowHistoryList = defineModel<boolean>('isShowHistoryList', { required: true });
@@ -101,7 +105,7 @@
   };
   const fetchHistoryVersionList = function (params: any = {}) {
     getApplicationDataHistoryList({
-      tableName: props.tableName,
+      tableKey: props.tableKey,
       ...params,
     }).then((res) => {
       historyVersionListData.value = res;
@@ -111,7 +115,7 @@
   const handleHistoryVersionApply = function (record: any) {
     getApplicationDataHistoryById(record._id)
       .then((res) => {
-        emits('historyVersionApply', res.applicationData);
+        emits('historyVersionApply', res.applicationData, res.ejs);
       })
       .catch((err) => {
         message.error('发生错误请重试');
