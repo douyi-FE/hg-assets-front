@@ -24,6 +24,9 @@
             </div>
           </div>
         </template>
+        <template v-if="column.dataIndex === 'createdAt'">
+          {{ dayjs(record.createdAt).format('YYYY-MM-DD HH:mm:ss') }}
+        </template>
         <template v-if="column.dataIndex === 'action'">
           <a-space>
             <a-button type="primary" @click="handleHistoryVersionApply(record)">应用</a-button>
@@ -44,6 +47,7 @@
 
 <script setup lang="ts">
   import { ref, defineModel, watch } from 'vue';
+  import dayjs from 'dayjs';
   import { CheckOutlined, EditOutlined, CloseOutlined } from '@ant-design/icons-vue';
   import { message } from 'ant-design-vue';
   import {
