@@ -3,12 +3,14 @@
     <Teleport to="body" :disabled="!isFullscreen">
       <div class="work-book-content">
         <div class="work-book-operator">
-          <a-button type="default" @click="addDicts" v-if="hasDict && isEditable"
-            >添加字典</a-button
-          >
-          <a-button type="default" @click="updateDicts" v-if="hasDict && isEditable"
-            >更新字典</a-button
-          >
+          <a-dropdown-button v-if="hasDict && isEditable" @click="addDicts">
+            <span>添加字典</span>
+            <template #overlay>
+              <a-menu @click="updateDicts">
+                <a-menu-item key="updateDicts"> 批量更新字典 </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown-button>
           <a-popconfirm
             v-if="isFilling"
             title="清除样式会保留数据，但所有样式将恢复默认，确定清除样式吗？"
@@ -578,6 +580,11 @@
     await addFieldDict(spread, dictDataFields, props.content.fileName);
   };
 
+  const addMultiColDicts = async function () {
+    message.warning('请选择需要添加字典的列');
+    // await addFieldDict(spread, dictDataFields, props.content.fileName);
+  };
+
   watch(
     () => props.content,
     (newVal) => {
@@ -711,7 +718,6 @@
     spread.open(
       fileBlob,
       function () {
-        spread.options.incrementalCalculation = true;
         // 需要手动添加Evaluate函数，不然会丢失自定义函数
         spread.addCustomFunction(new Evaluate());
         spread.suspendPaint();

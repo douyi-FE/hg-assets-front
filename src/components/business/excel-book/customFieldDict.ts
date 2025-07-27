@@ -47,30 +47,24 @@ export const setFieldDict = function (spread: any, dictData: any, dictDataFields
       const tableCol = table.getColumnDataField(j);
       if (sheetDictData[sheet.name()] && sheetDictData[sheet.name()][tableCol]) {
         const colValues = sheetDictData[sheet.name()][tableCol];
-        // 设置下拉框
-        // const comboItems = colValues.map((item) => ({ text: item, value: item }));
-        // const combo = new GC.Spread.Sheets.CellTypes.ComboBox();
-        // combo.items(comboItems).editorValueType(GC.Spread.Sheets.CellTypes.EditorValueType.text);
-        // sheet.setCellType(-1, col + j, combo);
         // 更换为list validator
-        const dictValidator = new GC.Spread.Sheets.DataValidation.createListValidator(colValues.join(','));
-        // dictValidator.inputTitle("请选择");
-        // dictValidator.inputMessage(colValues.join(','));
+        const dictValidator = new GC.Spread.Sheets.DataValidation.createListValidator(
+          colValues.join(','),
+        );
         dictValidator.highlightStyle({
           type: GC.Spread.Sheets.DataValidation.HighlightType.icon,
-          color: "gold",
-          position: GC.Spread.Sheets.DataValidation.HighlightPosition.topRight
+          color: 'gold',
+          position: GC.Spread.Sheets.DataValidation.HighlightPosition.topRight,
         });
         sheet.setDataValidator(-1, col + j, dictValidator);
       }
     }
+    // 清除表格外单元格的校验
     const sheetRowCount = sheet.getRowCount();
-    // const rowCellType = new TemplateCellType();
     for (let r = 0; r < sheetRowCount; r++) {
       if (r >= row && r < row + rowCount) {
         continue;
       }
-      // sheet.setCellType(r, -1, rowCellType);
       sheet.setDataValidator(r, -1, null);
     }
   }
@@ -105,40 +99,50 @@ export const updateDict = async function (spread: any, dictDataFields: any, file
         }
         const isValid = sheet.isValid(r, col + j, value);
         if (!isValid) {
+          // 排除重复值
+          const isExist = dictData.some((item) => item.可选值 === value);
+          if (isExist) {
+            continue;
+          }
           dictData.push({
-            '模板名称': fileName,
+            模板名称: fileName,
             Sheet名称: sheet.name(),
-            '字段名称': tableCol,
-            '可选值': value
+            字段名称: tableCol,
+            可选值: value,
           });
         }
       }
     }
   }
-  console.log(dictData);
   if (dictData.length > 0) {
-    // 提醒用户，更新字典会重置页面，未保存数据将丢失，是否继续
     await Modal.confirm({
       title: '提示',
-      content: '更新字典会重置页面，未保存数据将丢失，是否继续',
+      content: '把当前列中所有值添加到字典中，此操作会在所有同类表格中生效，是否继续？',
       onOk: async () => {
         // 更新到字典
-        const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
+        const dictApp = await getApplicationByName(TEMPLATE_FIELD_DICT_NAME);
+        const templateFieldDictId = dictApp.templateId;
+        const initDataSource = dictApp.initDataSource;
+        const dictTableData = initDataSource['列表字段取值字典'];
+        const dictBindingPath = Object.keys(dictTableData).find((key) => key.startsWith('table'));
+
         const res = await Api.applicationData.appendApplicationData({
           templateId: templateFieldDictId,
-          applicationData: { '列表字段取值字典': dictData }
+          applicationData: { 列表字段取值字典: { [dictBindingPath!]: dictData } },
         });
         if (res.code === 200) {
           message.success('更新字典成功');
           // 重新加载当前表格，只需要刷新字典即可，其他数据不变
-          const dictData = await getTemplateFieldDict({ templateId: templateFieldDictId, dictName: fileName });
+          const dictData = await getTemplateFieldDict({
+            templateId: templateFieldDictId,
+            dictName: fileName,
+          });
           setFieldDict(spread, dictData, dictDataFields);
         } else {
           message.error('更新字典失败');
         }
-      }
+      },
     });
-
   } else {
     message.success('没有检索到可更新的字典值');
   }
@@ -146,46 +150,56 @@ export const updateDict = async function (spread: any, dictDataFields: any, file
 
 // 把选中单元格数据添加到字典
 export const addFieldDict = async function (spread: any, dictDataFields: any, fileName: string) {
-  debugger;
-  const dictData: any[] = [];
-  const sheet = spread.getActiveSheet();
-  const table = sheet.tables.all()[0];
-  const tableRange = table.dataRange();
-  const col = tableRange.col;
-  const activeRow = sheet.getActiveRowIndex();
-  const activeCol = sheet.getActiveColumnIndex();
-  if (tableRange.contains(activeRow, activeCol)) {
-    const validator = sheet.getDataValidator(activeRow, activeCol);
-    if (validator) {
-      message.warning('该单元格已设置字典，请点击【更新字典】按钮更新字典');
-      return;
-    }
-    const value = sheet.getValue(activeRow, activeCol);
-    if (!value || (typeof value === 'string' && value.trim() === '')) {
-      message.warning('请选择一个有效值');
-      return;
-    }
-    dictData.push({
-      '模板名称': fileName,
-      Sheet名称: sheet.name(),
-      '字段名称': table.getColumnDataField(activeCol - col),
-      '可选值': value
-    });
-    // 更新字典
-    const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
-    const res = await Api.applicationData.appendApplicationData({
-      templateId: templateFieldDictId,
-      applicationData: { '列表字段取值字典': dictData }
-    });
-    if (res.code === 200) {
-      message.success('添加字典成功');
-      // 重新加载当前表格，只需要刷新字典即可，其他数据不变
-      const dictDatas = await getTemplateFieldDict({ templateId: templateFieldDictId, dictName: fileName });
-      setFieldDict(spread, dictDatas, dictDataFields);
-    } else {
-      message.error('添加字典失败');
-    }
-  } else {
-    message.warning('请在表格中选择一个单元格');
-  }
+  // 提醒用户是否继续
+  await Modal.confirm({
+    title: '提示',
+    content: '添加字典会在所有同类表格中生效，是否继续？',
+    onOk: async () => {
+      const dictData: any[] = [];
+      const sheet = spread.getActiveSheet();
+      const table = sheet.tables.all()[0];
+      const tableRange = table.dataRange();
+      const col = tableRange.col;
+      const activeRow = sheet.getActiveRowIndex();
+      const activeCol = sheet.getActiveColumnIndex();
+      if (tableRange.contains(activeRow, activeCol)) {
+        const value = sheet.getValue(activeRow, activeCol);
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          message.warning('请选择一个有效值');
+          return;
+        }
+        dictData.push({
+          模板名称: fileName,
+          Sheet名称: sheet.name(),
+          字段名称: table.getColumnDataField(activeCol - col),
+          可选值: value,
+        });
+        // 获取字典表的bindingPath
+        const dictApp = await getApplicationByName(TEMPLATE_FIELD_DICT_NAME);
+        const initDataSource = dictApp.initDataSource;
+        const dictTableData = initDataSource['列表字段取值字典'];
+        const dictBindingPath = Object.keys(dictTableData).find((key) => key.startsWith('table'));
+        // 更新字典
+        const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME))
+          .templateId;
+        const res = await Api.applicationData.appendApplicationData({
+          templateId: templateFieldDictId,
+          applicationData: { 列表字段取值字典: { [dictBindingPath!]: dictData } },
+        });
+        if (res.code === 200) {
+          message.success('添加字典成功');
+          // 重新加载当前表格，只需要刷新字典即可，其他数据不变
+          const dictDatas = await getTemplateFieldDict({
+            templateId: templateFieldDictId,
+            dictName: fileName,
+          });
+          setFieldDict(spread, dictDatas, dictDataFields);
+        } else {
+          message.error('添加字典失败');
+        }
+      } else {
+        message.warning('请在表格中选择一个单元格');
+      }
+    },
+  });
 };

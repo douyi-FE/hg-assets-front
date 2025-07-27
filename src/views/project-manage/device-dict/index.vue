@@ -43,7 +43,7 @@
     tableKey: '',
     tableName: '',
     editable: true,
-    hasDict: true,
+    hasDict: false,
     ejs: '',
     dataSource: {
       table: [{}],
