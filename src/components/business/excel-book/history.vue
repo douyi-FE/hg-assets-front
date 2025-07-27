@@ -55,6 +55,7 @@
     deleteApplicationDataHistory,
     updateApplicationDataHistoryName,
     getApplicationDataHistoryById,
+    searchApplicationDataHistoryList,
   } from '@/api/backend/api/templateDataHistory';
 
   const props = defineProps({
@@ -107,6 +108,16 @@
   const edit = function (record: any) {
     isEditName.value = true;
   };
+
+  const searchHistoryVersionList = function (params: any = {}) {
+    searchApplicationDataHistoryList({
+      tableKey: props.tableKey,
+      ...params,
+    }).then((res) => {
+      historyVersionListData.value = res;
+    });
+  };
+
   const fetchHistoryVersionList = function (params: any = {}) {
     getApplicationDataHistoryList({
       tableKey: props.tableKey,
@@ -136,7 +147,7 @@
   };
 
   const handleSearch = function () {
-    fetchHistoryVersionList({
+    searchHistoryVersionList({
       name: searchName.value,
     });
   };

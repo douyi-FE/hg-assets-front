@@ -180,6 +180,7 @@
   import { useUserStore } from '@/store/modules/user';
   import { addApplicationDataHistory } from '@/api/backend/api/templateDataHistory';
   // import { initCustomPasteEvents } from './customPasteEvents';
+  import { Evaluate } from '@/components/basic/ejs-design/resource/evaluateFunction';
   const userStore = useUserStore();
   const openAttachList = ref(false);
   const openPreviewFile = ref(false);
@@ -710,6 +711,23 @@
     spread.open(
       fileBlob,
       function () {
+        spread.options.incrementalCalculation = true;
+        // 需要手动添加Evaluate函数，不然会丢失自定义函数
+        spread.addCustomFunction(new Evaluate());
+        spread.suspendPaint();
+        spread.suspendCalcService();
+        Object.keys(applicationData).forEach((key) => {
+          const sheet = spread.getSheetFromName(key);
+          if (sheet) {
+            sheet.setDataSource(
+              new GC.Spread.Sheets.Bindings.CellBindingSource(applicationData[key]),
+            );
+            // 需要重新计算，不然会出现 #NAME? 错误
+            sheet.recalcAll(true);
+          }
+        });
+        spread.resumeCalcService(true);
+        spread.resumePaint();
         message.success('应用历史版本成功');
       },
       function (err) {
@@ -721,7 +739,6 @@
         incrementalCalculation: true,
         openMode: GC.Spread.Sheets.OpenMode.incremental,
         includeUnusedStyles: false,
-        ignoreFormula: true,
       },
     );
   };

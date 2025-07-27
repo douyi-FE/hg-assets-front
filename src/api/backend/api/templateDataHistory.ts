@@ -11,6 +11,15 @@ export async function getApplicationDataHistoryList(params: any) {
   });
 }
 
+// 根据条件检索应用数据历史版本列表
+export async function searchApplicationDataHistoryList(params: any) {
+  return request<any>({
+    url: '/api/application/history/search',
+    method: 'GET',
+    params,
+  });
+}
+
 // 应用数据历史版本添加
 export async function addApplicationDataHistory(data: any) {
   return request<any>({
