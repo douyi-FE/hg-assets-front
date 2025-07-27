@@ -677,7 +677,7 @@
     const { key } = e;
     if (key === 'saveHistoryVersion') {
       const sheetData = getSheetTableData(spread);
-      const ejs = await getSpreadSJS(spread);
+      const ejs = await getSpreadSJS(spread, { includeBindingSource: true });
       const data = {
         tableName: props.content.tableName,
         ejs,

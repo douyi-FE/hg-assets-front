@@ -156,7 +156,7 @@ export function getRangeValue(ranges) {
   return selectRanges[0];
 }
 
-export function getSpreadSJS(spreadjs = null) {
+export function getSpreadSJS(spreadjs = null, options: any = {}) {
   const spread = store.spread || spreadjs;
   if (!spread) {
     return Promise.reject('spread is null');
@@ -179,7 +179,7 @@ export function getSpreadSJS(spreadjs = null) {
         console.log('服务器错误: ', e);
         reject(e);
       },
-      { includeUnusedNames: false },
+      { includeUnusedNames: false, ...options },
     );
   });
 }
