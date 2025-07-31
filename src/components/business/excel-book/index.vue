@@ -264,6 +264,8 @@
           if (editable !== undefined) {
             isEditable.value = editable;
           }
+          // 加载完先添加自定义函数
+          spread.addCustomFunction(new Evaluate());
           // 增量计算
           spread.options.incrementalCalculation = true;
           spread.suspendPaint();
@@ -454,6 +456,10 @@
       if (sheet && activeSheet) {
         // 先获取模板的数据起点和列范围
         const table = activeSheet.tables.all()[0];
+        const isShowFooter = table.showFooter();
+        if (isShowFooter) {
+          table.showFooter(false);
+        }
         const tableDataRange = table.dataRange();
         const startRow = tableDataRange.row;
         const startColumn = tableDataRange.col;
@@ -504,13 +510,15 @@
             }
           });
           // activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
-          // 给底部插入一行，让绑定刷新
-          sheet.addRows(sheet.getRowCount(), 1);
-          table.showFooter(true);
+          if (isShowFooter) {
+            table.showFooter(true);
+          }
           activeSheet.resumePaint();
           activeSheet.resumeCalcService(true);
           // 关闭模态窗口
           openImportModal.value = false;
+          activeSheet.addRows(0, 1);
+          activeSheet.deleteRows(0, 1);
         }
         // 校验数据区域有效性
         else if (row + rowCount < startRow || column + columnCount < endColumn) {
@@ -535,7 +543,9 @@
           }
           activeSheet.suspendPaint();
           activeSheet.suspendCalcService();
-          table.showFooter(false);
+          if (isShowFooter) {
+            table.showFooter(false);
+          }
           const fromRow = tableDataRange.row + tableDataRange.rowCount;
           activeSheet.addRows(fromRow, rowCount);
           // fillTableRows(activeSheet.getParent(), activeSheet, table.dataRange(), fromRow, rowCount);
@@ -552,12 +562,16 @@
               }
             }
           });
-          activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
-          table.showFooter(true);
+          // activeSheet.setDataSource(new GC.Spread.Sheets.Bindings.CellBindingSource(sheetData));
+          if (isShowFooter) {
+            table.showFooter(true);
+          }
           activeSheet.resumePaint();
           activeSheet.resumeCalcService(true);
           // 关闭模态窗口
           openImportModal.value = false;
+          activeSheet.addRows(0, 1);
+          activeSheet.deleteRows(0, 1);
         }
       } else {
         message.warning('未找到有效表单，请检查');
@@ -578,11 +592,6 @@
 
   const addDicts = async function () {
     await addFieldDict(spread, dictDataFields, props.content.fileName);
-  };
-
-  const addMultiColDicts = async function () {
-    message.warning('请选择需要添加字典的列');
-    // await addFieldDict(spread, dictDataFields, props.content.fileName);
   };
 
   watch(
