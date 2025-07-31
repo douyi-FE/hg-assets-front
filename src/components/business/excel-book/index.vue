@@ -3,6 +3,8 @@
     <Teleport to="body" :disabled="!isFullscreen">
       <div class="work-book-content">
         <div class="work-book-operator">
+          <slot name="operator" />
+          <a-button @click="fieldConfig" v-if="props.templateId">字段配置</a-button>
           <a-dropdown-button v-if="hasDict && isEditable" @click="addDicts">
             <span>添加字典</span>
             <template #overlay>
@@ -138,6 +140,14 @@
       v-model:isShowHistoryList="isShowHistoryList"
       @history-version-apply="handleHistoryVersionApply"
     />
+    <!-- 字段配置 -->
+    <Relation
+      v-model:open="isShowRelation"
+      :templateId="props.templateId"
+      :spread="spread"
+      :mainField="mainField"
+      :relationFields="relationFields"
+    />
   </div>
 </template>
 
@@ -148,6 +158,7 @@
   import { message } from 'ant-design-vue';
   import History from './history.vue';
   import CustomMap from './custom-map.vue';
+  import Relation from './relation.vue';
   // import {
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
@@ -198,9 +209,14 @@
   const isShowCustomMap = ref(false);
   const importModel = ref('append');
   const customMapRef = ref();
+  // 字段配置
+  const isShowRelation = ref(false);
+  const mainField = ref<any>({});
+  const relationFields = ref<any[]>([]);
   // summaryData 设置非必填
   const props = withDefaults(
     defineProps<{
+      templateId?: string;
       content: {
         ejs: string;
         dataSource: any;
@@ -597,7 +613,6 @@
   watch(
     () => props.content,
     (newVal) => {
-      console.log('newVal:', newVal);
       message.loading('数据渲染中...');
       renderExcelBySjs(
         toRaw(newVal.ejs),
@@ -808,7 +823,7 @@
         }
         const table = activeSheet.tables.all()[0];
         if (table) {
-          const tableRange = table.range();
+          const tableRange = table.dataRange();
           const { row, col, colCount } = tableRange;
           for (let i = col; i < col + colCount; i++) {
             sourceRangeList.push({
@@ -843,8 +858,46 @@
     });
   };
 
+  // 字段配置
+  const fieldConfig = function () {
+    const sheet = spread.getActiveSheet();
+    const selections = sheet.getSelections()[0] || {};
+    if (selections.rowCount === 1 && selections.colCount === 1) {
+      const { row, col } = selections;
+      const table = sheet.tables.all()[0];
+      const { colCount } = table.dataRange();
+      const sourceFields: any[] = [];
+      for (let i = 0; i < colCount; i++) {
+        if (i === col) {
+          continue;
+        }
+        sourceFields.push({
+          row,
+          col: i,
+          colName: table.getColumnName(i),
+          text: sheet.getText(row, i),
+        });
+      }
+      mainField.value = {
+        row,
+        col: col,
+        colName: table.getColumnName(col),
+        text: sheet.getText(row, col),
+      };
+      relationFields.value = sourceFields;
+      isShowRelation.value = true;
+    } else {
+      message.error('请选择单个单元格');
+    }
+  };
+
+  const getSpread = function () {
+    return spread;
+  };
+
   defineExpose({
     updateSheetDataSource,
+    getSpread,
   });
 </script>
 

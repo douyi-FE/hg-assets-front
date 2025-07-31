@@ -4,6 +4,7 @@
       ref="excelBookRef"
       :key="excelBookKey"
       class="excel-book"
+      :templateId="templateId"
       :content="content"
       :dataSource="dataSource"
       @saveWorkBook="saveWorkBook"

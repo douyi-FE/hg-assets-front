@@ -6,6 +6,7 @@
       class="excel-book"
       :templateId="templateId"
       :content="content"
+      :dataSource="dataSource"
       @saveWorkBook="saveWorkBook"
       @cellClick="cellClick"
     />
@@ -23,32 +24,42 @@
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
+  import { nanoid } from 'nanoid';
   import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
   import templateBind from '@/components/business/template-bind/index.vue';
-  import { getApplicationById } from '@/api/backend/api/application';
+  import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
   import { getApplicationData, saveApplicationData } from '@/api/backend/api/applicationData';
   import { useUserStore } from '@/store/modules/user';
-
-  const APPLICATION_NAME = '廉洁教育谈话开展情况统计';
-  const APPLICATION_ID = '67f6d29c7211006a8329d803';
+  const APPLICATION_NAME = '多列字段取值字典';
   let templateId = '';
   const excelBookRef = ref();
   const excelBookKey = ref('');
-  const content = ref({
+  const content = ref<any>({
+    tableName: '',
+    tableKey: '',
     ejs: '',
     dataSource: {
-      table: [],
+      table: [[]],
     },
     fileName: '导出数据文件.xlsx',
   });
+  // const deptId = ref<number>(0);
+  const dataSource = ref({
+    table: [[]],
+  });
   const isShowTemplateSetting = ref(false);
   const userStore = useUserStore();
+  message.config({
+    maxCount: 1,
+  });
+
   const getTemplateId = async function () {
-    return getApplicationById(APPLICATION_ID);
+    return getApplicationByName(APPLICATION_NAME);
   };
 
   const fetchExcel = async function () {
+    message.loading('加载中...');
     getTemplateId()
       .then((res) => {
         templateId = res.templateId;
@@ -61,27 +72,33 @@
           getApplicationData({ templateId: templateId }),
         ])
           .then(([template, applicationData]) => {
+            dataSource.value = template.initDataSource;
             content.value = {
+              tableName: 'application_data',
+              tableKey: applicationData?._id || nanoid(),
               ejs: template.content,
-              dataSource: applicationData.applicationData,
+              dataSource: applicationData?.applicationData || dataSource,
               fileName: template.name,
             };
+            return applicationData || {};
           })
-          .catch(() => {
+          .catch((err) => {
             message.error('获取模板数据失败');
             isShowTemplateSetting.value = true;
           });
       })
-      .catch(() => {
+      .catch((err) => {
+        console.log('err2', err);
         message.error('获取模板数据失败');
       });
   };
 
   const saveWorkBook = function (data: any) {
     saveApplicationData({
-      templateId: APPLICATION_ID,
+      templateId: templateId,
       userId: userStore.userInfo.id,
-      applicationData: data,
+      // deptId: deptId.value,
+      applicationData: data || dataSource.value,
     })
       .then((res) => {
         message.success('保存数据成功');

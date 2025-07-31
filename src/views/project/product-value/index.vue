@@ -2,6 +2,7 @@
   <excel-book
     ref="excelBookRef"
     class="excel-book"
+    :templateId="templateId"
     :content="content"
     :key="excelBookKey"
     @saveWorkBook="saveWorkBook"
