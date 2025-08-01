@@ -1,13 +1,17 @@
 <template>
-  <a-modal v-model:open="open" title="字段配置" @ok="handleOk">
+  <a-modal v-model:open="open" title="字段配置" @ok="handleOk" @cancel="handleCancel">
     <div class="relation-field-operation">
       <a-button type="primary" @click="addRelationConfig">添加关联字段</a-button>
     </div>
     <div class="main-field">
-      <span> 主字段名：{{ mainField.colName }}</span>
-      <span> 主字段值：{{ mainField.text }}</span>
-      <span> 主字段行：{{ mainField.row }}</span>
-      <span> 主字段列：{{ mainField.col }}</span>
+      <p style="display: flex; overflow: hidden">
+        <span style="max-width: 70px">主字段名：</span>
+        <span class="main-field-value" :title="mainField.colName">{{ mainField.colName }}</span>
+      </p>
+      <p style="display: flex; overflow: hidden">
+        <span style="max-width: 70px">主字段值：</span>
+        <span class="main-field-value" :title="mainField.text">{{ mainField.text }}</span>
+      </p>
     </div>
     <div class="relation-field-header">
       <span>关联字段</span>
@@ -17,16 +21,16 @@
     <div class="relation-field-list-container">
       <ul class="relation-field-list">
         <a-empty v-if="relationConfigList.length === 0" style="margin: auto" />
-        <li v-for="item in relationConfigList" :key="item.col">
+        <li v-for="(item, index) in relationConfigList" :key="index">
           <a-select
             v-model:value="item.col"
             :options="relationFields"
             :fieldNames="{ label: 'colName', value: 'col' }"
           />
           <span>{{ getRelationFieldColName(item.col) }}</span>
-          <a-button @click="deleteRelationConfig(item.col)" size="small" style="width: 100px"
-            >删除</a-button
-          >
+          <div>
+            <a-button @click="deleteRelationConfig(index)" size="small">删除</a-button>
+          </div>
         </li>
       </ul>
     </div>
@@ -63,16 +67,27 @@
 
   const createSaveData = function (list: any[]) {
     const sheetName = props.spread.getActiveSheet().name();
-    return list.map((item) => {
-      return {
-        模板名称: template.value.name,
-        Sheet名称: sheetName,
-        主字段: props.mainField.colName,
-        主字段可选值: props.mainField.text,
-        联动字段: item.colName,
-        联动可选值: item.text,
-      };
-    });
+    const judgeEmpty = function (data: any) {
+      if (data === undefined || data === null || data.trim() === '') {
+        return true;
+      }
+      return false;
+    };
+    return list
+      .map((item) => {
+        if (!item || judgeEmpty(item.colName) || judgeEmpty(item.text)) {
+          return;
+        }
+        return {
+          模板名称: template.value.name,
+          Sheet名称: sheetName,
+          主字段: props.mainField.colName,
+          主字段可选值: props.mainField.text,
+          联动字段: item.colName,
+          联动可选值: item.text,
+        };
+      })
+      .filter((item) => item);
   };
 
   const getApplicationBindPath = async function () {
@@ -95,12 +110,15 @@
     const selectedRelationFields = relationConfigList.value.map((item) => {
       return props.relationFields.find((field) => field.col === item.col);
     });
+    const tmpSelectedRelationFields = new Set(
+      selectedRelationFields.filter((item) => `${item?.colName}-${item?.text}`),
+    );
+    if (selectedRelationFields.length > tmpSelectedRelationFields.size) {
+      message.error('请勿重复选择,请检查关联字段');
+      return;
+    }
     const saveData = createSaveData(selectedRelationFields);
     const { applicationBindPath, templateId } = await getApplicationBindPath();
-    console.log('saveData', {
-      templateId,
-      applicationData: { [TEMPLATE_FIELD_DICT_NAME]: { [applicationBindPath]: saveData } },
-    });
     Api.applicationData
       .appendApplicationData({
         templateId,
@@ -108,6 +126,7 @@
       })
       .then((res) => {
         message.success('保存成功');
+        relationConfigList.value = [];
         open.value = false;
       })
       .catch((err) => {
@@ -125,8 +144,13 @@
     });
   };
 
-  const deleteRelationConfig = function (col: number) {
-    relationConfigList.value = relationConfigList.value.filter((item) => item.col !== col);
+  const deleteRelationConfig = function (index: number) {
+    relationConfigList.value.splice(index, 1);
+  };
+
+  const handleCancel = function () {
+    open.value = false;
+    relationConfigList.value = [];
   };
 
   watch(
@@ -154,8 +178,15 @@
     flex-direction: row;
     gap: 10px;
     padding: 10px;
-    span {
+    p {
       flex: 1;
+    }
+    .main-field-value {
+      width: calc(100% - 70px);
+      display: inline-block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
   }
   .relation-field-header {

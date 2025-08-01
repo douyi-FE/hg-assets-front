@@ -811,7 +811,7 @@
         const sourceRangeList: any[] = [];
         const importRangeList: any[] = [];
         for (let i = col; i < col + colCount; i++) {
-          const text = importActiveSheet.getText(row, i);
+          const text = importActiveSheet.getValue(row, i);
           if (text.trim() === '') {
             continue;
           }
@@ -829,7 +829,7 @@
             sourceRangeList.push({
               row,
               col: i,
-              text: table.getColumnName(i),
+              text: table.getColumnDataField(i),
             });
           }
         }
@@ -864,6 +864,11 @@
     const selections = sheet.getSelections()[0] || {};
     if (selections.rowCount === 1 && selections.colCount === 1) {
       const { row, col } = selections;
+      const mainFieldValue = sheet.getValue(row, col);
+      if (mainFieldValue === undefined || mainFieldValue === null || mainFieldValue.trim() === '') {
+        message.error('请选择一个非空单元格');
+        return;
+      }
       const table = sheet.tables.all()[0];
       const { colCount } = table.dataRange();
       const sourceFields: any[] = [];
@@ -874,15 +879,15 @@
         sourceFields.push({
           row,
           col: i,
-          colName: table.getColumnName(i),
-          text: sheet.getText(row, i),
+          colName: table.getColumnDataField(i),
+          text: sheet.getValue(row, i),
         });
       }
       mainField.value = {
         row,
         col: col,
-        colName: table.getColumnName(col),
-        text: sheet.getText(row, col),
+        colName: table.getColumnDataField(col),
+        text: sheet.getValue(row, col),
       };
       relationFields.value = sourceFields;
       isShowRelation.value = true;
