@@ -4,6 +4,7 @@ import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
 import { message, Modal } from 'ant-design-vue';
 
 const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
+const MULTI_FIELD_DICT_NAME = '多列字段取值字典';
 /*
   先预处理 dictData 数据， 结果如下：
   {
@@ -344,31 +345,109 @@ export const setMultiFieldDict = function (spread: any, dictData: any, dictDataF
   spread.resumePaint();
 };
 
-export const addMultiFieldDictBatch = function (
-  spread: any,
-  dictDataFields: any,
-  fileName: string,
-) {
-  // const dictData: any[] = [];
-  // const sheetCount = spread.getSheetCount();
-  // for (let i = 0; i < sheetCount; i++) {
-  //   const sheet = spread.getSheet(i);
-  //   const table = sheet.tables.all()[0];
-  //   const tableRange = table.dataRange();
-  //   const colCount = tableRange.colCount;
-  //   const col = tableRange.col;
-  //   const row = tableRange.row;
-  //   const rowCount = tableRange.rowCount;
-  //   for (let j = 0; j < colCount; j++) {
-  //     const tableCol = table.getColumnDataField(j);
-  //     if (sheetDictData[sheet.name()]) {
-  //       const mainFieldData = sheetDictData[sheet.name()].find(
-  //         (item) => item['主字段'] === tableCol,
-  //       );
-  //     }
-  //   }
-  // }
+export const addMultiFieldDictBatch = async function (spread: any, fileName: string) {
+  let isSuccess = false;
+  const sheet = spread.getActiveSheet();
+  const row = sheet.getActiveRowIndex();
+  const col = sheet.getActiveColumnIndex();
+  const table = sheet.tables.all()[0];
+  if (!table) {
+    message.error('未发现绑定表，请确认模板是否正确');
+    return;
+  }
+  const tableRange = table.dataRange();
+  if (!tableRange.contains(row, col)) {
+    message.error('请选择表格中的单元格');
+    return;
+  }
+  const tag = sheet.getTag(-1, col);
+  if (!tag || !tag.length || tag.length === 0) {
+    message.error('请先给选中列配置多列字典');
+    return;
+  }
+  const mainFieldData = tag[0];
+  const linkField = mainFieldData['关联字段'];
+  if (!linkField || linkField.length === 0) {
+    message.error('请先给选中字典值配置关联字段');
+    return;
+  }
+
+  const linkFieldIndex: any = {};
+  const tcol = tableRange.col;
+  const tcolCount = tableRange.colCount;
+  // 获取主字段名称
+  const mainField = table.getColumnDataField(col - tcol);
+  // 获取关联字段在表格中的列索引
+  linkField.forEach((field) => {
+    for (let i = 0; i < tcolCount; i++) {
+      if (table.getColumnDataField(i) === field) {
+        linkFieldIndex[field] = i + tcol;
+        break;
+      }
+    }
+  });
+
+  const res: any[] = [];
+  const valArray = tag.map((item) => item['值']);
+  // 开始遍历表格中当前列所有单元格
+  const startRow = tableRange.row;
+  const rowCount = tableRange.rowCount;
+  for (let r = startRow; r < startRow + rowCount; r++) {
+    const val = sheet.getValue(r, col);
+    // 当 val 不等于 null\undefined, 以及空字符串时
+    if (val === null || val === undefined || (typeof val === 'string' && val.trim() === '')) {
+      continue;
+    }
+    // 当 val 在 valArray 中时，跳过
+    if (valArray.includes(val)) {
+      continue;
+    }
+
+    linkField.forEach((field) => {
+      const linkIndex = linkFieldIndex[field];
+      const linkVal = sheet.getValue(r, linkIndex);
+      if (
+        linkVal === null ||
+        linkVal === undefined ||
+        (typeof linkVal === 'string' && linkVal.trim() === '')
+      ) {
+        return;
+      }
+      valArray.push(val);
+      res.push({
+        模板名称: fileName,
+        Sheet名称: sheet.name(),
+        主字段: mainField,
+        主字段可选值: val,
+        联动字段: field,
+        联动可选值: linkVal,
+      });
+    });
+  }
+  const { applicationBindPath, templateId } = await getApplicationBindPath();
+  const saveRes = await Api.applicationData.appendApplicationData({
+    templateId,
+    applicationData: { [MULTI_FIELD_DICT_NAME]: { [applicationBindPath]: res } },
+  });
+  if (saveRes.code === 200) {
+    isSuccess = true;
+    message.success('保存成功');
+  } else {
+    message.error('保存失败');
+  }
+  return isSuccess;
 };
+
+async function getApplicationBindPath() {
+  const res1 = await Api.template.getExcelTemplateList({ name: MULTI_FIELD_DICT_NAME });
+  const res = await Api.applicationData.getApplicationData({
+    templateId: res1[0]._id,
+  });
+  return {
+    applicationBindPath: Object.keys(res.applicationData[MULTI_FIELD_DICT_NAME])[0],
+    templateId: res1[0]._id,
+  };
+}
 
 function setMultiFieldDictEvents(sheet: any) {
   sheet.bind(GC.Spread.Sheets.Events.ValueChanged, function (e, info) {

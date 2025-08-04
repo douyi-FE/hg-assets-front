@@ -162,10 +162,10 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref, toRaw, watch, nextTick } from 'vue';
+  import { onMounted, ref, toRaw, watch, nextTick, inject } from 'vue';
   import dayjs from 'dayjs';
   import { FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons-vue';
-  import { message } from 'ant-design-vue';
+  import { message, Modal } from 'ant-design-vue';
   import History from './history.vue';
   import CustomMap from './custom-map.vue';
   import Relation from './relation.vue';
@@ -682,8 +682,24 @@
     }
   };
 
-  const updateMultiFieldDict = function () {
-    addMultiFieldDictBatch(spread, dictDataFields, props.content.fileName);
+  const refreshExcel = inject('refreshExcel') as (data: any) => void;
+  const updateMultiFieldDict = async function () {
+    Modal.confirm({
+      title: '提示',
+      content: '添加字典会在所有同类表格中生效，是否继续？',
+      onOk: async () => {
+        const isSuccess = await addMultiFieldDictBatch(spread, props.content.app);
+        if (isSuccess) {
+          Modal.confirm({
+            title: '提示',
+            content: '字典保存成功，重新加载表格可以生效，是否现在重新加载？',
+            onOk: () => {
+              refreshExcel(props.content.app);
+            },
+          });
+        }
+      },
+    });
   };
 
   watch(
