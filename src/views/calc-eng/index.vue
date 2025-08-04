@@ -31,7 +31,10 @@
   import excelBook from '@/components/business/excel-book/index.vue';
   import templateBind from '@/components/business/template-bind/index.vue';
   import { getApplicationByName, getApplicationById } from '@/api/backend/api/application';
-  import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
+  import {
+    getTemplateFieldDict,
+    getTemplateFieldMultiDict,
+  } from '@/api/backend/api/applicationData';
   import {
     getProjectDevice,
     saveProjectDevice,
@@ -41,6 +44,7 @@
   // import { eventBus } from '@/utils/event-bus';
   let app = '';
   const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
+  const TEMPLATE_FIELD_MULTI_DICT_NAME = '多列字段取值字典';
   let templateId = '';
   let type = '',
     project = '',
@@ -62,9 +66,11 @@
       table: [{}],
     },
     dictData: [],
+    multiDictData: [],
     fileName: app + '.xlsx',
     editable: editable,
     hasDict: true,
+    app,
   });
   // const deptId = ref<number>(0);
   const userStore = useUserStore();
@@ -84,6 +90,8 @@
   };
 
   const templateFieldDictId = (await getApplicationByName(TEMPLATE_FIELD_DICT_NAME)).templateId;
+  const templateFieldMultiDictId = (await getApplicationByName(TEMPLATE_FIELD_MULTI_DICT_NAME))
+    .templateId;
 
   const fetchExcel = async function () {
     getTemplateId()
@@ -103,8 +111,9 @@
             engineer,
           }),
           getTemplateFieldDict({ templateId: templateFieldDictId, dictName: app }),
+          getTemplateFieldMultiDict({ templateId: templateFieldMultiDictId, dictName: app }),
         ])
-          .then(([template, projectData, templateFieldDict]) => {
+          .then(([template, projectData, templateFieldDict, templateFieldMultiDict]) => {
             let initDataSource = null;
             const userName = userStore.userInfo.username!;
             try {
@@ -126,8 +135,10 @@
               summaryData: projectData?.projectDeviceSummary || dataSource,
               fileName: template.name,
               dictData: templateFieldDict || [],
+              multiDictData: templateFieldMultiDict || [],
               editable: editable,
               hasDict: true,
+              app,
             };
           })
           .catch(() => {

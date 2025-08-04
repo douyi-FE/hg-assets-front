@@ -4,12 +4,22 @@
       <div class="work-book-content">
         <div class="work-book-operator">
           <slot name="operator" />
-          <a-button @click="fieldConfig" v-if="props.templateId">字段配置</a-button>
           <a-dropdown-button v-if="hasDict && isEditable" @click="addDicts">
             <span>添加字典</span>
             <template #overlay>
               <a-menu @click="updateDicts">
                 <a-menu-item key="updateDicts"> 批量更新字典 </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown-button>
+          <a-dropdown-button
+            v-if="hasDict && isEditable && props.templateId"
+            @click="addMultiFieldDict"
+          >
+            <span>多列字典配置</span>
+            <template #overlay>
+              <a-menu @click="updateMultiFieldDict">
+                <a-menu-item key="updateMultiFieldDict"> 批量更新多列字典 </a-menu-item>
               </a-menu>
             </template>
           </a-dropdown-button>
@@ -163,7 +173,13 @@
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
   // } from './customComments';
-  import { addFieldDict, setFieldDict, updateDict } from './customFieldDict';
+  import {
+    addFieldDict,
+    setFieldDict,
+    updateDict,
+    setMultiFieldDict,
+    addMultiFieldDictBatch,
+  } from './customFieldDict';
   import { getSummaryDataTable, setSummarySheet } from './addSummarySheet';
   import { initCustomInsertRows, initCustomInsertRowsForDesigner } from './customInsertRows';
   import {
@@ -223,10 +239,12 @@
         summaryData: any;
         fileName: string;
         dictData: any[];
+        multiDictData: any[];
         editable: boolean;
         hasDict: boolean;
         tableName: string;
         tableKey: string;
+        app: string;
       };
     }>(),
     {
@@ -241,10 +259,12 @@
         },
         fileName: '导出数据文件.xlsx',
         dictData: [],
+        multiDictData: [],
         editable: true,
         hasDict: false,
         tableName: '',
         tableKey: '',
+        app: '',
       }),
     },
   );
@@ -262,8 +282,10 @@
     dataSource: any = {},
     summaryData: any = {},
     dictData: any = {},
+    multiDictData: any = {},
     editable: boolean = true,
     hasDict: boolean = false,
+    app: string = '',
   ) {
     return new Promise((resolve, reject) => {
       const _sjs = dataSource['_sjs'];
@@ -284,6 +306,8 @@
           spread.addCustomFunction(new Evaluate());
           // 增量计算
           spread.options.incrementalCalculation = true;
+          // 多列填充 —— 限制默认填充类型为 copyCells
+          spread.options.defaultDragFillType = GC.Spread.Sheets.Fill.AutoFillType.copyCells;
           spread.suspendPaint();
           let sheet = spread.getActiveSheet();
           // 先切换到非汇总表
@@ -340,6 +364,7 @@
           spread.resumePaint();
           initUploadFile(spread);
           setFieldDict(spread, dictData, dictDataFields);
+          setMultiFieldDict(spread, multiDictData, dictDataFields);
           initWorkbook(spread, (spread) => {
             initCustomInsertRows(spread);
           });
@@ -610,6 +635,57 @@
     await addFieldDict(spread, dictDataFields, props.content.fileName);
   };
 
+  // 多列字典字段配置
+  const addMultiFieldDict = function () {
+    const sheet = spread.getActiveSheet();
+    const selections = sheet.getSelections()[0] || {};
+    if (selections.rowCount === 1 && selections.colCount === 1) {
+      const { row, col } = selections;
+      const mainFieldValue = sheet.getValue(row, col);
+      if (mainFieldValue === undefined || mainFieldValue === null || mainFieldValue.trim() === '') {
+        message.error('请选择一个非空单元格');
+        return;
+      }
+      const table = sheet.tables.all()[0];
+      if (!table) {
+        message.error('未发现绑定表，请确认模板是否正确');
+        return;
+      }
+      const tableRange = table.dataRange();
+      if (!tableRange.contains(row, col)) {
+        message.error('请选择表格中的单元格');
+        return;
+      }
+      const { colCount } = tableRange;
+      const sourceFields: any[] = [];
+      for (let i = 0; i < colCount; i++) {
+        if (i === col) {
+          continue;
+        }
+        sourceFields.push({
+          row,
+          col: i,
+          colName: table.getColumnDataField(i),
+          text: sheet.getValue(row, i),
+        });
+      }
+      mainField.value = {
+        row,
+        col: col,
+        colName: table.getColumnDataField(col),
+        text: sheet.getValue(row, col),
+      };
+      relationFields.value = sourceFields;
+      isShowRelation.value = true;
+    } else {
+      message.error('请选择单个单元格');
+    }
+  };
+
+  const updateMultiFieldDict = function () {
+    addMultiFieldDictBatch(spread, dictDataFields, props.content.fileName);
+  };
+
   watch(
     () => props.content,
     (newVal) => {
@@ -619,7 +695,10 @@
         toRaw(newVal.dataSource),
         toRaw(newVal.summaryData),
         toRaw(newVal.dictData),
+        toRaw(newVal.multiDictData),
         newVal.editable,
+        newVal.hasDict,
+        newVal.app,
       ).finally(() => {
         message.destroy();
       });
@@ -856,44 +935,6 @@
     clearAllProjectDeviceStyles({}).then((res) => {
       message.success('清除所有样式成功');
     });
-  };
-
-  // 字段配置
-  const fieldConfig = function () {
-    const sheet = spread.getActiveSheet();
-    const selections = sheet.getSelections()[0] || {};
-    if (selections.rowCount === 1 && selections.colCount === 1) {
-      const { row, col } = selections;
-      const mainFieldValue = sheet.getValue(row, col);
-      if (mainFieldValue === undefined || mainFieldValue === null || mainFieldValue.trim() === '') {
-        message.error('请选择一个非空单元格');
-        return;
-      }
-      const table = sheet.tables.all()[0];
-      const { colCount } = table.dataRange();
-      const sourceFields: any[] = [];
-      for (let i = 0; i < colCount; i++) {
-        if (i === col) {
-          continue;
-        }
-        sourceFields.push({
-          row,
-          col: i,
-          colName: table.getColumnDataField(i),
-          text: sheet.getValue(row, i),
-        });
-      }
-      mainField.value = {
-        row,
-        col: col,
-        colName: table.getColumnDataField(col),
-        text: sheet.getValue(row, col),
-      };
-      relationFields.value = sourceFields;
-      isShowRelation.value = true;
-    } else {
-      message.error('请选择单个单元格');
-    }
   };
 
   const getSpread = function () {

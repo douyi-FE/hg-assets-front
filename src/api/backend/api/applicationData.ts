@@ -46,3 +46,13 @@ export async function getTemplateFieldDict(params: any, options?: RequestOptions
     ...(options || {}),
   });
 }
+
+// 获取模板字段多列取值字典
+export async function getTemplateFieldMultiDict(params: any, options?: RequestOptions) {
+  return request<any>({
+    url: '/api/application/template-field-multi-dict',
+    method: 'GET',
+    params,
+    ...(options || {}),
+  });
+}

@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
   import { defineModel, ref, watch } from 'vue';
-  import { message } from 'ant-design-vue';
+  import { message, Modal } from 'ant-design-vue';
   import { getExcelTemplateByIds } from '@/api/backend/api/template';
   import Api from '@/api';
 
@@ -68,7 +68,7 @@
   const createSaveData = function (list: any[]) {
     const sheetName = props.spread.getActiveSheet().name();
     const judgeEmpty = function (data: any) {
-      if (data === undefined || data === null || data.trim() === '') {
+      if (data === undefined || data === null || (data.trim && data.trim() === '')) {
         return true;
       }
       return false;
@@ -125,7 +125,13 @@
         applicationData: { [TEMPLATE_FIELD_DICT_NAME]: { [applicationBindPath]: saveData } },
       })
       .then((res) => {
-        message.success('保存成功');
+        Modal.confirm({
+          title: '提示',
+          content: '保存成功，重新加载表格可以生效，是否现在重新加载？',
+          onOk: () => {
+            // TODO 重新加载表格
+          },
+        });
         relationConfigList.value = [];
         open.value = false;
       })
