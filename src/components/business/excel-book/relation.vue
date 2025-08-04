@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-  import { defineModel, ref, watch } from 'vue';
+  import { defineModel, inject, ref, watch } from 'vue';
   import { message, Modal } from 'ant-design-vue';
   import { getExcelTemplateByIds } from '@/api/backend/api/template';
   import Api from '@/api';
@@ -59,6 +59,8 @@
       text: string;
     }[];
   }>();
+
+  const refreshExcel = inject('refreshExcel') as (data: any) => void;
 
   const TEMPLATE_FIELD_DICT_NAME = '多列字段取值字典';
   const open = defineModel('open', { type: Boolean, default: false });
@@ -130,6 +132,9 @@
           content: '保存成功，重新加载表格可以生效，是否现在重新加载？',
           onOk: () => {
             // TODO 重新加载表格
+            refreshExcel({
+              templateId,
+            });
           },
         });
         relationConfigList.value = [];

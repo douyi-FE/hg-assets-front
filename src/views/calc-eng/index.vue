@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { onMounted, provide, ref } from 'vue';
   import { useRoute } from 'vue-router';
   import { message } from 'ant-design-vue';
   import excelBook from '@/components/business/excel-book/index.vue';
@@ -85,6 +85,12 @@
   });
   const isShowTemplateSetting = ref(false);
   const route = useRoute();
+
+  provide('refreshExcel', (data: any) => {
+    console.log('data', data);
+    fetchExcel();
+  });
+
   const getTemplateId = async function () {
     return getApplicationByName(app);
   };
