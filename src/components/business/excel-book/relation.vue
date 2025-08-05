@@ -40,6 +40,7 @@
 <script setup lang="ts">
   import { defineModel, inject, ref, watch } from 'vue';
   import { message, Modal } from 'ant-design-vue';
+  import { addMultiFieldDictBatch } from './customFieldDict';
   import { getExcelTemplateByIds } from '@/api/backend/api/template';
   import Api from '@/api';
 
@@ -90,6 +91,26 @@
         };
       })
       .filter((item) => item);
+  };
+
+  const createBatchSaveData = async function (spread: any, fileName: string) {
+    const data = addMultiFieldDictBatch(spread, fileName);
+    const { applicationBindPath, templateId } = await getApplicationBindPath();
+    console.log('data', {
+      templateId,
+      applicationData: { [TEMPLATE_FIELD_DICT_NAME]: { [applicationBindPath]: data } },
+    });
+    return Api.applicationData
+      .appendApplicationData({
+        templateId,
+        applicationData: { [TEMPLATE_FIELD_DICT_NAME]: { [applicationBindPath]: data } },
+      })
+      .then((res) => {
+        // TODO 重新加载表格
+        refreshExcel({
+          templateId,
+        });
+      });
   };
 
   const getApplicationBindPath = async function () {
@@ -176,6 +197,10 @@
       }
     },
   );
+
+  defineExpose({
+    createBatchSaveData,
+  });
 </script>
 
 <style lang="less" scoped>

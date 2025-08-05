@@ -1,7 +1,7 @@
+import { message, Modal } from 'ant-design-vue';
 import Api from '@/api';
 import { getApplicationByName } from '@/api/backend/api/application';
 import { getTemplateFieldDict } from '@/api/backend/api/applicationData';
-import { message, Modal } from 'ant-design-vue';
 
 const TEMPLATE_FIELD_DICT_NAME = '列表字段取值字典';
 /*
@@ -344,30 +344,59 @@ export const setMultiFieldDict = function (spread: any, dictData: any, dictDataF
   spread.resumePaint();
 };
 
-export const addMultiFieldDictBatch = function (
-  spread: any,
-  dictDataFields: any,
-  fileName: string,
-) {
-  // const dictData: any[] = [];
-  // const sheetCount = spread.getSheetCount();
-  // for (let i = 0; i < sheetCount; i++) {
-  //   const sheet = spread.getSheet(i);
-  //   const table = sheet.tables.all()[0];
-  //   const tableRange = table.dataRange();
-  //   const colCount = tableRange.colCount;
-  //   const col = tableRange.col;
-  //   const row = tableRange.row;
-  //   const rowCount = tableRange.rowCount;
-  //   for (let j = 0; j < colCount; j++) {
-  //     const tableCol = table.getColumnDataField(j);
-  //     if (sheetDictData[sheet.name()]) {
-  //       const mainFieldData = sheetDictData[sheet.name()].find(
-  //         (item) => item['主字段'] === tableCol,
-  //       );
-  //     }
-  //   }
-  // }
+export const addMultiFieldDictBatch = function (spread: any, fileName: string) {
+  const sheet = spread.getActiveSheet();
+  const sheetName = sheet.name();
+  const table = sheet.tables.all()[0];
+  const { row, rowCount, colCount } = table.dataRange();
+  const selections = sheet.getSelections()[0] || {};
+  const data: any[] = [];
+  if (selections.rowCount === 1 && selections.colCount === 1) {
+    const { row: activeRow, col: activeCol } = selections;
+    const mainFieldValue = sheet.getValue(activeRow, activeCol);
+    const mainFieldColName = table.getColumnDataField(activeCol);
+    if (
+      mainFieldValue === undefined ||
+      mainFieldValue === null ||
+      mainFieldValue.toString().trim() === ''
+    ) {
+      message.error('请选择一个非空单元格');
+      return;
+    }
+    for (let i = activeRow; i < row + rowCount; i++) {
+      const mainField = sheet.getValue(i, activeCol);
+      if (
+        mainField === undefined ||
+        mainField === null ||
+        mainField.toString().trim() === '' ||
+        data.find((item) => item['主字段可选值'] === mainField)
+      ) {
+        continue;
+      }
+      for (let j = 0; j < colCount; j++) {
+        if (j === activeCol) {
+          continue;
+        }
+        const relationField = sheet.getValue(i, j);
+        if (
+          relationField === undefined ||
+          relationField === null ||
+          relationField.toString().trim() === ''
+        ) {
+          continue;
+        }
+        data.push({
+          模板名称: fileName,
+          Sheet名称: sheetName,
+          主字段: mainFieldColName,
+          主字段可选值: mainField,
+          联动字段: table.getColumnDataField(j),
+          联动可选值: sheet.getValue(i, j),
+        });
+      }
+    }
+  }
+  return data;
 };
 
 function setMultiFieldDictEvents(sheet: any) {

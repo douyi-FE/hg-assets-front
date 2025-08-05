@@ -152,6 +152,7 @@
     />
     <!-- 字段配置 -->
     <Relation
+      ref="relationRef"
       v-model:open="isShowRelation"
       :templateId="props.templateId"
       :spread="spread"
@@ -173,13 +174,7 @@
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
   // } from './customComments';
-  import {
-    addFieldDict,
-    setFieldDict,
-    updateDict,
-    setMultiFieldDict,
-    addMultiFieldDictBatch,
-  } from './customFieldDict';
+  import { addFieldDict, setFieldDict, updateDict, setMultiFieldDict } from './customFieldDict';
   import { getSummaryDataTable, setSummarySheet } from './addSummarySheet';
   import { initCustomInsertRows, initCustomInsertRowsForDesigner } from './customInsertRows';
   import {
@@ -225,6 +220,7 @@
   const isShowCustomMap = ref(false);
   const importModel = ref('append');
   const customMapRef = ref();
+  const relationRef = ref();
   // 字段配置
   const isShowRelation = ref(false);
   const mainField = ref<any>({});
@@ -683,7 +679,9 @@
   };
 
   const updateMultiFieldDict = function () {
-    addMultiFieldDictBatch(spread, dictDataFields, props.content.fileName);
+    relationRef.value.createBatchSaveData(spread, props.content.fileName).then((res) => {
+      message.success('保存成功');
+    });
   };
 
   watch(
