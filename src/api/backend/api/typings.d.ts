@@ -1307,6 +1307,7 @@ declare namespace API {
 
   // SSO相关类型定义
   type OAuth2UserInfo = {
+    username: string;
     nickname: string;
     deptName: string;
     email: string;
