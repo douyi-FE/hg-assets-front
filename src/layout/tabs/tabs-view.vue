@@ -81,7 +81,7 @@
   };
   // 切换页面
   const changePage = (key) => {
-    Object.is(route.fullPath, key) || router.push(key);
+    Object.is(route.fullPath, key) || router.push({ name: key });
   };
 </script>
 

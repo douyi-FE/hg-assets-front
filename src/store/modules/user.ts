@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
+import { message } from 'ant-design-vue';
 import { useLockscreenStore } from './lockscreen';
 import { useSSEStore } from './sse';
 import type { RouteRecordRaw } from 'vue-router';
@@ -12,6 +13,19 @@ export const useUserStore = defineStore(
   'user',
   () => {
     const sseStore = useSSEStore();
+    const yudaoToken = ref<{
+      accessToken: string;
+      expiresTime: number;
+      refreshToken: string;
+      userId: string;
+      tenantId: number;
+    }>({
+      accessToken: '',
+      expiresTime: 0,
+      refreshToken: '',
+      userId: '',
+      tenantId: 0,
+    });
     const lockscreenStore = useLockscreenStore();
     const token = ref<string>();
     const perms = ref<string[]>([]);
@@ -29,6 +43,52 @@ export const useUserStore = defineStore(
           return flag;
         })
         .sort((a, b) => ~~Number(a.meta?.orderNo) - ~~Number(b.meta?.orderNo));
+    };
+
+    // 获取芋道的token
+    const getYuDaoToken = function () {
+      return Api.sso
+        .getYuDaoTenantIdByUserName()
+        .then((res) => {
+          if (res.code === 0) {
+            return res.data;
+          } else {
+            return Promise.reject('访问出错，请重试');
+          }
+        })
+        .then((data) => {
+          console.log('data', data);
+          return Api.sso.getYuDaoToken(data);
+        })
+        .then((res) => {
+          if (res.code === 0) {
+            const { accessToken, expiresTime, refreshToken, userId, tenantId } = res.data;
+            setYuDaoToken({
+              accessToken,
+              expiresTime,
+              refreshToken,
+              userId,
+              tenantId,
+            });
+          } else {
+            return Promise.reject('访问出错，请重试');
+          }
+        })
+        .catch((msg) => {
+          message.error(msg);
+        });
+    };
+
+    // 设置芋道token
+    const setYuDaoToken = function (data: any) {
+      const { accessToken, expiresTime, refreshToken, userId } = data;
+      yudaoToken.value = {
+        accessToken,
+        expiresTime,
+        refreshToken,
+        userId,
+        tenantId: import.meta.env.VITE_DEFAULT_FLOW_TENANT_ID,
+      };
     };
 
     /** 清空登录态(token、userInfo...) */
@@ -64,10 +124,11 @@ export const useUserStore = defineStore(
         const { accountProfile } = Api.account;
         // const wsStore = useWsStore();
         const userInfoData = await accountProfile();
-
         userInfo.value = userInfoData;
         await fetchPermsAndMenus();
         sseStore.initServerMsgListener();
+        // 流程系统设置token
+        await getYuDaoToken();
       } catch (error) {
         return Promise.reject(error);
         // return logout();
@@ -101,6 +162,8 @@ export const useUserStore = defineStore(
       menus,
       menuPerms,
       userInfo,
+      yudaoToken,
+      setYuDaoToken,
       login,
       afterLogin,
       logout,

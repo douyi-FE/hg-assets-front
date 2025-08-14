@@ -1,7 +1,8 @@
 import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
-import mkcert from 'vite-plugin-mkcert';
+// 注释掉mkcert导入，防止cert目录下的公私钥文件更新
+// import mkcert from 'vite-plugin-mkcert';
 import vue from '@vitejs/plugin-vue';
 // import checker from 'vite-plugin-checker';
 import Components from 'unplugin-vue-components/vite';
@@ -55,12 +56,12 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
       vueJsx({
         // options are passed on to @vue/babel-plugin-jsx
       }),
-      // 指定 mkcert 的下载源为 coding，从 coding.net 镜像下载证书
-      mkcert({
-        savePath: './.cert', // 指定证书存储路径
-        keyFileName: 'my-key.pem', // 指定私钥文件名
-        certFileName: 'my-cert.pem', // 指定证书文件名
-      }),
+      // 注释掉mkcert插件配置，防止cert目录下的公私钥文件更新
+      // mkcert({
+      //   savePath: './.cert', // 指定证书存储路径
+      //   keyFileName: 'my-key.pem', // 指定私钥文件名
+      //   certFileName: 'my-cert.pem', // 指定证书文件名
+      // }),
       // 开启 http2 代理
       Http2Proxy(),
       TinymceResourcePlugin({ baseUrl: '/tinymce-resource/' }),
@@ -118,6 +119,7 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
     server: {
       host: '0.0.0.0',
       port: 8088,
+      // 注释掉https配置，默认不启用HTTPS
       // https: {
       //   key: resolve(CWD, './.cert/my-key.pem'),
       //   cert: resolve(CWD, './.cert/my-cert.pem'),
@@ -127,6 +129,11 @@ export default ({ command, mode }: ConfigEnv): UserConfig => {
         overlay: false,
       },
       proxy: {
+        '^/admin-api': {
+          target: 'http://172.16.1.5:48080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/admin-api/, ''),
+        },
         '^/api': {
           // target: 'https://nest-api.buqiyuan.site',
           target: 'http://127.0.0.1:7001',

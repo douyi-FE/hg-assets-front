@@ -33,5 +33,9 @@
     :deep(div[class^='ant-spin']) {
       @apply wh-full;
     }
+
+    iframe {
+      border: none;
+    }
   }
 </style>

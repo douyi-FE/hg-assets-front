@@ -14,7 +14,7 @@
     </div>
     <!-- 使用iframe显示目标页面 -->
     <div v-else class="iframe-container">
-      <iframe :src="javaUrl" class="wh-full" frameborder="0" @load="onFrameLoad" ref="iframeRef" />
+      <iframe :src="javaUrl" class="wh-full" frameborder="0" ref="iframeRef" />
     </div>
   </div>
 </template>
@@ -22,98 +22,42 @@
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
-  import { message } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
-  import Api from '@/api/';
 
-  const userStore = useUserStore();
   const router = useRouter();
   const loading = ref(true);
   const loadingText = ref('正在处理登录信息...');
   const javaUrl = ref('');
   const iframeRef = ref<HTMLIFrameElement>();
 
-  // 处理SSO跳转
-  const handleSSO = async () => {
-    try {
-      loadingText.value = '正在获取用户Token...';
+  const jumpToPath = (extSearch: string = '') => {
+    const url = new URL(`${location.protocol}${location.host}${router.currentRoute.value.path}`);
+    const search = new URLSearchParams(url.search);
+    const path: string | null = search.get('path');
+    const isOnlyContent = search.get('isOnlyContent');
+    url &&
+      (javaUrl.value = `${import.meta.env.VITE_FLOW_FRONT_DOMAIN}${path}?isOnlyContent=${isOnlyContent}${extSearch === '' ? '' : `&${extSearch}`}`);
+    loading.value = false;
+  };
 
-      // 1. 获取当前用户的token
-      const currentToken = userStore.token;
-      if (!currentToken) {
-        throw new Error('未检测到登录信息，请先登录');
-      }
-
-      loadingText.value = '正在转换Token...';
-
-      // 2. 调用Node.js Token转换接口
-      const tokenResponse = await Api.sso.convertTokenToOAuth2({
-        token: currentToken,
-      });
-
-      if (!tokenResponse.success || !tokenResponse.oauth2Token) {
-        throw new Error('Token转换失败');
-      }
-
-      loadingText.value = '正在加载流程系统...';
-
-      // 3. 调用Java单点登录接口
-      const javaResponse = await Api.sso.javaSSOLogin(tokenResponse.oauth2Token);
-
-      // Java系统返回code为0表示成功
-      if (javaResponse.code !== 0) {
-        throw new Error(`流程系统加载失败: ${javaResponse.msg || '未知错误'}`);
-      }
-
-      loadingText.value = '正在准备流程系统...';
-
-      // 4. 设置Java前端页面URL
-      const javaToken = javaResponse.data.accessToken;
-
-      // 方案1: 使用URL参数传递token
-      const baseUrl = 'http://localhost/bpm/manager/model';
-      const urlWithToken = `${baseUrl}?token=${encodeURIComponent(javaToken)}&sso=true&timestamp=${Date.now()}`;
-
-      // 方案2: 同时存储到localStorage作为备用
-      localStorage.setItem('java_sso_token', javaToken);
-      localStorage.setItem('java_sso_timestamp', Date.now().toString());
-
-      javaUrl.value = urlWithToken;
-
-      // 延迟一下让用户看到最后的加载状态
-      setTimeout(() => {
-        loading.value = false;
-      }, 1000);
-    } catch (error: any) {
-      loading.value = false;
-      const errorMessage =
-        error.response?.data?.message || error.message || '流程系统加载失败，请重试';
-      message.error(errorMessage);
-      console.error('SSO Error:', error);
+  // 获取token
+  const jumpToYuDaoPath = function () {
+    const userStore = useUserStore();
+    if (userStore.yudaoToken.accessToken) {
+      const { accessToken, expiresTime, refreshToken, userId } = userStore.yudaoToken;
+      const search = new URLSearchParams();
+      search.append('accessToken', accessToken);
+      search.append('expiresTime', expiresTime.toString());
+      search.append('refreshToken', refreshToken);
+      search.append('userId', userId);
+      search.append('tenantId', import.meta.env.VITE_DEFAULT_FLOW_TENANT_ID);
+      jumpToPath(search.toString());
     }
   };
 
-  const onFrameLoad = () => {
-    console.log('流程系统页面加载完成');
-
-    // 检查是否需要重新传递token
-    setTimeout(() => {
-      const storedToken = localStorage.getItem('java_sso_token');
-      const storedTimestamp = localStorage.getItem('java_sso_timestamp');
-
-      if (storedToken && storedTimestamp) {
-        const tokenAge = Date.now() - parseInt(storedTimestamp);
-        // 如果token超过5分钟，清除它
-        if (tokenAge > 5 * 60 * 1000) {
-          localStorage.removeItem('java_sso_token');
-          localStorage.removeItem('java_sso_timestamp');
-        }
-      }
-    }, 2000);
-  };
-
   onMounted(() => {
-    handleSSO();
+    // handleSSO();
+    jumpToYuDaoPath();
   });
 </script>
 

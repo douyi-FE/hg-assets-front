@@ -19,24 +19,18 @@
     <a-row :gutter="32" style="margin-top: 20px">
       <a-col :span="16">
         <a-card title="我的待办" :bordered="false">
-          <a-list
-            :data-source="[
-              { title: '任务1', description: '任务1内容，请尽快处理！' },
-              { title: '任务2', description: '任务2内容，请尽快处理！' },
-              { title: '任务3', description: '任务3内容，请尽快处理！' },
-            ]"
-          >
+          <a-list :data-source="myTasks">
             <template #renderItem="{ item }">
               <a-list-item>
                 <template #actions>
                   <a key="list-loadmore-edit">处理</a>
                 </template>
-                <a-list-item-meta :description="item.description">
+                <a-list-item-meta :description="item.summary.value">
                   <template #title>
-                    <a href="https://www.antdv.com/">{{ item.title }}</a>
+                    <a href="https://www.antdv.com/">{{ item.name }}</a>
                   </template>
                   <template #avatar>
-                    <!-- <a-avatar src="https://joeschmoe.io/api/v1/random" /> -->
+                    <a-avatar :src="item.startUser.avatar" />
                   </template>
                 </a-list-item-meta>
               </a-list-item>
@@ -76,10 +70,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { Dayjs } from 'dayjs';
   import QuickNav from './quick-nav-v2.vue';
+  import { getMyTasks } from '@/api/backend/api/workspace';
+  import { useUserStore } from '@/store/modules/user';
 
+  const userStore = useUserStore();
   const value = ref<Dayjs>();
 
   const getListData = (value: Dayjs) => {
@@ -116,6 +113,20 @@
       return 1394;
     }
   };
+
+  const myTasks = ref([]);
+
+  onMounted(() => {
+    if (userStore.yudaoToken.accessToken) {
+      getMyTasks({
+        pageNo: 1,
+        pageSize: 10,
+      }).then((res) => {
+        console.log('tasklist:', res);
+        myTasks.value = res.data.list;
+      });
+    }
+  });
 </script>
 
 <style lang="less" scoped>

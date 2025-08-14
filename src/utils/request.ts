@@ -6,6 +6,7 @@ import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ResultEnum } from '@/enums/httpEnum';
 import { useUserStore } from '@/store/modules/user';
 import { useSSEStore } from '@/store/modules/sse';
+import { refreshYuDaoToken } from '@/api/backend/api/sso';
 
 export interface RequestOptions extends AxiosRequestConfig {
   /** 是否直接将数据从响应中提取出，例如直接返回 res.data，而忽略 res.code 等信息 */
@@ -39,6 +40,19 @@ const service = axios.create({
   },
 });
 
+const refreshYuDaoTokenCircle = async () => {
+  const userStore = useUserStore();
+  requestIdleCallback(() => {
+    refreshYuDaoToken(userStore.yudaoToken.refreshToken, userStore.yudaoToken.accessToken).then(
+      (res: any) => {
+        if (res.code === 0) {
+          userStore.setYuDaoToken(res.data);
+        }
+      },
+    );
+  });
+};
+
 service.interceptors.request.use(
   (config) => {
     const userStore = useUserStore();
@@ -57,6 +71,9 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse<BaseResponse>) => {
     const res = response.data;
+
+    // 刷新芋道token
+    refreshYuDaoTokenCircle();
 
     // if the custom code is not 200, it is judged as an error.
     if (res.code !== ResultEnum.SUCCESS) {
