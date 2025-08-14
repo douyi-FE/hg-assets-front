@@ -74,16 +74,16 @@
   const isEdit = ref(false);
 
   const fetchData = () => {
-    Promise.all([getApplicationList({ isBuildIn: false }), getQuickNavList({})]).then(
-      ([applicationList, quickNavList]) => {
+    Promise.all([getApplicationList({ isBuildIn: false }), getQuickNavList({})])
+      .then(([applicationList, quickNavList]) => {
         applicationCollection.value = applicationList.map((application) => ({
           ...application,
           checked: quickNavList[0]?.includes(application.templateId),
         }));
-
-        console.log('applicationCollection', applicationCollection.value);
-      },
-    );
+      })
+      .catch(() => {
+        console.log('error');
+      });
   };
 
   const modifyQuickNavList = (templateIds: string[]) => {

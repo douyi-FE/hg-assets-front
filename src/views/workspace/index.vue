@@ -23,14 +23,14 @@
             <template #renderItem="{ item }">
               <a-list-item>
                 <template #actions>
-                  <a key="list-loadmore-edit">处理</a>
+                  <a key="list-loadmore-edit" @click.stop="handleTask(item)">处理</a>
                 </template>
-                <a-list-item-meta :description="item.summary.value">
+                <a-list-item-meta :description="item.summary?.value">
                   <template #title>
-                    <a href="https://www.antdv.com/">{{ item.name }}</a>
+                    <a href="https://www.antdv.com/">{{ item.processInstance?.name || '--' }}</a>
                   </template>
                   <template #avatar>
-                    <a-avatar :src="item.startUser.avatar" />
+                    <a-avatar :src="item.startUser?.avatar || ''" />
                   </template>
                 </a-list-item-meta>
               </a-list-item>
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
   import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import { Dayjs } from 'dayjs';
   import QuickNav from './quick-nav-v2.vue';
   import { getMyTasks } from '@/api/backend/api/workspace';
@@ -78,7 +79,7 @@
 
   const userStore = useUserStore();
   const value = ref<Dayjs>();
-
+  const router = useRouter();
   const getListData = (value: Dayjs) => {
     let listData;
     switch (value.date()) {
@@ -121,12 +122,21 @@
       getMyTasks({
         pageNo: 1,
         pageSize: 10,
-      }).then((res) => {
-        console.log('tasklist:', res);
-        myTasks.value = res.data.list;
-      });
+      })
+        .then((res) => {
+          myTasks.value = res.data.list;
+        })
+        .catch(() => {
+          console.log('error');
+        });
     }
   });
+
+  const handleTask = (item: any) => {
+    router.push({
+      name: '/flow/task/flow/sso?path=/bpm/task/todo&isOnlyContent=true',
+    });
+  };
 </script>
 
 <style lang="less" scoped>

@@ -44,13 +44,13 @@
   const jumpToYuDaoPath = function () {
     const userStore = useUserStore();
     if (userStore.yudaoToken.accessToken) {
-      const { accessToken, expiresTime, refreshToken, userId } = userStore.yudaoToken;
+      const { accessToken, expiresTime, refreshToken, userId, tenantId = 0 } = userStore.yudaoToken;
       const search = new URLSearchParams();
       search.append('accessToken', accessToken);
       search.append('expiresTime', expiresTime.toString());
       search.append('refreshToken', refreshToken);
       search.append('userId', userId);
-      search.append('tenantId', import.meta.env.VITE_DEFAULT_FLOW_TENANT_ID);
+      search.append('tenantId', tenantId.toString());
       jumpToPath(search.toString());
     }
   };

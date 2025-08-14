@@ -11,7 +11,7 @@ export const getMyTasks = async (params: any) => {
   //     Authorization: `Bearer ${userStore.yudaoToken.accessToken}`,
   //   },
   // });
-  const res = await axios.get('/admin-api/bpm/process-instance/my-page', {
+  const res = await axios.get('/admin-api/bpm/task/todo-page', {
     params,
     headers: {
       Authorization: `Bearer ${userStore.yudaoToken.accessToken}`,

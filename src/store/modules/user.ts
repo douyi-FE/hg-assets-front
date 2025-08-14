@@ -13,6 +13,7 @@ export const useUserStore = defineStore(
   'user',
   () => {
     const sseStore = useSSEStore();
+    const tenantId = ref<number>(0);
     const yudaoToken = ref<{
       accessToken: string;
       expiresTime: number;
@@ -51,13 +52,17 @@ export const useUserStore = defineStore(
         .getYuDaoTenantIdByUserName()
         .then((res) => {
           if (res.code === 0) {
+            tenantId.value = res.data;
+            setYuDaoToken({
+              ...yudaoToken.value,
+              tenantId: res.data,
+            });
             return res.data;
           } else {
             return Promise.reject('访问出错，请重试');
           }
         })
         .then((data) => {
-          console.log('data', data);
           return Api.sso.getYuDaoToken(data);
         })
         .then((res) => {
@@ -87,7 +92,7 @@ export const useUserStore = defineStore(
         expiresTime,
         refreshToken,
         userId,
-        tenantId: import.meta.env.VITE_DEFAULT_FLOW_TENANT_ID,
+        tenantId: tenantId.value,
       };
     };
 
@@ -146,6 +151,7 @@ export const useUserStore = defineStore(
       ]);
       perms.value = permsData;
       const result = generateDynamicRoutes(menusData as unknown as RouteRecordRaw[]);
+      console.log('result-routes', result);
       menus.value = sortMenus(result);
       menuPerms.value = menuPermData;
     };
