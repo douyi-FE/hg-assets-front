@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { message } from 'ant-design-vue';
 import { useLockscreenStore } from './lockscreen';
 import { useSSEStore } from './sse';
+import { useYdTodoStore } from './ydTodo';
 import type { RouteRecordRaw } from 'vue-router';
 import { store } from '@/store';
 import Api from '@/api/';
@@ -13,6 +14,7 @@ export const useUserStore = defineStore(
   'user',
   () => {
     const sseStore = useSSEStore();
+    const ydTodoStore = useYdTodoStore();
     const tenantId = ref<number>(0);
     const yudaoToken = ref<{
       accessToken: string;
@@ -134,6 +136,8 @@ export const useUserStore = defineStore(
         sseStore.initServerMsgListener();
         // 流程系统设置token
         await getYuDaoToken();
+        // 芋道待办事项
+        await ydTodoStore.getTodoList();
       } catch (error) {
         return Promise.reject(error);
         // return logout();

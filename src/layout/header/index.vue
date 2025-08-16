@@ -25,7 +25,7 @@
         <FullScreen />
         <!-- <LocalePicker /> -->
         <Dropdown placement="bottomRight">
-          <a-badge count="5">
+          <a-badge :count="ydTodoStore.todoList.total || 0">
             <Avatar :src="userInfo.avatar" :alt="userInfo.username">{{ userInfo.username }}</Avatar>
           </a-badge>
           <template #overlay>
@@ -71,6 +71,7 @@
   } from 'ant-design-vue';
   import { Search, FullScreen, LayoutBreadcrumb } from './components/';
   import { useUserStore } from '@/store/modules/user';
+  import { useYdTodoStore } from '@/store/modules/ydTodo';
   import { useKeepAliveStore } from '@/store/modules/keepAlive';
   import { useLockscreenStore } from '@/store/modules/lockscreen';
   import { LOGIN_NAME } from '@/router/constant';
@@ -89,7 +90,7 @@
   const layoutSettingStore = useLayoutSettingStore();
   const lockscreenStore = useLockscreenStore();
   const keepAliveStore = useKeepAliveStore();
-
+  const ydTodoStore = useYdTodoStore();
   const router = useRouter();
   const route = useRoute();
   const userInfo = computed(() => userStore.userInfo);

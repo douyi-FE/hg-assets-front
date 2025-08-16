@@ -19,7 +19,7 @@
     <a-row :gutter="32" style="margin-top: 20px">
       <a-col :span="16">
         <a-card title="我的待办" :bordered="false">
-          <a-list :data-source="myTasks">
+          <a-list :data-source="ydTodoStore.todoList.list">
             <template #renderItem="{ item }">
               <a-list-item>
                 <template #actions>
@@ -70,14 +70,13 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
+  import { ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { Dayjs } from 'dayjs';
   import QuickNav from './quick-nav-v2.vue';
-  import { getMyTasks } from '@/api/backend/api/workspace';
-  import { useUserStore } from '@/store/modules/user';
+  import { useYdTodoStore } from '@/store/modules/ydTodo';
 
-  const userStore = useUserStore();
+  const ydTodoStore = useYdTodoStore();
   const value = ref<Dayjs>();
   const router = useRouter();
   const getListData = (value: Dayjs) => {
@@ -114,23 +113,6 @@
       return 1394;
     }
   };
-
-  const myTasks = ref([]);
-
-  onMounted(() => {
-    if (userStore.yudaoToken.accessToken) {
-      getMyTasks({
-        pageNo: 1,
-        pageSize: 10,
-      })
-        .then((res) => {
-          myTasks.value = res.data.list;
-        })
-        .catch(() => {
-          console.log('error');
-        });
-    }
-  });
 
   const handleTask = (item: any) => {
     router.push({
