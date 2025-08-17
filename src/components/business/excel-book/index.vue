@@ -31,7 +31,7 @@
           >
             <a-button type="default">清除样式</a-button>
           </a-popconfirm>
-          <a-button type="default" @click="exportExcel">导出</a-button>
+          <a-button type="default" @click="() => addByFlowRef.open()">新增</a-button>
           <a-button type="default" @click="openImportDialog">导入</a-button>
           <!-- <a-button type="default" @click="clearAllStyles">清除所有样式</a-button> -->
           <a-dropdown-button type="primary" :disabled="!isEditable" @click="saveWorkBookData">
@@ -159,6 +159,11 @@
       :mainField="mainField"
       :relationFields="relationFields"
     />
+    <AddByFlow
+      ref="addByFlowRef"
+      flowPath="/bpm/task/create"
+      :modelId="props.content.flowPath || ''"
+    />
   </div>
 </template>
 
@@ -170,6 +175,7 @@
   import History from './history.vue';
   import CustomMap from './custom-map.vue';
   import Relation from './relation.vue';
+  import AddByFlow from './addByFlow.vue';
   // import {
   //   initCustomCommentsEvents,
   //   renderCommentsByData,
@@ -221,6 +227,7 @@
   const importModel = ref('append');
   const customMapRef = ref();
   const relationRef = ref();
+  const addByFlowRef = ref();
   // 字段配置
   const isShowRelation = ref(false);
   const mainField = ref<any>({});
@@ -241,6 +248,7 @@
         tableName: string;
         tableKey: string;
         app: string;
+        flowPath?: string;
       };
     }>(),
     {
@@ -261,6 +269,7 @@
         tableName: '',
         tableKey: '',
         app: '',
+        flowPath: '',
       }),
     },
   );

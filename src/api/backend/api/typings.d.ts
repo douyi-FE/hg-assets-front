@@ -1286,6 +1286,7 @@ declare namespace API {
     _id: string;
     name: string;
     code: string;
+    flowPath: string;
     status: number;
     isBuildIn: boolean;
     note: string;

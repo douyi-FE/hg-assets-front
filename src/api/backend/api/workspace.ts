@@ -11,3 +11,14 @@ export const getMyTasks = async (params: any) => {
   });
   return res.data;
 };
+
+export const getYuDaoFlowList = async (params = { suspensionState: 1 }) => {
+  const userStore = useUserStore();
+  const res = await axios.get('/admin-api/bpm/process-definition/list', {
+    params,
+    headers: {
+      Authorization: `Bearer ${userStore.yudaoToken.accessToken}`,
+    },
+  });
+  return res.data;
+};

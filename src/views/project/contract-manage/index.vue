@@ -74,6 +74,7 @@
             dataSource.value = template.initDataSource;
             content.value = {
               tableName: 'application_data',
+              flowPath: template.flowPath,
               tableKey: applicationData._id,
               ejs: template.content,
               dataSource: applicationData?.applicationData || dataSource,
